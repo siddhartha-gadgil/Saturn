@@ -53,3 +53,11 @@ def dpSAT (n: Nat): (List (Clause n)) →  Option (Solution n) :=
         Option.orElse
           (Option.map (induce k true) (dpSAT k (branchMap true clauses)))
           (Option.map (induce k false) (dpSAT k (branchMap false clauses)))
+
+def isContradiction(n: Nat) : (Clause n) → Bool :=
+  match n with
+    | 0 => fun clause => true
+    | k + 1 => fun clause => ((clause 0) == none) && (isContradiction k (restrict k clause))
+
+#eval isContradiction 3 (contradiction 3)
+#eval isContradiction 3 (fun x => some (true))
