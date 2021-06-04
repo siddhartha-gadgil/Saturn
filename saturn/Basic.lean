@@ -7,8 +7,16 @@ def Clause(n : Nat) : Type := (Fin n) → Option Bool
 def plusOne(n: Nat) : Fin n → Fin (n + 1) :=
   fun arg => Fin.mk (succ arg.val) (succ_lt_succ arg.isLt)
 
-def restrict{α : Type}(n : Nat)(fn: (Fin (Nat.succ n)) → α)(arg: Fin n) : α :=
-  fn (plusOne _ arg)
+def restrict{α : Type}(n : Nat) : (Fin (Nat.succ n) → α) → Fin n →  α :=
+  fun fn =>
+    fun arg =>
+      fn (plusOne n arg)
+
+def lem1{α : Type}(n: Nat)(zeroVal : α)(j: Fin n)(g: (Fin (succ n)) → α) 
+        : (restrict n g j) = g (plusOne n j) := by
+        rfl
+        done
+        
 
 def eqClause (n: Nat): (Clause n) → (Clause n) → Bool := 
   match n with
@@ -25,7 +33,8 @@ def induce{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(arg: Fin (n + 
   match arg with
     | Fin.mk 0 _ => zeroVal
     | Fin.mk (k + 1) witness =>
-      let pred := Fin.mk k witness
+      let predwit : k < n := leOfSuccLeSucc witness
+      let pred := Fin.mk k (predwit)
       fn (pred)
 
 
@@ -37,7 +46,6 @@ def branchClause {n: Nat} (branch: Bool) (clause : Clause (n + 1)) : Option (Cla
 
 def branchMap  {n: Nat} (branch: Bool)(clauses : List (Clause (n  + 1))) 
   : List (Clause n) :=
-    let base := branchClause branch
     (List.filterMap (branchClause branch) clauses).eraseDups
 
 def contradiction(n: Nat) : Clause n :=
@@ -171,16 +179,28 @@ def transpZero {n: Nat} (k: Fin (succ n)) (l: Fin (succ n)) : Fin (succ n) :=
         0
       else l
 
+ 
+      
+
 
 def restrictInduce{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n) : 
     restrict n (induce n zeroVal fn) j = fn j := 
-        let j0 := j.val
-        let l0 := j.isLt
-        let lem1 : restrict n (induce n zeroVal fn) j = induce n zeroVal fn (plusOne _ j) := _
-        let lem2 : induce n zeroVal fn (plusOne _ j) = fn j := _
+        let lem1 : restrict n (induce n zeroVal fn) j = induce n zeroVal fn (plusOne n j) := by rfl
+        let lem2 : induce n zeroVal fn (plusOne n j) = fn j := 
+          sorry
+          -- by
+          --   cases (plusOne n j)
+          --   done
         let lem3 := Eq.trans lem1 lem2
-        sorry
+        lem3
 
+def indc {α: Type} (zeroVal : α) (fn: Nat → α) : Nat → α :=
+  fun n =>
+    match n with
+    | 0 => zeroVal
+    | n + 1 => fn (n)
+  
+def lemInd{α: Type}(n: Nat)(zeroVal: α)(fn: Nat → α) : indc zeroVal fn (succ n) = fn n := by rfl 
 
 
 def transpLemma1{n: Nat}(fn :Fin (succ n) → α)(k : Fin (succ n)):
