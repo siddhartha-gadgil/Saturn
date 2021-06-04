@@ -137,15 +137,87 @@ def dlppSAT (n: Nat): (List (Clause n)) →  Option (Solution n) :=
   match n with 
     | 0 => 
       fun clauses => 
-        if clauses == [contradiction 0] then 
-          none 
-        else some (fun n => true) 
+        match clauses with 
+          | x :: ys => none
+          | [] => some (fun n => true) 
     | k + 1 => 
       fun clauses =>
-        match preAssign clauses with
-          | none =>
-            ((dlppSAT k (branchMap true clauses)).map (induce k true)).orElse
-            ((dlppSAT k (branchMap false clauses)).map (induce k false))
-          | some ((j, b)) =>
-              let permuted := clauses.map (transposeZero j)
-              ((dlppSAT k (branchMap b permuted)).map (induce k b)).map (transposeZero j)
+        if clauses.contains (contradiction (k + 1)) then 
+        none
+        else 
+          match preAssign clauses with
+            | none =>
+              ((dlppSAT k (branchMap true clauses)).map (induce k true)).orElse
+              ((dlppSAT k (branchMap false clauses)).map (induce k false))
+            | some ((j, b)) =>
+                let permuted := clauses.map (transposeZero j)
+                ((dlppSAT k (branchMap b permuted)).map (induce k b)).map (transposeZero j)
+
+theorem zeroLenClsEql : ∀ (cl1: Clause 0), ∀ (cl2: Clause 0) ,  (cl1 = cl2) := 
+  fun cl1 =>
+    fun cl2 =>
+      funext (
+        fun (x : Fin 0) =>
+          match x with 
+            | ⟨_, h⟩ => absurd h (notLtZero _)
+      )
+
+
+def transpZero {n: Nat} (k: Fin (succ n)) (l: Fin (succ n)) : Fin (succ n) :=
+    if (l == 0) then 
+      k
+    else 
+      if (l == k) then
+        0
+      else l
+
+
+def restrictInduce{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n) : 
+    restrict n (induce n zeroVal fn) j = fn j := 
+        let j0 := j.val
+        let l0 := j.isLt
+        let lem1 : restrict n (induce n zeroVal fn) j = induce n zeroVal fn (plusOne _ j) := _
+        let lem2 : induce n zeroVal fn (plusOne _ j) = fn j := _
+        let lem3 := Eq.trans lem1 lem2
+        sorry
+
+
+
+def transpLemma1{n: Nat}(fn :Fin (succ n) → α)(k : Fin (succ n)):
+  (transpZero k (transpZero k 0)) = k := 
+    sorry
+
+def transposeInvolution {α : Type}{n: Nat}(fn :Fin (succ n) → α) : ∀ k : Fin (succ n), 
+  (transposeZero k ((transposeZero k fn))) = fn := 
+    fun k =>
+      funext (
+        fun l =>
+          if l == k then
+            sorry
+          else if l == 0
+            then sorry
+          else sorry
+      ) 
+
+-- scratch
+
+
+def testDec (a: Nat)[C : Decidable (Not (a = 2))] : Bool :=
+  match C with 
+    | isTrue pf => true
+    | isFalse pf => 
+      false
+#eval testDec 2
+
+theorem s : 1 = 1 := by
+  simp
+  done
+
+def piEg := (n : Nat) → (n = 1)
+
+#reduce piEg
+
+#check funext
+
+
+  
