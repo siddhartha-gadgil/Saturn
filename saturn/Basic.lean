@@ -212,7 +212,7 @@ def transposeInvolution {α : Type}{n: Nat}(fn :Fin (succ n) → α) : ∀ k : F
     fun k =>
       funext (
         fun l =>
-          if l == k then
+          if c: l == k then
             sorry
           else if l == 0
             then sorry
