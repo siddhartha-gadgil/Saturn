@@ -228,20 +228,17 @@ def decNEq(k: Nat)(l: Nat): NEq k l :=
       
 -- scratch
 
-def lem2{α: Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n):
+theorem inducePlusOne{α: Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n):
   induce n zeroVal fn (plusOne n j) = fn j :=
-    let k := j.val
-    let witness := j.isLt
-    let l0 : Fin.val (plusOne n j) = succ k := by rfl
-    let l1 : induce n zeroVal fn (Fin.mk (succ k) 
-      (succ_lt_succ witness)) = fn (Fin.mk k witness) := by rfl
-    let l2 : (plusOne n j) = Fin.mk (succ k) (succ_lt_succ witness) := by rfl
+    let l1 : induce n zeroVal fn (Fin.mk (succ j.val) 
+      (succ_lt_succ j.isLt)) = fn (Fin.mk j.val j.isLt) := by rfl
+    let l2 : (plusOne n j) = Fin.mk (succ j.val) (succ_lt_succ j.isLt) := by rfl
     let indFn: Fin (n + 1) → α := 
       fun p1j => induce n zeroVal fn p1j
     let l3 : induce n zeroVal fn (plusOne n j) =
-       induce n zeroVal fn (Fin.mk (succ k) (succ_lt_succ witness)) := congrArg indFn l2
+       induce n zeroVal fn (Fin.mk (succ j.val) (succ_lt_succ j.isLt)) := congrArg indFn l2
     let l4 := Eq.trans l3 l1
-    let l5 :  Fin.mk k witness = j := by
+    let l5 :  Fin.mk j.val j.isLt = j := by
       apply Fin.eqOfVeq
       rfl
       done
@@ -249,11 +246,10 @@ def lem2{α: Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n):
     Eq.trans l4 l6
   
 
-def restrictInduce{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n) : 
+theorem restrictInduce{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n) : 
     restrict n (induce n zeroVal fn) j = fn j := 
         let lem1 : restrict n (induce n zeroVal fn) j = induce n zeroVal fn (plusOne n j) := by rfl
-        let lem3 := Eq.trans lem1 (lem2 n zeroVal fn j)
-        lem3
+        Eq.trans lem1 (inducePlusOne n zeroVal fn j)
 
 def indc {α: Type} (zeroVal : α) (fn: Nat → α) : Nat → α :=
   fun n =>
