@@ -179,9 +179,60 @@ def transpZero {n: Nat} (k: Fin (succ n)) (l: Fin (succ n)) : Fin (succ n) :=
         0
       else l
 
+theorem succEq(k: Nat)(l: Nat) : (k = l) →  (succ k = succ l):= by
+  intro h
+  apply congrArg
+  assumption
+  done 
+
+theorem succNotZero(n : Nat) : ((succ n) = 0) → False := by
+  simp
+  done
+
+theorem zeroNotSucc(n : Nat) : (0 = (succ n)) → False := by
+  simp
+  done
+
+theorem succInjective(k: Nat)(l: Nat) : (succ k = succ l) → k = l :=
+  match k with
+  | 0 => 
+    match l with
+    | 0 => fun _ => rfl
+    | m + 1 => fun h => nomatch h
+  | n + 1 =>
+    match l with
+    | 0 => fun h => nomatch h
+    | m + 1 => by
+                intro h
+                injection h 
+                assumption
+                done
+
+inductive NEq(k: Nat)(l: Nat) where
+  | AreEq (pf : k = l) : NEq k l
+  | AreUneq (contra : (k = l) → False) : NEq k l
+
+def decNEq(k: Nat)(l: Nat): NEq k l :=
+  match k with
+    | 0 =>
+      match l with
+      | 0 =>
+        let lem : 0 = 0 := by rfl  
+        NEq.AreEq lem
+      | succ m => NEq.AreUneq (zeroNotSucc m)
+    | n + 1 => 
+      match l with
+      | 0 => NEq.AreUneq (succNotZero n)
+      | m + 1 =>
+        let pred := decNEq n m
+        match pred with
+        | NEq.AreEq pf =>
+          NEq.AreEq (congrArg succ pf)
+        | NEq.AreUneq contra =>
+          NEq.AreUneq (fun h => contra (succInjective n m h))
  
       
-
+-- scratch
 
 def restrictInduce{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n) : 
     restrict n (induce n zeroVal fn) j = fn j := 
@@ -239,5 +290,3 @@ def piEg := (n : Nat) → (n = 1)
 
 #check funext
 
-
-  
