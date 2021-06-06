@@ -5,7 +5,7 @@ def Clause(n : Nat) : Type := (Fin n) → Option Bool
 #eval true && false
 
 def plusOne(n: Nat) : Fin n → Fin (n + 1) :=
-  fun arg => Fin.mk (succ arg.val) (succ_lt_succ arg.isLt)
+  fun arg => Fin.mk (succ (Fin.val arg)) (succ_lt_succ (Fin.isLt arg))
 
 def restrict{α : Type}(n : Nat) : (Fin (Nat.succ n) → α) → Fin n →  α :=
   fun fn =>
@@ -29,13 +29,16 @@ def eqClause (n: Nat): (Clause n) → (Clause n) → Bool :=
 
 instance {n: Nat} : BEq (Clause n) :=   BEq.mk (eqClause n)
 
+def pred(n: Nat)(k: Nat) : k + 1 < n + 1 → Fin n :=
+  fun witness =>
+    let predwit : k < n := leOfSuccLeSucc witness
+    Fin.mk k (predwit)
+
 def induce{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(arg: Fin (n + 1)) : α :=
   match arg with
     | Fin.mk 0 _ => zeroVal
     | Fin.mk (k + 1) witness =>
-      let predwit : k < n := leOfSuccLeSucc witness
-      let pred := Fin.mk k (predwit)
-      fn (pred)
+      fn (pred n k witness)
 
 
 def branchClause {n: Nat} (branch: Bool) (clause : Clause (n + 1)) : Option (Clause n) :=
@@ -126,7 +129,7 @@ def findPure (n: Nat) : List (Clause n) →  Option ((Fin n) × Bool) :=
                 fun (x, b) => (plusOne k x, b)
               let shorterClauses := clauses.map (restrict k)
               (findPure k (shorterClauses)).map (shift)
-
+              
 def transposeZero {α : Type}{n: Nat} (k: Fin (succ n)) (fn :Fin (succ n) → α) : (Fin (succ n) → α) :=
   fun l =>
     if l == k then 
@@ -193,20 +196,11 @@ theorem zeroNotSucc(n : Nat) : (0 = (succ n)) → False := by
   simp
   done
 
-theorem succInjective(k: Nat)(l: Nat) : (succ k = succ l) → k = l :=
-  match k with
-  | 0 => 
-    match l with
-    | 0 => fun _ => rfl
-    | m + 1 => fun h => nomatch h
-  | n + 1 =>
-    match l with
-    | 0 => fun h => nomatch h
-    | m + 1 => by
-                intro h
-                injection h 
-                assumption
-                done
+theorem succInjective(k: Nat)(l: Nat) : (succ k = succ l) → k = l := by
+  intro h
+  injection h
+  assumption
+  done
 
 inductive NEq(k: Nat)(l: Nat) where
   | AreEq (pf : k = l) : NEq k l
@@ -234,15 +228,31 @@ def decNEq(k: Nat)(l: Nat): NEq k l :=
       
 -- scratch
 
+def lem2{α: Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n):
+  induce n zeroVal fn (plusOne n j) = fn j :=
+    let k := j.val
+    let witness := j.isLt
+    let l0 : Fin.val (plusOne n j) = succ k := by rfl
+    let l1 : induce n zeroVal fn (Fin.mk (succ k) 
+      (succ_lt_succ witness)) = fn (Fin.mk k witness) := by rfl
+    let l2 : (plusOne n j) = Fin.mk (succ k) (succ_lt_succ witness) := by rfl
+    let indFn: Fin (n + 1) → α := 
+      fun p1j => induce n zeroVal fn p1j
+    let l3 : induce n zeroVal fn (plusOne n j) =
+       induce n zeroVal fn (Fin.mk (succ k) (succ_lt_succ witness)) := congrArg indFn l2
+    let l4 := Eq.trans l3 l1
+    let l5 :  Fin.mk k witness = j := by
+      apply Fin.eqOfVeq
+      rfl
+      done
+    let l6 := congrArg fn l5
+    Eq.trans l4 l6
+  
+
 def restrictInduce{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n) : 
     restrict n (induce n zeroVal fn) j = fn j := 
         let lem1 : restrict n (induce n zeroVal fn) j = induce n zeroVal fn (plusOne n j) := by rfl
-        let lem2 : induce n zeroVal fn (plusOne n j) = fn j := 
-          sorry
-          -- by
-          --   cases (plusOne n j)
-          --   done
-        let lem3 := Eq.trans lem1 lem2
+        let lem3 := Eq.trans lem1 (lem2 n zeroVal fn j)
         lem3
 
 def indc {α: Type} (zeroVal : α) (fn: Nat → α) : Nat → α :=
@@ -253,6 +263,10 @@ def indc {α: Type} (zeroVal : α) (fn: Nat → α) : Nat → α :=
   
 def lemInd{α: Type}(n: Nat)(zeroVal: α)(fn: Nat → α) : indc zeroVal fn (succ n) = fn n := by rfl 
 
+
+
+
+-- scratch
 
 def transpLemma1{n: Nat}(fn :Fin (succ n) → α)(k : Fin (succ n)):
   (transpZero k (transpZero k 0)) = k := 
@@ -269,8 +283,6 @@ def transposeInvolution {α : Type}{n: Nat}(fn :Fin (succ n) → α) : ∀ k : F
             then sorry
           else sorry
       ) 
-
--- scratch
 
 
 def testDec (a: Nat)[C : Decidable (Not (a = 2))] : Bool :=
