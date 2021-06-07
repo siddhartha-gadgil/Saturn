@@ -42,10 +42,9 @@ def induce{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(arg: Fin (n + 
 
 
 def branchClause {n: Nat} (branch: Bool) (clause : Clause (n + 1)) : Option (Clause n) :=
-  if (clause (Fin.mk 0 (zeroLtSucc n))) == some (branch) then
-    none
-  else
-    some (restrict n clause)
+  match (clause (Fin.mk 0 (zeroLtSucc n))) with 
+  | some (branch) => none
+  | none => some (restrict n clause)
 
 def branchMap  {n: Nat} (branch: Bool)(clauses : List (Clause (n  + 1))) 
   : List (Clause n) :=
@@ -230,14 +229,15 @@ def decNEq(k: Nat)(l: Nat): NEq k l :=
 
 theorem inducePlusOne{α: Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n):
   induce n zeroVal fn (plusOne n j) = fn j :=
-    let l1 : induce n zeroVal fn (Fin.mk (succ j.val) 
-      (succ_lt_succ j.isLt)) = fn (Fin.mk j.val j.isLt) := by rfl
-    let l2 : (plusOne n j) = Fin.mk (succ j.val) (succ_lt_succ j.isLt) := by rfl
-    let indFn: Fin (n + 1) → α := 
-      fun p1j => induce n zeroVal fn p1j
-    let l3 : induce n zeroVal fn (plusOne n j) =
-       induce n zeroVal fn (Fin.mk (succ j.val) (succ_lt_succ j.isLt)) := congrArg indFn l2
-    let l4 := Eq.trans l3 l1
+    -- let l1 : induce n zeroVal fn (Fin.mk (succ j.val) 
+    --   (succ_lt_succ j.isLt)) = fn (Fin.mk j.val j.isLt) := by rfl
+    -- let l2 : (plusOne n j) = Fin.mk (succ j.val) (succ_lt_succ j.isLt) := by rfl
+    -- let indFn: Fin (n + 1) → α := 
+    --   fun p1j => induce n zeroVal fn p1j
+    -- let l3 : induce n zeroVal fn (plusOne n j) =
+    --    induce n zeroVal fn (Fin.mk (succ j.val) (succ_lt_succ j.isLt)) := congrArg indFn l2
+    -- let l4 := Eq.trans l3 l1
+    let l4 : induce n zeroVal fn (plusOne n j) = fn (Fin.mk j.val j.isLt) := by rfl
     let l5 :  Fin.mk j.val j.isLt = j := by
       apply Fin.eqOfVeq
       rfl
@@ -259,10 +259,15 @@ def indc {α: Type} (zeroVal : α) (fn: Nat → α) : Nat → α :=
   
 def lemInd{α: Type}(n: Nat)(zeroVal: α)(fn: Nat → α) : indc zeroVal fn (succ n) = fn n := by rfl 
 
-
-
-
 -- scratch
+
+def boolBranch(b: Bool)(n: Nat) := 
+  match b with
+  | true => n 
+  | false => n + 1
+
+theorem boolBranchTest(n: Nat) : boolBranch false n = n + 1 := by rfl 
+
 
 def transpLemma1{n: Nat}(fn :Fin (succ n) → α)(k : Fin (succ n)):
   (transpZero k (transpZero k 0)) = k := 
