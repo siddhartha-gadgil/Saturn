@@ -58,7 +58,31 @@ structure SeqElem{α: Type}[beq : BEq α]{n: Nat}(seq: Fin n → α)(elem: α) w
   index: Fin n 
   elemAtIndex: seq index = elem
 
--- Need variants of Nat.eqOfBeqEqTrue for the above to be useful
+
+def findElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
+  (seq: Fin n → α) → (elem: α) →  Option (SeqElem seq elem) :=
+    match n with
+    | 0 => fun _  => fun _ => none
+    | m + 1 => 
+      fun fn =>
+        fun x =>
+          if pf : (fn (Fin.mk 0 (zeroLtSucc m))) =  x then
+            let e : SeqElem fn x := ⟨Fin.mk 0 (zeroLtSucc m), pf⟩
+            some (e)
+          else
+            let pred := findElem (dropHead _ fn) x
+            pred.map (fun seqElem => 
+              let zeroVal := fn (Fin.mk 0 (zeroLtSucc m))
+              let j := seqElem.index
+              let l1 : dropHead m fn j = x := seqElem.elemAtIndex
+              let l2 := dropPlusOne _ zeroVal j fn
+              let l3 : fn (plusOne m j) = x := Eq.trans (Eq.symm l2) l1
+              ⟨(plusOne _ j), l3⟩ 
+            )
+
+
+-- good exercise but not needed if using decidable equality
+
 
 def boolEqOfBeqEqTrue : {x y : Bool} → (x == y) = true →  x = y
   | true,   true,   h => rfl
@@ -114,27 +138,6 @@ instance {α: Type}[BEq α][LiftEq α] : LiftEq (Option α) where
   liftEq := fun x => fun y => fun eq => optLiftTrue eq
   liftNeq := fun x => fun y => fun neq => optLiftFalse neq
 
-def findElem{α: Type}[beq : BEq α][leq : LiftEq α]{n: Nat}: 
-  (seq: Fin n → α) → (elem: α) →  Option (SeqElem seq elem) :=
-    match n with
-    | 0 => fun _  => fun _ => none
-    | m + 1 => 
-      fun fn =>
-        fun x =>
-          if pf : (fn (Fin.mk 0 (zeroLtSucc m))) ==  x then
-            let e : SeqElem fn x := ⟨Fin.mk 0 (zeroLtSucc m), liftEquality pf⟩
-            some (e)
-          else
-            let pred := findElem (dropHead _ fn) x
-            pred.map (fun seqElem => 
-              let zeroVal := fn (Fin.mk 0 (zeroLtSucc m))
-              let j := seqElem.index
-              let l1 : dropHead m fn j = x := seqElem.elemAtIndex
-              let l2 := dropPlusOne _ zeroVal j fn
-              let l3 : fn (plusOne m j) = x := Eq.trans (Eq.symm l2) l1
-              ⟨(plusOne _ j), l3⟩ 
-            )
-            
 
 -- scratch : miscellaneous theorems
 
