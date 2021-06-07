@@ -132,8 +132,7 @@ def findUnit(n: Nat) : Clause n → Option ((Fin n) × Bool) :=
       fun clause =>
         match clause 0 with 
           | some (b) => 
-            if isContradiction _ (dropHead
-           k clause) then 
+            if isContradiction _ (dropHead k clause) then 
               some ((0, b))
             else
               none
