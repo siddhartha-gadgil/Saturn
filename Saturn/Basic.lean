@@ -10,9 +10,6 @@ def dropHead{α : Type}(n : Nat) : (Fin (Nat.succ n) → α) → Fin n →  α :
     fun arg =>
       fn (plusOne n arg)
 
-
-        
-
 def eqClause (n: Nat): (Clause n) → (Clause n) → Bool := 
   match n with
     | 0 => fun c1 => (fun c2 => true)
@@ -37,16 +34,72 @@ def prepend{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(arg: Fin (n +
     | Fin.mk (k + 1) witness =>
       fn (pred n k witness)
 
+def dropAt{α : Type} : (n : Nat) →  
+  (k: Nat) → (lt : k < succ n) →  (Fin (Nat.succ n) → α) → Fin n →  α := 
+    fun n =>
+      match n with
+        | 0 =>
+          fun k =>
+            fun lt =>
+              fun fn => 
+                 fun l => nomatch l
+        | m + 1 => 
+          fun k =>            
+            match k with
+            | 0 =>
+              fun lt =>
+               fun fn =>
+                dropHead (m + 1) fn
+            | l + 1 => 
+              fun lt =>
+               fun fn =>
+                let predwit : l < m + 1 := leOfSuccLeSucc lt  
+                let tail := dropAt m l predwit (dropHead _ fn)
+                let head := fn (Fin.mk 0 (zeroLtSucc (m + 1)))
+                prepend _ head tail
+
+def insertAt{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (Fin n →  α) →  (Fin (Nat.succ n) → α) := 
+      fun n =>
+        match n with
+          | 0 =>  
+            fun k =>
+              fun lt =>
+                fun _ => 
+                  fun l => value
+          | m + 1 => 
+            fun k =>
+              match k with
+              | 0 =>
+                fun lt =>
+                fun fn =>
+                  prepend _ value fn
+              | l + 1 => 
+                fun lt =>
+                fun fn =>
+                  let predwit : l < m + 1 := leOfSuccLeSucc lt
+                  let head := fn (Fin.mk 0 (zeroLtSucc (m)))
+                  let tail := insertAt value m l predwit (dropHead _ fn)
+                  prepend _ head tail
 
 def branchClause {n: Nat} (branch: Bool) (clause : Clause (n + 1)) : Option (Clause n) :=
   match (clause (Fin.mk 0 (zeroLtSucc n))) with 
   | some (branch) => none
-  | none => some (dropHead
- n clause)
+  | none => some (dropHead n clause)
+
+def branchAtClause {n: Nat} (branch: Bool)(k : Fin (n + 1)) (clause : Clause (n + 1)) : 
+  Option (Clause n) :=
+    match (clause (k)) with 
+    | some (branch) => none
+    | none => some (dropAt n k.val k.isLt clause)
 
 def branchMap  {n: Nat} (branch: Bool)(clauses : List (Clause (n  + 1))) 
   : List (Clause n) :=
     (List.filterMap (branchClause branch) clauses).eraseDups
+
+def branchAtMap  {n: Nat} (branch: Bool)(k : Fin (n + 1))(clauses : List (Clause (n  + 1))) 
+  : List (Clause n) :=
+    (List.filterMap (branchAtClause branch k) clauses).eraseDups 
 
 def contradiction(n: Nat) : Clause n :=
   fun n => none
@@ -59,7 +112,7 @@ def dpSAT (n: Nat): (List (Clause n)) →  Option (Solution n) :=
       fun clauses => 
         if clauses == [contradiction 0] then 
           none 
-        else some (fun n => true) 
+        else some (fun n => nomatch n) 
     | k + 1 => 
       fun clauses =>
           ((dpSAT k (branchMap true clauses)).map (prepend k true)).orElse
@@ -122,15 +175,15 @@ def findPure (n: Nat) : List (Clause n) →  Option ((Fin n) × Bool) :=
              k)
               (findPure k (shorterClauses)).map (shift)
               
-def transposeZero {α : Type}{n: Nat} (k: Fin (succ n)) (fn :Fin (succ n) → α) : (Fin (succ n) → α) :=
-  fun l =>
-    if l == k then 
-      fn 0
-    else 
-      if l == 0 then
-        fn k
-      else 
-        fn l
+-- def transposeZero {α : Type}{n: Nat} (k: Fin (succ n)) (fn :Fin (succ n) → α) : (Fin (succ n) → α) :=
+--   fun l =>
+--     if l == k then 
+--       fn 0
+--     else 
+--       if l == 0 then
+--         fn k
+--       else 
+--         fn l
 
 def preAssign {n: Nat}(clauses : List (Clause (succ n))) : Option ((Fin (succ n)) × Bool) :=
   Option.orElse (List.findSome? (findUnit (succ n)) clauses) 
@@ -142,7 +195,7 @@ def dlppSAT (n: Nat): (List (Clause n)) →  Option (Solution n) :=
       fun clauses => 
         match clauses with 
           | x :: ys => none
-          | [] => some (fun n => true) 
+          | [] => some (fun n => nomatch n) 
     | k + 1 => 
       fun clauses =>
         if clauses.contains (contradiction (k + 1)) then 
@@ -153,7 +206,8 @@ def dlppSAT (n: Nat): (List (Clause n)) →  Option (Solution n) :=
               ((dlppSAT k (branchMap true clauses)).map (prepend k true)).orElse
               ((dlppSAT k (branchMap false clauses)).map (prepend k false))
             | some ((j, b)) =>
-                let permuted := clauses.map (transposeZero j)
-                ((dlppSAT k (branchMap b permuted)).map (prepend k b)).map (transposeZero j)
+                -- let permuted := clauses.map (transposeZero j)
+                -- ((dlppSAT k (branchMap b permuted)).map (prepend k b)).map (transposeZero j)
+                ((dlppSAT k (branchAtMap b j clauses)).map (insertAt b k j.val j.isLt))
 
 
