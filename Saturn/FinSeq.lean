@@ -64,6 +64,9 @@ structure SigmaPredElem{α: Type}{n: Nat}(seq: Fin n → α)(pred: α → Prop) 
   property: pred (seq index) 
 
 
+structure PiPred{α: Type}{n: Nat}(seq: Fin n → α)(pred: α → Prop) where
+  property : (x : Fin n) → pred (seq x)
+
 
 def findElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: Fin n → α) → (elem: α) →  Option (SigmaEqElem seq elem) :=
@@ -106,6 +109,30 @@ def findPred{α: Type}(pred: α → Prop)[DecidablePred pred]{n: Nat}:
             ⟨(plusOne _ j), l3⟩ 
           )
 
+ def showForAll{α: Type}(pred: α → Prop)[DecidablePred pred]{n: Nat}: 
+  (seq: Fin n → α)  →  Option (PiPred seq pred) := 
+    match n with
+    | 0 =>
+      fun seq => 
+        let pf : (x : Fin 0) → pred (seq x) := fun x => nomatch x  
+        some (⟨pf⟩)
+    | m + 1 => 
+      fun seq =>
+        if c : pred (seq (Fin.mk 0 (zeroLtSucc m))) then
+          let tail : Fin m → α := dropHead _ seq
+          (showForAll pred tail).map (
+            fun ⟨ tpf ⟩ =>
+              let pf : (j :Fin (m +1)) → pred (seq j) := 
+                fun j =>
+                  match j with 
+                  | ⟨0, w⟩ => c
+                  | ⟨i + 1, w⟩ =>
+                    let tailWit : i < m := leOfSuccLeSucc w 
+                    tpf (⟨i, tailWit⟩)
+              ⟨ pf ⟩
+          )
+        else 
+          none
 
 -- good exercise but not needed if using decidable equality
 
