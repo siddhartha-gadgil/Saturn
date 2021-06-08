@@ -34,7 +34,7 @@ theorem dropOnePrepend{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j:
         let dropPlusOne : dropHead n (prepend n zeroVal fn) j = prepend n zeroVal fn (plusOne n j) := by rfl
         Eq.trans dropPlusOne (prependPlusOne n zeroVal fn j)
 
-def deqClause (n: Nat) : (c1 : Clause n) → (c2: Clause n) → Decidable (c1 = c2) := 
+def deqClause {α : Type}[DecidableEq α] (n: Nat) : (c1 : Fin n → α) → (c2: Fin n → α) → Decidable (c1 = c2) := 
   match n with
   | 0 => 
     fun c1 c2 => 
@@ -82,7 +82,7 @@ def deqClause (n: Nat) : (c1 : Clause n) → (c2: Clause n) → Decidable (c1 = 
                     done)
             h lem)
 
-instance {n: Nat} : DecidableEq (Clause n) := fun c1 c2 => deqClause _ c1 c2
+instance {n: Nat}[DecidableEq α] : DecidableEq (Fin n → α) := fun c1 c2 => deqClause _ c1 c2
 
 -- need this as Sigma, Prop and Option don't work together
 structure SigmaEqElem{α: Type}{n: Nat}(seq: Fin n → α)(elem: α) where
