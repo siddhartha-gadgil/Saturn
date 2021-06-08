@@ -2,6 +2,8 @@ open Nat
 
 def Clause(n : Nat) : Type := (Fin n) → Option Bool
 
+def Sect(n: Nat) : Type := Fin n → Bool
+
 def plusOne(n: Nat) : Fin n → Fin (n + 1) :=
   fun arg => Fin.mk (succ (Fin.val arg)) (succ_lt_succ (Fin.isLt arg))
 
