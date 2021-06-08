@@ -54,31 +54,57 @@ theorem dropOnePrepend{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j:
         let dropPlusOne : dropHead n (prepend n zeroVal fn) j = prepend n zeroVal fn (plusOne n j) := by rfl
         Eq.trans dropPlusOne (prependPlusOne n zeroVal fn j)
 
-structure SeqElem{α: Type}[beq : BEq α]{n: Nat}(seq: Fin n → α)(elem: α) where
+-- need this as Sigma, Prop and Option don't work together
+structure SigmaEqElem{α: Type}{n: Nat}(seq: Fin n → α)(elem: α) where
   index: Fin n 
-  elemAtIndex: seq index = elem
+  equality: seq index = elem
+
+structure SigmaPredElem{α: Type}{n: Nat}(seq: Fin n → α)(pred: α → Prop) where
+  index: Fin n 
+  property: pred (seq index) 
+
 
 
 def findElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
-  (seq: Fin n → α) → (elem: α) →  Option (SeqElem seq elem) :=
+  (seq: Fin n → α) → (elem: α) →  Option (SigmaEqElem seq elem) :=
     match n with
     | 0 => fun _  => fun _ => none
     | m + 1 => 
       fun fn =>
         fun x =>
           if pf : (fn (Fin.mk 0 (zeroLtSucc m))) =  x then
-            let e : SeqElem fn x := ⟨Fin.mk 0 (zeroLtSucc m), pf⟩
+            let e  := ⟨Fin.mk 0 (zeroLtSucc m), pf⟩
             some (e)
           else
             let pred := findElem (dropHead _ fn) x
-            pred.map (fun seqElem => 
+            pred.map (fun ⟨j, eql⟩ => 
               let zeroVal := fn (Fin.mk 0 (zeroLtSucc m))
-              let j := seqElem.index
-              let l1 : dropHead m fn j = x := seqElem.elemAtIndex
-              let l2 := dropPlusOne _ zeroVal j fn
-              let l3 : fn (plusOne m j) = x := Eq.trans (Eq.symm l2) l1
-              ⟨(plusOne _ j), l3⟩ 
+              let l1 := dropPlusOne _ zeroVal j fn
+              let l2 : fn (plusOne m j) = x := Eq.trans (Eq.symm l1) eql
+              ⟨(plusOne _ j), l2⟩ 
             )
+
+def findPred{α: Type}(pred: α → Prop)[DecidablePred pred]{n: Nat}: 
+  (seq: Fin n → α)  →  Option (SigmaPredElem seq pred) :=
+    match n with
+    | 0 => fun _  => none
+    | m + 1 => 
+      fun fn =>
+        if pf : pred (fn (Fin.mk 0 (zeroLtSucc m))) then
+          let e  := ⟨Fin.mk 0 (zeroLtSucc m), pf⟩
+          some (e)
+        else
+          let tail := findPred pred (dropHead _ fn) 
+          tail.map (fun ⟨j, eql⟩ => 
+            let zeroVal := fn (Fin.mk 0 (zeroLtSucc m))
+            let l1 := dropPlusOne _ zeroVal j fn
+            let l2  := congrArg pred l1
+            let l3 : pred (fn (plusOne m j)) := by
+              rw (Eq.symm l2)
+              exact eql
+              done
+            ⟨(plusOne _ j), l3⟩ 
+          )
 
 
 -- good exercise but not needed if using decidable equality
