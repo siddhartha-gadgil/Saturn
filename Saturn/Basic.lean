@@ -10,18 +10,19 @@ def dropHead{α : Type}(n : Nat) : (Fin (Nat.succ n) → α) → Fin n →  α :
     fun arg =>
       fn (plusOne n arg)
 
-def eqClause (n: Nat): (Clause n) → (Clause n) → Bool := 
+def beqClause (n: Nat): (Clause n) → (Clause n) → Bool := 
   match n with
     | 0 => fun c1 => (fun c2 => true)
     | k + 1 => 
       fun c1 => (fun c2 => 
           let head1 := c1 0
           let head2 := c2 0
-          (head1 == head2) && (eqClause k (dropHead
+          (head1 == head2) && (beqClause k (dropHead
          k c1) (dropHead
          k c2))) 
 
-instance {n: Nat} : BEq (Clause n) :=   BEq.mk (eqClause n)
+instance {n: Nat} : BEq (Clause n) :=   BEq.mk (beqClause n)
+
 
 def pred(n: Nat)(k: Nat) : k + 1 < n + 1 → Fin n :=
   fun witness =>

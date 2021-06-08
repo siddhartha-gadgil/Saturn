@@ -17,25 +17,6 @@ theorem zeroLenClsEql : ∀ (cl1: Clause 0), ∀ (cl2: Clause 0) ,  (cl1 = cl2) 
             | ⟨_, h⟩ => absurd h (notLtZero _)
       )
 
-theorem succEq(k: Nat)(l: Nat) : (k = l) →  (succ k = succ l):= by
-  intro h
-  apply congrArg
-  assumption
-  done 
-
-theorem succNotZero(n : Nat) : ((succ n) = 0) → False := by
-  simp
-  done
-
-theorem zeroNotSucc(n : Nat) : (0 = (succ n)) → False := by
-  simp
-  done
-
-theorem succInjective(k: Nat)(l: Nat) : (succ k = succ l) → k = l := by
-  intro h
-  injection h
-  assumption
-  done
 
 theorem prependPlusOne{α: Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n):
   prepend n zeroVal fn (plusOne n j) = fn j :=
@@ -49,24 +30,82 @@ theorem prependPlusOne{α: Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: 
   
 
 theorem dropOnePrepend{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(j: Fin n) : 
-    dropHead
-   n (prepend n zeroVal fn) j = fn j := 
+    dropHead n (prepend n zeroVal fn) j = fn j := 
         let dropPlusOne : dropHead n (prepend n zeroVal fn) j = prepend n zeroVal fn (plusOne n j) := by rfl
         Eq.trans dropPlusOne (prependPlusOne n zeroVal fn j)
+
+def deqClause (n: Nat) : (c1 : Clause n) → (c2: Clause n) → Decidable (c1 = c2) := 
+  match n with
+  | 0 => 
+    fun c1 c2 => 
+      isTrue (funext 
+        (fun x => nomatch x))
+  | m + 1 => 
+    fun c1 c2 =>
+      match deqClause _ (dropHead _ c1) (dropHead _ c2) with
+      | isTrue h => 
+          if c : c1 (⟨0, zeroLtSucc m⟩) = c2 (⟨0, zeroLtSucc m⟩) then
+            isTrue 
+              (funext fun k =>
+                match k with
+                | ⟨0, w⟩ => c
+                | ⟨j+ 1, w⟩ => 
+                  let l1 : dropHead m c1 ⟨j, w⟩ = c1 ⟨j+ 1, w⟩ := by rfl
+                  let l2 : dropHead m c2 ⟨j, w⟩ = c2 ⟨j+ 1, w⟩ := by rfl
+                  let l3 : dropHead m c1 ⟨j, w⟩ = dropHead m c2 ⟨j, w⟩ := congr h rfl
+                  by 
+                    rw (Eq.symm l1)
+                    apply Eq.symm 
+                    rw (Eq.symm l2)
+                    exact (Eq.symm l3)
+                    done)
+          else 
+            isFalse (
+              fun hyp =>
+                let lem : c1 (⟨0, zeroLtSucc m⟩) = c2 (⟨0, zeroLtSucc m⟩) := congr hyp rfl
+                c lem
+            )
+      |isFalse h => 
+        isFalse (
+          fun hyp => 
+            let lem : (dropHead m c1) = (dropHead m c2) := 
+              funext (
+                fun x =>
+                  let l1 : (dropHead m c1) x = c1 (plusOne m x) := rfl
+                  let l2 : (dropHead m c2) x = c2 (plusOne m x) := rfl
+                  let l3 : c1 (plusOne m x) = c2 (plusOne m x) := congr hyp rfl 
+                  by 
+                    rw l1
+                    rw l3
+                    apply Eq.symm
+                    exact l2
+                    done)
+            h lem)
+
+instance {n: Nat} : DecidableEq (Clause n) := fun c1 c2 => deqClause _ c1 c2
 
 -- need this as Sigma, Prop and Option don't work together
 structure SigmaEqElem{α: Type}{n: Nat}(seq: Fin n → α)(elem: α) where
   index: Fin n 
   equality: seq index = elem
 
+def SigmaEqElem.toProof{α: Type}{n: Nat}{seq: Fin n → α}
+  {elem: α}(s : SigmaEqElem (seq) (elem)) :  ∃ (j : Fin n), seq j = elem := 
+    ⟨s.index, s.equality⟩ 
+
 structure SigmaPredElem{α: Type}{n: Nat}(seq: Fin n → α)(pred: α → Prop) where
   index: Fin n 
   property: pred (seq index) 
 
+def SigmaPredElem.toProof{α: Type}{n: Nat}{seq: Fin n → α}{pred: α → Prop}
+  (s : SigmaPredElem seq pred) : ∃ (j : Fin n), pred (seq j) :=
+    ⟨s.index, s.property⟩
 
 structure PiPred{α: Type}{n: Nat}(seq: Fin n → α)(pred: α → Prop) where
   property : (x : Fin n) → pred (seq x)
 
+def PiPred.toProof{α: Type}{n: Nat}{seq: Fin n → α}{pred: α → Prop}
+  (p: PiPred seq pred) : ∀ (j : Fin n), pred (seq j) := p.property
 
 def findElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: Fin n → α) → (elem: α) →  Option (SigmaEqElem seq elem) :=
@@ -193,6 +232,26 @@ instance {α: Type}[BEq α][LiftEq α] : LiftEq (Option α) where
 
 
 -- scratch : miscellaneous theorems
+
+theorem succEq(k: Nat)(l: Nat) : (k = l) →  (succ k = succ l):= by
+  intro h
+  apply congrArg
+  assumption
+  done 
+
+theorem succNotZero(n : Nat) : ((succ n) = 0) → False := by
+  simp
+  done
+
+theorem zeroNotSucc(n : Nat) : (0 = (succ n)) → False := by
+  simp
+  done
+
+theorem succInjective(k: Nat)(l: Nat) : (succ k = succ l) → k = l := by
+  intro h
+  injection h
+  assumption
+  done
 
 
 def indc {α: Type} (zeroVal : α) (fn: Nat → α) : Nat → α :=
