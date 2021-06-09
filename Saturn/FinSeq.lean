@@ -280,7 +280,22 @@ def varSat (clVal: Option Bool)(sectVal : Bool) := clVal = some sectVal
 def clauseSat {n: Nat}(clause : Clause n)(sect: Sect n) := 
   ∃ (k : Fin n), varSat (clause k) (sect k)
 
+theorem contradictionFalse (n: Nat) : ∀ sect : Sect n, Not (clauseSat (contradiction n) sect) :=
+  fun sect => fun ⟨k, p⟩ => 
+    let lem1 : (contradiction n) (k) = none := by rfl
+    let lem2 := congrArg varSat lem1
+    let lem3 : varSat (contradiction n k) (sect k) = 
+                varSat none (sect k) := congr lem2 rfl
+    let lem4 : (varSat none (sect k)) = (none = some (sect k)) := rfl
+    let lem5 : (none = some (sect k)) := by
+      rw (Eq.symm lem4)
+      rw lem4
+      assumption
+      done 
+    Option.noConfusion lem5
+
 #check clauseSat
+#check Bool.noConfusion
 
 theorem liftSatHead {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
   clauseSat (dropHead n clause) (dropHead n sect) → clauseSat clause sect := 
@@ -344,3 +359,45 @@ inductive RestrictionsAt{n q: Nat}(k : Fin (n + 1))
         (Σ (i: Fin q),  
           DropAtMatch k clause (restrictions i)) → 
             (RestrictionsAt k branch restrictions clause)
+
+def isUnit{n: Nat}(k: Fin (n + 1))(b: Bool)(cl: Clause (n + 1)) :=
+  (cl k = some b) &&
+  ((dropAt n k.val k.isLt cl) =  contradiction n)
+  
+def unitClause(n : Nat)(b : Bool): (k : Fin (n + 1)) →    Clause (n + 1) := 
+  match n with
+    | 0 => fun k => fun j => some b
+    | m + 1 => 
+      fun k =>
+        match k with
+          | ⟨0, _⟩ => prepend _ (some b) (contradiction (m + 1))
+          | ⟨l + 1, w⟩ => prepend _ none (unitClause m b ⟨l , leOfSuccLeSucc w⟩)
+
+theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) → 
+                                  unitClause n b k k = some b :=
+  match n with
+    | 0 => fun k => by rfl
+    | m + 1 => 
+       fun k =>
+        match k with
+          | ⟨0, w⟩ => 
+            let lhs := prepend _ (some b) (contradiction (m + 1)) 0
+            let defLHS : unitClause (m + 1) b ⟨0, w⟩ ⟨0, w⟩ = 
+              lhs := by rfl
+            let lem : lhs = some b := by rfl
+            by 
+              rw defLHS
+              exact lem
+              done
+          | ⟨l + 1, w⟩ => 
+            let lhs := prepend _ none (unitClause m b ⟨l , leOfSuccLeSucc w⟩) ⟨l + 1, w⟩
+            let defLHS : unitClause (m + 1) b ⟨l + 1, w⟩ ⟨l + 1, w⟩ = 
+              lhs := by rfl 
+            let lem : lhs = (unitClause m b ⟨l , leOfSuccLeSucc w⟩) ⟨l, w⟩ := by rfl
+            let base : unitClause m b ⟨l , leOfSuccLeSucc w⟩ ⟨l , w⟩
+              = some b := unitClauseDiag m b ⟨l , leOfSuccLeSucc w⟩
+            by 
+              rw defLHS
+              rw lem
+              rw base
+              done 

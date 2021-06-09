@@ -29,7 +29,7 @@ def prepend{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(arg: Fin (n +
   match arg with
     | ⟨0, _⟩ => zeroVal
     | ⟨k + 1, witness⟩ =>
-      fn (⟨k, witness⟩)
+      fn (⟨k, leOfSuccLeSucc witness⟩)
 
 def dropAt{α : Type} : (n : Nat) →  
   (k: Nat) → (lt : k < succ n) →  (Fin (Nat.succ n) → α) → Fin n →  α := 
@@ -125,7 +125,7 @@ def branchAtMap  {n: Nat} (branch: Bool)(k : Fin (n + 1))(clauses : List (Clause
     (List.filterMap (branchAtClause branch k) clauses).eraseDups 
 
 def contradiction(n: Nat) : Clause n :=
-  fun n => none
+  fun j => none
 
 def Solution(n: Nat) : Type := (Fin n) → Bool
 
