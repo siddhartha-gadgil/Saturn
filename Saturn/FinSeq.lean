@@ -285,7 +285,7 @@ def clauseSat {n: Nat}(clause : Clause n)(sect: Sect n) :=
 theorem liftSatHead {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
   clauseSat (dropHead n clause) (dropHead n sect) → clauseSat clause sect := 
     fun ⟨⟨k, w⟩, tpf⟩ => 
-      let l1 : dropHead n clause ⟨k, w⟩ = clause ⟨k+1, _⟩ := by rfl
+      let l1 : dropHead n clause ⟨k, w⟩ = clause (⟨k+1, _⟩) := by rfl
       let l2 : dropHead n sect ⟨k, w⟩ = sect ⟨k+1, _⟩ := by rfl
       let l3 := congrArg varSat l1
       let l4 := congr l3 l2
@@ -296,11 +296,36 @@ theorem liftSatHead {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
       ⟨⟨k+1, _⟩, pf⟩
 
 
+theorem liftSatAt {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
+  (j : Nat) → (lt : j < n + 1) → 
+  clauseSat (dropAt n j lt clause) (dropAt n j lt sect) → clauseSat clause sect := 
+    fun j =>
+    fun lt =>
+     fun ⟨⟨k, w⟩, tpf⟩ => 
+      let l1 : dropAt n j lt clause ⟨k, w⟩ = clause (shiftAt n j lt ⟨k, w⟩) := 
+        dropAtShift n j lt clause ⟨k, w⟩
+      let l2 : dropAt n j lt sect ⟨k, w⟩ = sect (shiftAt n j lt ⟨k, w⟩) := 
+        dropAtShift n j lt sect ⟨k, w⟩
+      let l3 := congrArg varSat l1
+      let l4 := congr l3 l2
+      let pf : varSat (clause (shiftAt n j lt ⟨k, w⟩)) (sect (shiftAt n j lt ⟨k, w⟩)) := by
+        rw (Eq.symm l4)
+        exact tpf
+        done
+      ⟨(shiftAt n j lt ⟨k, w⟩), pf⟩
+
 structure ClauseHead{n: Nat}(clause: Clause (n + 1))(branch: Bool) where
   check : clause (⟨0, zeroLtSucc n⟩) = some branch
 
+structure ClauseAt{n: Nat}(k: Fin n)(clause: Clause n)(branch: Bool) where
+  check : clause k = some branch
+
 structure DropHeadMatch{n: Nat}(clause: Clause (n + 1))(restriction: Clause n) where
   check : dropHead n clause = restriction
+
+structure DropAtMatch{n: Nat}(k: Fin (n + 1))(clause: Clause (n +1))(restriction: Clause n) where
+  check : dropAt n k.val k.isLt clause = restriction
+
 
 inductive HeadRestrictions{n q: Nat}
   (branch: Bool)(restrictions: Fin q → Clause n)(clause : Clause (n + 1)) where    
@@ -311,4 +336,11 @@ inductive HeadRestrictions{n q: Nat}
           DropHeadMatch clause (restrictions i)) → 
             (HeadRestrictions branch restrictions clause)
                        
-
+inductive RestrictionsAt{n q: Nat}(k : Fin (n + 1))
+  (branch: Bool)(restrictions: Fin q → Clause n)(clause : Clause (n + 1)) where    
+  |  proofAt : (clause (k) = some branch) → 
+          (RestrictionsAt k branch restrictions clause)
+  |  restrictClause:  
+        (Σ (i: Fin q),  
+          DropAtMatch k clause (restrictions i)) → 
+            (RestrictionsAt k branch restrictions clause)
