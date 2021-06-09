@@ -3,6 +3,7 @@ import Saturn.FinSeq
 
 open Nat 
 
+#check Nat.rec
 
 -- good exercise but not needed if using decidable equality
 

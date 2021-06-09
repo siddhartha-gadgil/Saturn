@@ -25,17 +25,11 @@ def beqClause (n: Nat): (Clause n) → (Clause n) → Bool :=
 
 instance {n: Nat} : BEq (Clause n) :=   BEq.mk (beqClause n)
 
-
-def pred(n: Nat)(k: Nat) : k + 1 < n + 1 → Fin n :=
-  fun witness =>
-    let predwit : k < n := leOfSuccLeSucc witness
-    Fin.mk k (predwit)
-
 def prepend{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(arg: Fin (n + 1)) : α :=
   match arg with
-    | Fin.mk 0 _ => zeroVal
-    | Fin.mk (k + 1) witness =>
-      fn (pred n k witness)
+    | ⟨0, _⟩ => zeroVal
+    | ⟨k + 1, witness⟩ =>
+      fn (⟨k, witness⟩)
 
 def dropAt{α : Type} : (n : Nat) →  
   (k: Nat) → (lt : k < succ n) →  (Fin (Nat.succ n) → α) → Fin n →  α := 
@@ -58,8 +52,8 @@ def dropAt{α : Type} : (n : Nat) →
                fun fn =>
                 let predwit : l < m + 1 := leOfSuccLeSucc lt  
                 let tail := dropAt m l predwit (dropHead _ fn)
-                let head := fn (Fin.mk 0 (zeroLtSucc (m + 1)))
-                prepend _ head tail
+                let head := fn (⟨0, zeroLtSucc (m + 1)⟩)
+                prepend m head tail
 
 def insertAt{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (Fin n →  α) →  (Fin (Nat.succ n) → α) := 
@@ -84,6 +78,32 @@ def insertAt{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
                   let head := fn (Fin.mk 0 (zeroLtSucc (m)))
                   let tail := insertAt value m l predwit (dropHead _ fn)
                   prepend _ head tail
+
+def shiftAtFin : (n : Nat) →  (k: Nat) → (lt : k < succ n) → 
+    Fin n → Fin (n + 1) :=
+      fun n => 
+        match n with 
+        | 0 => 
+          fun k =>
+            fun lt =>
+                  fun _ => 
+                    ⟨0, zeroLtSucc 0⟩
+        | m + 1 => 
+          fun k =>
+            match k with
+            | 0 => 
+              fun lt =>
+                fun ⟨i, w⟩ =>
+                  let wit : i < m + 2 := leStep w
+                  ⟨i + 1, succ_lt_succ w⟩
+            | l+1 => 
+              fun lt =>
+                fun j =>
+                  match j with
+                  | ⟨0, _⟩ => ⟨0, zeroLtSucc _⟩
+                  | ⟨i + 1, w⟩ => 
+                      plusOne (m + 1) (shiftAtFin m l (leOfSuccLeSucc lt) ⟨i, leOfSuccLeSucc w⟩)
+
 
 def branchClause {n: Nat} (branch: Bool) (clause : Clause (n + 1)) : Option (Clause n) :=
   match (clause (Fin.mk 0 (zeroLtSucc n))) with 

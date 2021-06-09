@@ -173,6 +173,106 @@ def findPred{α: Type}(pred: α → Prop)[DecidablePred pred]{n: Nat}:
         else 
           none
 
+def shiftAtNat : Nat → Nat → Nat :=
+    fun k =>
+      match k with
+      | 0 => 
+          fun i =>
+            i + 1
+      | l+1 => 
+          fun j =>
+            match j with
+            | 0 => 0
+            | i + 1 => 
+                (shiftAtNat l i) + 1
+
+theorem shiftBound: (k j: Nat) →  shiftAtNat k j < j + 2 :=
+    fun k =>
+      match k with
+      | 0 => 
+          fun i =>
+            let unfold : shiftAtNat 0 i = i + 1 := by rfl
+            by
+              rw unfold
+              apply Nat.leRefl
+              done
+      | l+1 => 
+          fun j =>
+            match j with
+            | 0 => 
+              let isZero : shiftAtNat (l + 1) 0 = 0 := by rfl
+              by
+                rw isZero
+                exact zeroLtSucc 0
+                done 
+            | i + 1 => 
+              let  unfold : shiftAtNat (l + 1) (i + 1) = (shiftAtNat  l  i) + 1 := by rfl
+              let base : shiftAtNat l i < i + 2  :=  shiftBound l i
+              let baseP1 : succ (shiftAtNat l i) < succ (i + 2) := succ_lt_succ base
+              by
+                rw unfold
+                exact baseP1
+                done
+
+def shiftInheritBound (n k j : Nat) : j < n → shiftAtNat k j < n + 1 := 
+  fun h =>
+    Nat.leTrans (shiftBound k j) h
+
+def shiftAt : (n : Nat) →  (k: Nat) → (lt : k < succ n) → 
+    Fin n → Fin (n + 1) :=
+      fun n k lt =>
+        fun ⟨i, w⟩ => 
+          ⟨shiftAtNat k i, (shiftInheritBound n k i w)⟩
+
+#check Nat.leTrans
+
+theorem seqShiftNatLemma: (l: Nat) → (i : Nat) →   
+    (shiftAtNat (l + 1)  (i + 1)) = (shiftAtNat  l  i) + 1 := 
+      fun l => fun i => rfl
+
+
+
+def dropAtShift{α : Type} : (n : Nat) →  
+  (k: Nat) → (lt : k < succ n) →  (fn :Fin (Nat.succ n) → α) → 
+    (j : Fin n) →  dropAt n k lt fn j = fn (shiftAt n k lt j) := 
+    fun n =>
+      match n with
+        | 0 =>
+          fun k =>
+            fun lt =>
+              fun fn => 
+                 fun l => nomatch l
+        | m + 1 => 
+          fun k =>            
+            match k with
+            | 0 =>
+              fun lt =>
+               fun fn =>
+                fun ⟨i, w⟩ => by rfl
+            | l + 1 => 
+              fun lt =>
+               fun fn =>
+                fun j =>
+                  match j with
+                  | ⟨0, w⟩ => by rfl
+                  | ⟨i + 1, w⟩ =>
+                    let predwit : l < m + 1 := leOfSuccLeSucc lt  
+                    let tfn := dropHead _ fn
+                    let tail := dropAt m l predwit tfn
+                    let head := fn (⟨0, zeroLtSucc (m + 1)⟩)
+                    let caseFunc := prepend m head tail
+                    let unfold1 : dropAt (m + 1) (l +1) lt fn ⟨i + 1, w⟩ =
+                      caseFunc ⟨i + 1, w⟩ := by rfl
+                    let unfold2 : caseFunc ⟨i + 1, w⟩ = tail ⟨i, w⟩ := by rfl
+                    let base : tail ⟨i, w⟩ = 
+                                  fn (shiftAt (m + 1) (l + 1) lt ⟨i + 1, w⟩) := 
+                                dropAtShift m l predwit tfn ⟨i, w⟩
+                    by 
+                      rw unfold1
+                      rw unfold2
+                      rw base
+                      done
+
 -- More specific to SAT
 
 def varSat (clVal: Option Bool)(sectVal : Bool) := clVal = some sectVal
