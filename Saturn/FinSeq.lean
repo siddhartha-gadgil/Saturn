@@ -402,8 +402,30 @@ theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) →
               rw base
               done
 
-theorem shiftIsSection (n: Nat): (k j: Fin (n + 1)) →  
-    Or (k = j)  (∃ i : Fin n, (shiftAt n k.val k.isLt i) = j) := 
+inductive SectionCase (n: Nat) (k j: Fin (n + 1)) where
+  | diagonal : k = j → SectionCase n k j
+  | image : (i : Fin n) →  (shiftAt n k.val k.isLt i) = j → SectionCase n k j
+
+class Prover(α: Type) where
+  statement : (x : α) → Prop
+  proof : (x : α) → statement x
+
+instance {n: Nat} {k j: Fin (n + 1)}: Prover (SectionCase n k j) where
+  statement := fun s => 
+    match s with
+    | SectionCase.diagonal _ => k = j
+    | SectionCase.image i w => (shiftAt n k.val k.isLt i) = j
+  proof := fun s => 
+    match s with
+    | SectionCase.diagonal w => w
+    | SectionCase.image i w => w
+
+def asProof{α : Type}[pr : Prover α](x: α) := pr.proof x 
+
+def asProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
+
+def shiftIsSection (n: Nat): (k j: Fin (n + 1)) →  
+    SectionCase n k j := 
     match n with 
     | 0 => 
       fun k =>
@@ -411,35 +433,35 @@ theorem shiftIsSection (n: Nat): (k j: Fin (n + 1)) →
         | ⟨0, w⟩ => 
           fun j =>
           match j with
-          | ⟨0, w⟩ => Or.inl rfl
+          | ⟨0, w⟩ => SectionCase.diagonal rfl
     | m + 1 => 
       fun k =>
         match k with
         | ⟨0, w⟩ => 
           fun j =>
           match j with
-          | ⟨0, wj⟩ => Or.inl rfl
+          | ⟨0, wj⟩ => SectionCase.diagonal rfl
           | ⟨i + 1, wj⟩ =>
             let eql : shiftAt (m + 1) 0 w ⟨i, leOfSuccLeSucc wj⟩ = ⟨i + 1, wj⟩ := by rfl 
-            Or.inr ⟨⟨i, leOfSuccLeSucc wj⟩, eql⟩
+            SectionCase.image ⟨i, leOfSuccLeSucc wj⟩ eql
         | ⟨l + 1, w⟩ => 
           fun j => 
           match j with
           | ⟨0, wj⟩ =>
             let eql : shiftAt (m + 1) (l + 1) w ⟨0, zeroLtSucc _⟩ = ⟨0, wj⟩ := by rfl 
-            Or.inr ⟨⟨0, zeroLtSucc _⟩, eql⟩
+            SectionCase.image ⟨0, zeroLtSucc _⟩ eql
           | ⟨i + 1, wj⟩ => 
             let base := shiftIsSection m ⟨l, (leOfSuccLeSucc w)⟩ ⟨i, leOfSuccLeSucc wj⟩
             match base with
-            | Or.inl beql => 
+            | SectionCase.diagonal beql => 
               let beqlv : l = i := congrArg Fin.val beql
               by
-                apply Or.inl
+                apply SectionCase.diagonal
                 apply Fin.eqOfVeq
                 apply (congrArg succ)
                 exact beqlv
                 done
-            | Or.inr ⟨⟨p, wp⟩ , beql⟩ => 
+            | SectionCase.image ⟨p, wp⟩  beql => 
               let unfold : shiftAt (m + 1) (l + 1) (succ_lt_succ w) ⟨p + 1, succ_lt_succ wp⟩ =
                 plusOne (m + 1) (shiftAt m l w ⟨p, wp⟩) := by rfl
               let p1eql : plusOne (m + 1) ⟨i, leOfSuccLeSucc wj⟩ =  ⟨i + 1, wj⟩ := by rfl
@@ -450,9 +472,8 @@ theorem shiftIsSection (n: Nat): (k j: Fin (n + 1)) →
                   rw (Eq.symm p1eql)
                   apply (Eq.symm)
                   exact (congrArg (plusOne (m + 1)) beql)
-                  done
-               
-              Or.inr ⟨⟨p + 1, succ_lt_succ wp⟩, eql⟩
+                  done               
+              SectionCase.image ⟨p + 1, succ_lt_succ wp⟩ eql
 
 theorem shiftSkipsEq(n: Nat): (k: Nat) → (lt : k < n + 1)→   
     (j: Fin n) → Not ((shiftAt n k lt j) = ⟨k, lt⟩) := 
@@ -510,4 +531,10 @@ theorem shiftSkipsEq(n: Nat): (k: Nat) → (lt : k < n + 1)→
                 done
               base (contra)
 
-#check Or.inl
+def liftAt{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (Fin n →  α) →  (Fin (Nat.succ n) → α) := 
+  fun n k lt fn j =>  
+    let switch := shiftIsSection n ⟨k, lt⟩ j
+    match switch with
+    | SectionCase.diagonal _ => value
+    | SectionCase.image i _ => fn i
