@@ -454,4 +454,60 @@ theorem shiftIsSection (n: Nat): (k j: Fin (n + 1)) →
                
               Or.inr ⟨⟨p + 1, succ_lt_succ wp⟩, eql⟩
 
+theorem shiftSkipsEq(n: Nat): (k: Nat) → (lt : k < n + 1)→   
+    (j: Fin n) → Not ((shiftAt n k lt j) = ⟨k, lt⟩) := 
+    match n with 
+    | 0 => 
+      fun k =>      
+      match k with
+      | 0 => 
+        fun lt =>
+        fun j => nomatch j
+      | l + 1 => 
+        fun lt =>
+          nomatch lt
+    | m + 1 => 
+      fun k =>
+        match k with
+        | 0 =>
+          fun w =>
+          fun ⟨j, wj⟩ =>   
+            let unfold : (shiftAt (m + 1) 0 w ⟨j, wj⟩).val = j + 1 := by rfl
+            fun hyp =>
+              let hypV : (shiftAt (m + 1) 0 w ⟨j, wj⟩).val = 0 := congrArg Fin.val hyp
+              let contra : (succ j) = 0 := Eq.trans (Eq.symm unfold) hypV 
+              Nat.noConfusion contra
+        | l + 1 =>
+          fun w => 
+          fun j => 
+          match j with
+          | ⟨0, wj⟩ =>
+            let unfold : (shiftAt (m + 1) (l + 1) w ⟨0, wj⟩).val = 0 := by rfl
+            fun hyp =>
+              let hypV : (shiftAt (m + 1) (l + 1) w ⟨0, wj⟩).val = l + 1 := congrArg Fin.val hyp
+              let contra : 0 =  (succ l) := Eq.trans (Eq.symm unfold) hypV 
+              Nat.noConfusion contra
+          | ⟨i + 1, wj⟩ => 
+            let base : Not (shiftAt m l (leOfSuccLeSucc w) ⟨i, leOfSuccLeSucc wj⟩ = 
+              ⟨l, leOfSuccLeSucc w⟩)  := shiftSkipsEq m l (leOfSuccLeSucc w) ⟨i, leOfSuccLeSucc wj⟩
+            fun hyp => 
+              let unfold : shiftAt (m + 1) (l + 1) w ⟨i + 1, wj⟩ =
+                plusOne (m + 1) (shiftAt m l (leOfSuccLeSucc w) ⟨i, leOfSuccLeSucc wj⟩) := by rfl
+              let unfoldV : (shiftAt (m + 1) (l + 1) w ⟨i + 1, wj⟩).val = 
+                (shiftAt m l (leOfSuccLeSucc w) ⟨i, leOfSuccLeSucc wj⟩).val + 1 := 
+                  congrArg Fin.val unfold
+              let lem : 
+                (shiftAt m l (leOfSuccLeSucc w) ⟨i, leOfSuccLeSucc wj⟩).val + 1 
+                  = l + 1 := by
+                    rw (Eq.symm unfoldV )
+                    rw (congrArg Fin.val hyp)
+                    done
+              let contra : shiftAt m l (leOfSuccLeSucc w) ⟨i, leOfSuccLeSucc wj⟩ = 
+              ⟨l, leOfSuccLeSucc w⟩ := by 
+                apply Fin.eqOfVeq
+                injection lem
+                assumption
+                done
+              base (contra)
+
 #check Or.inl
