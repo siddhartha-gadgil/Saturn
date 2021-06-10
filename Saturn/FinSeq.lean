@@ -578,9 +578,6 @@ def clauseUnit{n: Nat}(clause: Clause (n + 1)) : Option (IsUnitClause clause) :=
   let seq : Fin (n + 1) → Fin (n + 1) := fun x => x
   findSome? f seq
 
-inductive OptionUnitClause{l n: Nat}(clauses : Fin l → Clause (n + 1)) where
-
-
 def someUnitClause {l : Nat} : (n : Nat) →  (clauses : Fin l → (Clause (n + 1))) →  
   Option (Σ k : Fin l, IsUnitClause (clauses k))  := 
     match l with 
@@ -596,3 +593,55 @@ def someUnitClause {l : Nat} : (n : Nat) →  (clauses : Fin l → (Clause (n + 
           | some ⟨⟨i, w⟩, u⟩ => 
             some ⟨⟨i + 1, leOfSuccLeSucc w⟩, u⟩
           | none => none
+
+inductive Join (left right top : Option Bool) where
+  | noneNone : (left = none) → (right = none) → (top = none)→ Join left right top 
+  | noneSome : (b : Bool) → (left = none) → (right = some b) → (top = some b)→ Join left right top
+  | someNone : (b : Bool) → (left = some b) → (right = none) → (top = some b)→ Join left right top
+  | someSome : (b : Bool) → (left = some b) → (right = some b) → (top = some b)→ Join left right top
+
+theorem varResolution (left right top : Option Bool)(join: Join left right top)(sectVal : Bool) :
+  Or (varSat left sectVal) (varSat right sectVal) → (varSat top sectVal)  :=
+  fun hyp  =>
+    match join with
+    | Join.noneNone pl pr pt => 
+      match hyp with
+      | Or.inl heq => 
+        let contra: none = some (sectVal) := Eq.trans (Eq.symm pl) heq
+        Option.noConfusion contra
+      | Or.inr heq => 
+        let contra: none = some (sectVal) := Eq.trans (Eq.symm pr) heq
+        Option.noConfusion contra 
+    | Join.someNone b pl pr pt =>
+      match hyp with
+      | Or.inl (heq : left = some sectVal) => 
+        let lem : top = left := Eq.trans pt (Eq.symm pl)
+        Eq.trans lem heq
+      | Or.inr heq => 
+        let contra: none = some (sectVal) := Eq.trans (Eq.symm pr) heq
+        Option.noConfusion contra  
+    | Join.noneSome b pl pr pt =>
+      match hyp with
+      | Or.inl heq => 
+        let contra: none = some (sectVal) := Eq.trans (Eq.symm pl) heq
+        Option.noConfusion contra
+      | Or.inr heq => 
+        let lem : top = right := Eq.trans pt (Eq.symm pr)
+        Eq.trans lem heq  
+    | Join.someSome b pl pr pt => 
+      match hyp with
+      | Or.inl heq => 
+        let lem : top = left := Eq.trans pt (Eq.symm pl)
+        Eq.trans lem heq
+      | Or.inr heq => 
+        let lem : top = right := Eq.trans pt (Eq.symm pr)
+        Eq.trans lem heq
+
+structure Resolution{n: Nat}(left right top : Clause (n + 1)) where
+  pivot : Fin (n + 1)
+  leftPivot : left pivot = some false
+  rightPivot : right pivot = some true
+  joinRest : (k : Fin n) → 
+    Join  (left (shiftAt _ pivot.val pivot.isLt k)) 
+          (right (shiftAt _ pivot.val pivot.isLt k)) 
+          (top (shiftAt _ pivot.val pivot.isLt k))
