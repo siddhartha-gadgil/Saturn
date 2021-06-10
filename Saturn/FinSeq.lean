@@ -400,4 +400,58 @@ theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) →
               rw defLHS
               rw lem
               rw base
-              done 
+              done
+
+theorem shiftIsSection (n: Nat): (k j: Fin (n + 1)) →  
+    Or (k = j)  (∃ i : Fin n, (shiftAt n k.val k.isLt i) = j) := 
+    match n with 
+    | 0 => 
+      fun k =>
+        match k with
+        | ⟨0, w⟩ => 
+          fun j =>
+          match j with
+          | ⟨0, w⟩ => Or.inl rfl
+    | m + 1 => 
+      fun k =>
+        match k with
+        | ⟨0, w⟩ => 
+          fun j =>
+          match j with
+          | ⟨0, wj⟩ => Or.inl rfl
+          | ⟨i + 1, wj⟩ =>
+            let eql : shiftAt (m + 1) 0 w ⟨i, leOfSuccLeSucc wj⟩ = ⟨i + 1, wj⟩ := by rfl 
+            Or.inr ⟨⟨i, leOfSuccLeSucc wj⟩, eql⟩
+        | ⟨l + 1, w⟩ => 
+          fun j => 
+          match j with
+          | ⟨0, wj⟩ =>
+            let eql : shiftAt (m + 1) (l + 1) w ⟨0, zeroLtSucc _⟩ = ⟨0, wj⟩ := by rfl 
+            Or.inr ⟨⟨0, zeroLtSucc _⟩, eql⟩
+          | ⟨i + 1, wj⟩ => 
+            let base := shiftIsSection m ⟨l, (leOfSuccLeSucc w)⟩ ⟨i, leOfSuccLeSucc wj⟩
+            match base with
+            | Or.inl beql => 
+              let beqlv : l = i := congrArg Fin.val beql
+              by
+                apply Or.inl
+                apply Fin.eqOfVeq
+                apply (congrArg succ)
+                exact beqlv
+                done
+            | Or.inr ⟨⟨p, wp⟩ , beql⟩ => 
+              let unfold : shiftAt (m + 1) (l + 1) (succ_lt_succ w) ⟨p + 1, succ_lt_succ wp⟩ =
+                plusOne (m + 1) (shiftAt m l w ⟨p, wp⟩) := by rfl
+              let p1eql : plusOne (m + 1) ⟨i, leOfSuccLeSucc wj⟩ =  ⟨i + 1, wj⟩ := by rfl
+              let eql : shiftAt (m + 1) (l + 1) (succ_lt_succ w) ⟨p + 1, succ_lt_succ wp⟩ =
+                ⟨i + 1, wj⟩ := by
+                  rw unfold
+                  apply Eq.symm
+                  rw (Eq.symm p1eql)
+                  apply (Eq.symm)
+                  exact (congrArg (plusOne (m + 1)) beql)
+                  done
+               
+              Or.inr ⟨⟨p + 1, succ_lt_succ wp⟩, eql⟩
+
+#check Or.inl
