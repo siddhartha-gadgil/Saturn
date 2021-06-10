@@ -1,6 +1,10 @@
 import Saturn.Basic
 open Nat
 
+class Prover(α: Type) where
+  statement : (x : α) → Prop
+  proof : (x : α) → statement x
+
 -- theorems about finite sequences
 
 theorem dropPlusOne{α : Type}(n: Nat)(zeroVal : α)(j: Fin n)(g: (Fin (succ n)) → α) 
@@ -148,30 +152,40 @@ def findPred{α: Type}(pred: α → Prop)[DecidablePred pred]{n: Nat}:
             ⟨(plusOne _ j), l3⟩ 
           )
 
- def showForAll{α: Type}(pred: α → Prop)[DecidablePred pred]{n: Nat}: 
-  (seq: Fin n → α)  →  Option (PiPred seq pred) := 
+def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (Fin n → α) → Option β :=
     match n with
-    | 0 =>
-      fun seq => 
-        let pf : (x : Fin 0) → pred (seq x) := fun x => nomatch x  
-        some (⟨pf⟩)
+    | 0 => fun _ => none
     | m + 1 => 
-      fun seq =>
-        if c : pred (seq (Fin.mk 0 (zeroLtSucc m))) then
-          let tail : Fin m → α := dropHead _ seq
-          (showForAll pred tail).map (
-            fun ⟨ tpf ⟩ =>
-              let pf : (j :Fin (m +1)) → pred (seq j) := 
-                fun j =>
-                  match j with 
-                  | ⟨0, w⟩ => c
-                  | ⟨i + 1, w⟩ =>
-                    let tailWit : i < m := leOfSuccLeSucc w 
-                    tpf (⟨i, tailWit⟩)
-              ⟨ pf ⟩
-          )
-        else 
-          none
+      fun seq => 
+        (f (seq ⟨0, zeroLtSucc m⟩)).orElse (
+          findSome? f (fun t : Fin m => seq (plusOne _ t))
+        ) 
+         
+
+def showForAll{α: Type}(pred: α → Prop)[DecidablePred pred]{n: Nat}: 
+(seq: Fin n → α)  →  Option (PiPred seq pred) := 
+  match n with
+  | 0 =>
+    fun seq => 
+      let pf : (x : Fin 0) → pred (seq x) := fun x => nomatch x  
+      some (⟨pf⟩)
+  | m + 1 => 
+    fun seq =>
+      if c : pred (seq (Fin.mk 0 (zeroLtSucc m))) then
+        let tail : Fin m → α := dropHead _ seq
+        (showForAll pred tail).map (
+          fun ⟨ tpf ⟩ =>
+            let pf : (j :Fin (m +1)) → pred (seq j) := 
+              fun j =>
+                match j with 
+                | ⟨0, w⟩ => c
+                | ⟨i + 1, w⟩ =>
+                  let tailWit : i < m := leOfSuccLeSucc w 
+                  tpf (⟨i, tailWit⟩)
+            ⟨ pf ⟩
+        )
+      else 
+        none
 
 def shiftAtNat : Nat → Nat → Nat :=
     fun k =>
@@ -224,8 +238,6 @@ def shiftAt : (n : Nat) →  (k: Nat) → (lt : k < succ n) →
         fun ⟨i, w⟩ => 
           ⟨shiftAtNat k i, (shiftInheritBound n k i w)⟩
 
-#check Nat.leTrans
-
 theorem seqShiftNatLemma: (l: Nat) → (i : Nat) →   
     (shiftAtNat (l + 1)  (i + 1)) = (shiftAtNat  l  i) + 1 := 
       fun l => fun i => rfl
@@ -275,10 +287,19 @@ def dropAtShift{α : Type} : (n : Nat) →
 
 -- More specific to SAT
 
-def varSat (clVal: Option Bool)(sectVal : Bool) := clVal = some sectVal
+def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
+
+structure ClauseSat{n: Nat}(clause : Clause n)(sect: Sect n) where
+  coord : Fin n
+  witness: varSat (clause coord) (sect coord)
 
 def clauseSat {n: Nat}(clause : Clause n)(sect: Sect n) := 
   ∃ (k : Fin n), varSat (clause k) (sect k)
+
+instance {n: Nat}(clause : Clause n)(sect: Sect n): Prover (ClauseSat clause sect) where 
+  statement := fun cs => varSat (clause cs.coord) (sect cs.coord)
+  proof := fun cs => cs.witness
+
 
 theorem contradictionFalse (n: Nat) : ∀ sect : Sect n, Not (clauseSat (contradiction n) sect) :=
   fun sect => fun ⟨k, p⟩ => 
@@ -294,11 +315,9 @@ theorem contradictionFalse (n: Nat) : ∀ sect : Sect n, Not (clauseSat (contrad
       done 
     Option.noConfusion lem5
 
-#check clauseSat
-#check Bool.noConfusion
 
 theorem liftSatHead {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
-  clauseSat (dropHead n clause) (dropHead n sect) → clauseSat clause sect := 
+  ClauseSat (dropHead n clause) (dropHead n sect) → ClauseSat clause sect := 
     fun ⟨⟨k, w⟩, tpf⟩ => 
       let l1 : dropHead n clause ⟨k, w⟩ = clause (⟨k+1, _⟩) := by rfl
       let l2 : dropHead n sect ⟨k, w⟩ = sect ⟨k+1, _⟩ := by rfl
@@ -313,7 +332,7 @@ theorem liftSatHead {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
 
 theorem liftSatAt {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
   (j : Nat) → (lt : j < n + 1) → 
-  clauseSat (dropAt n j lt clause) (dropAt n j lt sect) → clauseSat clause sect := 
+  ClauseSat (dropAt n j lt clause) (dropAt n j lt sect) → ClauseSat clause sect := 
     fun j =>
     fun lt =>
      fun ⟨⟨k, w⟩, tpf⟩ => 
@@ -347,8 +366,8 @@ inductive HeadRestrictions{n q: Nat}
   |  headProof : (clause (⟨0, zeroLtSucc n⟩) = some branch) → 
           (HeadRestrictions branch restrictions clause)
   |  restrictClause:  
-        (Σ (i: Fin q),  
-          DropHeadMatch clause (restrictions i)) → 
+        (i: Fin q) →   
+          DropHeadMatch clause (restrictions i) → 
             (HeadRestrictions branch restrictions clause)
                        
 inductive RestrictionsAt{n q: Nat}(k : Fin (n + 1))
@@ -356,25 +375,25 @@ inductive RestrictionsAt{n q: Nat}(k : Fin (n + 1))
   |  proofAt : (clause (k) = some branch) → 
           (RestrictionsAt k branch restrictions clause)
   |  restrictClause:  
-        (Σ (i: Fin q),  
-          DropAtMatch k clause (restrictions i)) → 
+        (i: Fin q) →   
+          DropAtMatch k clause (restrictions i) → 
             (RestrictionsAt k branch restrictions clause)
 
 def isUnit{n: Nat}(k: Fin (n + 1))(b: Bool)(cl: Clause (n + 1)) :=
   (cl k = some b) &&
   ((dropAt n k.val k.isLt cl) =  contradiction n)
   
-def unitClause(n : Nat)(b : Bool): (k : Fin (n + 1)) →    Clause (n + 1) := 
+def unitClauseRecDefn(n : Nat)(b : Bool): (k : Fin (n + 1)) →    Clause (n + 1) := 
   match n with
     | 0 => fun k => fun j => some b
     | m + 1 => 
       fun k =>
         match k with
           | ⟨0, _⟩ => prepend _ (some b) (contradiction (m + 1))
-          | ⟨l + 1, w⟩ => prepend _ none (unitClause m b ⟨l , leOfSuccLeSucc w⟩)
+          | ⟨l + 1, w⟩ => prepend _ none (unitClauseRecDefn m b ⟨l , leOfSuccLeSucc w⟩)
 
 theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) → 
-                                  unitClause n b k k = some b :=
+                                  unitClauseRecDefn n b k k = some b :=
   match n with
     | 0 => fun k => by rfl
     | m + 1 => 
@@ -382,7 +401,7 @@ theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) →
         match k with
           | ⟨0, w⟩ => 
             let lhs := prepend _ (some b) (contradiction (m + 1)) 0
-            let defLHS : unitClause (m + 1) b ⟨0, w⟩ ⟨0, w⟩ = 
+            let defLHS : unitClauseRecDefn (m + 1) b ⟨0, w⟩ ⟨0, w⟩ = 
               lhs := by rfl
             let lem : lhs = some b := by rfl
             by 
@@ -390,11 +409,11 @@ theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) →
               exact lem
               done
           | ⟨l + 1, w⟩ => 
-            let lhs := prepend _ none (unitClause m b ⟨l , leOfSuccLeSucc w⟩) ⟨l + 1, w⟩
-            let defLHS : unitClause (m + 1) b ⟨l + 1, w⟩ ⟨l + 1, w⟩ = 
+            let lhs := prepend _ none (unitClauseRecDefn m b ⟨l , leOfSuccLeSucc w⟩) ⟨l + 1, w⟩
+            let defLHS : unitClauseRecDefn (m + 1) b ⟨l + 1, w⟩ ⟨l + 1, w⟩ = 
               lhs := by rfl 
-            let lem : lhs = (unitClause m b ⟨l , leOfSuccLeSucc w⟩) ⟨l, w⟩ := by rfl
-            let base : unitClause m b ⟨l , leOfSuccLeSucc w⟩ ⟨l , w⟩
+            let lem : lhs = (unitClauseRecDefn m b ⟨l , leOfSuccLeSucc w⟩) ⟨l, w⟩ := by rfl
+            let base : unitClauseRecDefn m b ⟨l , leOfSuccLeSucc w⟩ ⟨l , w⟩
               = some b := unitClauseDiag m b ⟨l , leOfSuccLeSucc w⟩
             by 
               rw defLHS
@@ -405,10 +424,6 @@ theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) →
 inductive SectionCase (n: Nat) (k j: Fin (n + 1)) where
   | diagonal : k = j → SectionCase n k j
   | image : (i : Fin n) →  (shiftAt n k.val k.isLt i) = j → SectionCase n k j
-
-class Prover(α: Type) where
-  statement : (x : α) → Prop
-  proof : (x : α) → statement x
 
 instance {n: Nat} {k j: Fin (n + 1)}: Prover (SectionCase n k j) where
   statement := fun s => 
@@ -538,3 +553,46 @@ def liftAt{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
     match switch with
     | SectionCase.diagonal _ => value
     | SectionCase.image i _ => fn i
+
+def unitClause(n : Nat)(b : Bool)(k : Fin (n + 1)):   Clause (n + 1):=
+  liftAt (some b) n k.val k.isLt (contradiction n) 
+
+structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
+  index: Fin (n + 1)
+  parity: Bool
+  equality : clause = unitClause n parity index
+
+def clauseUnit{n: Nat}(clause: Clause (n + 1)) : Option (IsUnitClause clause) :=
+  let f : Fin (n + 1) → Option (IsUnitClause clause) := 
+    fun k =>
+      match deqClause _ clause  (unitClause n true k) with 
+      | isTrue pf => 
+        let cl : IsUnitClause clause := IsUnitClause.mk k true pf 
+        some (cl)
+      | isFalse _ => 
+        match deqClause _ clause  (unitClause n false k) with 
+      | isTrue pf => 
+        let cl : IsUnitClause clause := IsUnitClause.mk k false pf 
+        some (cl)
+      | isFalse _ => none  
+  let seq : Fin (n + 1) → Fin (n + 1) := fun x => x
+  findSome? f seq
+
+inductive OptionUnitClause{l n: Nat}(clauses : Fin l → Clause (n + 1)) where
+
+
+def someUnitClause {l : Nat} : (n : Nat) →  (clauses : Fin l → (Clause (n + 1))) →  
+  Option (Σ k : Fin l, IsUnitClause (clauses k))  := 
+    match l with 
+    | 0 => fun _ _ =>  none
+    | m + 1 => 
+      fun n cls =>
+        match clauseUnit (cls ⟨0, zeroLtSucc m⟩) with
+        | some u => some ⟨⟨0, zeroLtSucc m⟩, u⟩ 
+        | none => 
+          let tcls := dropHead _ cls
+          let tail := someUnitClause n tcls
+          match tail with
+          | some ⟨⟨i, w⟩, u⟩ => 
+            some ⟨⟨i + 1, leOfSuccLeSucc w⟩, u⟩
+          | none => none
