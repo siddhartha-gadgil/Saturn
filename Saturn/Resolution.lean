@@ -8,6 +8,74 @@ inductive Join (left right top : Option Bool) where
   | someNone : (b : Bool) → (left = some b) → (right = none) → (top = some b)→ Join left right top
   | someSome : (b : Bool) → (left = some b) → (right = some b) → (top = some b)→ Join left right top
 
+theorem notNot(bf b bb : Bool) : Not (b = bf) → Not (bb = bf) → b = bb :=
+  match bf with
+  | true => fun w ww => 
+    Eq.trans (eqFalseOfNeTrue w) (Eq.symm (eqFalseOfNeTrue ww))
+  | false => fun w ww => 
+    Eq.trans (eqTrueOfNeFalse w) (Eq.symm (eqTrueOfNeFalse ww))
+def getJoin (bf : Bool)(left right : Option Bool) :
+  Not (left = some bf) → Not (right = some bf) → 
+    Σ (top : Option Bool),  Join left right top :=
+      match left with
+      | none => 
+        match right with
+        | none => fun _ _ => ⟨none, Join.noneNone rfl rfl rfl⟩
+        | some b => fun _ w => 
+          if c: b = bf then 
+            absurd (congrArg some c) w
+          else 
+            ⟨some b, Join.noneSome b rfl rfl rfl⟩
+      | some b => 
+        fun w =>
+          if c: b = bf then 
+            absurd (congrArg some c) w
+          else 
+            match right with
+            | none => 
+              fun wr => ⟨some b, Join.someNone b rfl rfl rfl⟩
+            | some bb => 
+              fun wr =>
+                let lem1 : Not (bb = bf) := by
+                  intro hyp
+                  exact (wr (congrArg some hyp))
+                  done
+                let lem2 : bb = b := notNot bf bb b lem1 c
+                ⟨some b, Join.someSome b rfl (congrArg some lem2) rfl⟩
+
+def topJoin(bf : Bool)(left right top: Option Bool): Join left right top →
+    Not (left = some bf) → Not (right = some bf) → 
+       Not (top = some bf) := 
+        fun join =>
+          match join with
+          | Join.noneNone _ _ wt => fun _ _ hyp => 
+            let lem := Eq.trans (Eq.symm hyp) wt
+            Option.noConfusion lem
+          | Join.someNone b wl _ wt => 
+            fun nwl _  hyp => 
+              let lem : left = some bf := by
+                rw wl
+                rw (Eq.symm wt)
+                assumption
+                done
+              nwl lem
+          | Join.noneSome b _ wr wt => 
+            fun _ nwr  hyp => 
+              let lem : right = some bf := by
+                rw wr
+                rw (Eq.symm wt)
+                assumption
+                done
+              nwr lem
+          | Join.someSome b wl _ wt => 
+            fun nwl _  hyp => 
+              let lem : left = some bf := by
+                rw wl
+                rw (Eq.symm wt)
+                assumption
+                done
+              nwl lem
+
 theorem varResolution (left right top : Option Bool)(join: Join left right top)(sectVal : Bool) :
   Or (varSat left sectVal) (varSat right sectVal) → (varSat top sectVal)  :=
   fun hyp  =>
