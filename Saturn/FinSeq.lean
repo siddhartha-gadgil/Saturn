@@ -544,6 +544,14 @@ theorem shiftSkipsEq(n: Nat): (k: Nat) → (lt : k < n + 1)→
                 done
               base (contra)
 
+def liftAtSwitch{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (Fin n →  α) →  
+      (j : Fin (Nat.succ n)) → SectionCase n ⟨k, lt⟩ j → α := 
+  fun n k lt fn j switch =>  
+    match switch with
+    | SectionCase.diagonal _ => value
+    | SectionCase.image i _ => fn i
+
 def liftAt{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (Fin n →  α) →  (Fin (Nat.succ n) → α) := 
   fun n k lt fn j =>  
@@ -551,6 +559,45 @@ def liftAt{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
     match switch with
     | SectionCase.diagonal _ => value
     | SectionCase.image i _ => fn i
+
+structure ProvedUpdate{α : Type}(value : α) (n: Nat)(fn : Fin (n + 1) →  α) (k j: Fin (n + 1)) where
+  result : α
+  check : Not (k = j) → result = fn j
+  checkDiag : k = j → result = value
+
+def provedUpdate{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (fn: Fin (n + 1) →  α)  →  ( j: Fin (Nat.succ n)) → 
+        ProvedUpdate value n fn ⟨k, lt⟩ j := 
+      fun n k lt fn j =>
+      match shiftIsSection n ⟨k, lt⟩ j with
+      | SectionCase.diagonal eql =>
+        let result := value 
+        let check : Not (⟨k, lt⟩ = j) → result = fn j := fun c =>  absurd eql c 
+        ⟨result, check, fun _ => rfl⟩
+      | SectionCase.image i eql =>
+        let lem1 := shiftSkipsEq n k lt i
+        let lem : Not (⟨k, lt⟩ = j) := 
+          fun hyp =>
+            let lem2 := Eq.trans eql (Eq.symm hyp)
+            lem1 lem2 
+        ⟨fn j, fun _ => rfl, fun c => absurd c lem⟩
+
+def update{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (fn: Fin (n + 1) →  α)  →  ( j: Fin (Nat.succ n)) → 
+        α := 
+      fun n k lt fn j => (provedUpdate value n k lt fn j).result
+
+def updateEq{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (fn: Fin (n + 1) →  α)  →  ( j: Fin (Nat.succ n)) →
+      Not (⟨k ,lt⟩ = j) → (update value n k lt fn j) = fn j := 
+      fun n k lt fn j w =>
+        (provedUpdate value n k lt fn j).check w        
+
+def updateEqDiag{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (fn: Fin (n + 1) →  α)  → 
+      (update value n k lt fn ⟨k, lt⟩) = value := 
+      fun n k lt fn   =>
+        (provedUpdate value n k lt fn ⟨k, lt⟩).checkDiag rfl
 
 def shiftIsSectionProp (n: Nat): (k j: Fin (n + 1)) →  
     Or (k = j) (∃ i : Fin n, (shiftAt n k.val k.isLt i) = j) :=
