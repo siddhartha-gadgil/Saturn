@@ -125,3 +125,71 @@ def decNEq(k: Nat)(l: Nat): NEq k l :=
           NEq.AreUneq (fun h => contra (succInjective n m h))
 
 
+def unitClauseRecDefn(n : Nat)(b : Bool): (k : Fin (n + 1)) →    Clause (n + 1) := 
+  match n with
+    | 0 => fun k => fun j => some b
+    | m + 1 => 
+      fun k =>
+        match k with
+          | ⟨0, _⟩ => prepend _ (some b) (contradiction (m + 1))
+          | ⟨l + 1, w⟩ => prepend _ none (unitClauseRecDefn m b ⟨l , leOfSuccLeSucc w⟩)
+
+theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) → 
+                                  unitClauseRecDefn n b k k = some b :=
+  match n with
+    | 0 => fun k => by rfl
+    | m + 1 => 
+       fun k =>
+        match k with
+          | ⟨0, w⟩ => 
+            let lhs := prepend _ (some b) (contradiction (m + 1)) 0
+            let defLHS : unitClauseRecDefn (m + 1) b ⟨0, w⟩ ⟨0, w⟩ = 
+              lhs := by rfl
+            let lem : lhs = some b := by rfl
+            by 
+              rw defLHS
+              exact lem
+              done
+          | ⟨l + 1, w⟩ => 
+            let lhs := prepend _ none (unitClauseRecDefn m b ⟨l , leOfSuccLeSucc w⟩) ⟨l + 1, w⟩
+            let defLHS : unitClauseRecDefn (m + 1) b ⟨l + 1, w⟩ ⟨l + 1, w⟩ = 
+              lhs := by rfl 
+            let lem : lhs = (unitClauseRecDefn m b ⟨l , leOfSuccLeSucc w⟩) ⟨l, w⟩ := by rfl
+            let base : unitClauseRecDefn m b ⟨l , leOfSuccLeSucc w⟩ ⟨l , w⟩
+              = some b := unitClauseDiag m b ⟨l , leOfSuccLeSucc w⟩
+            by 
+              rw defLHS
+              rw lem
+              rw base
+              done
+
+structure ClauseHead{n: Nat}(clause: Clause (n + 1))(branch: Bool) where
+  check : clause (⟨0, zeroLtSucc n⟩) = some branch
+
+structure ClauseAt{n: Nat}(k: Fin n)(clause: Clause n)(branch: Bool) where
+  check : clause k = some branch
+
+structure DropHeadMatch{n: Nat}(clause: Clause (n + 1))(restriction: Clause n) where
+  check : dropHead n clause = restriction
+
+structure DropAtMatch{n: Nat}(k: Fin (n + 1))(clause: Clause (n +1))(restriction: Clause n) where
+  check : dropAt n k.val k.isLt clause = restriction
+
+
+inductive HeadRestrictions{n q: Nat}
+  (branch: Bool)(restrictions: Fin q → Clause n)(clause : Clause (n + 1)) where    
+  |  headProof : (clause (⟨0, zeroLtSucc n⟩) = some branch) → 
+          (HeadRestrictions branch restrictions clause)
+  |  restrictClause:  
+        (i: Fin q) →   
+          DropHeadMatch clause (restrictions i) → 
+            (HeadRestrictions branch restrictions clause)
+                       
+inductive RestrictionsAt{n q: Nat}(k : Fin (n + 1))
+  (branch: Bool)(restrictions: Fin q → Clause n)(clause : Clause (n + 1)) where    
+  |  proofAt : (clause (k) = some branch) → 
+          (RestrictionsAt k branch restrictions clause)
+  |  restrictClause:  
+        (i: Fin q) →   
+          DropAtMatch k clause (restrictions i) → 
+            (RestrictionsAt k branch restrictions clause)
