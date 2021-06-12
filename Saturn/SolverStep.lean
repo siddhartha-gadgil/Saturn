@@ -283,3 +283,88 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                     rc.pure l w lem2
             RestrictionClauses.mk codomN restClausesN forwardN forwardWitN droppedN 
                 reverseN reverseWitN compositionN relationN pureN
+
+def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
+    (clauses: Fin dom →  Clause (n + 1)):
+      (rc: RestrictionClauses branch focus clauses) → 
+        (head : Clause (n + 1)) → (p : Fin rc.codom) → 
+          (rc.restClauses p = dropAt _ focus.val focus.isLt head) → 
+            RestrictionClauses branch focus (prepend _ head clauses) := 
+          fun rc head p peqn =>
+            let domN := dom + 1
+            let codomN := rc.codom
+            let clausesN := prepend _ head clauses
+            let forwardN: (k : Nat) →  k < domN → Option Nat  := 
+              fun k  => 
+              match k with 
+              | 0 => fun _ => some p.val
+              | l + 1 => 
+                fun w : l + 1 < domN   =>  rc.forward l (leOfSuccLeSucc w)
+            let forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
+              fun k  => 
+              match k with 
+              | 0 => fun w => 
+                let lem1 : forwardN 0 w = some p.val := by rfl
+                by
+                  rw lem1
+                  exact p.isLt
+                  done
+              | l + 1 => 
+                fun w : l + 1 < domN   => 
+                  let lem : forwardN (l + 1) w = rc.forward l (leOfSuccLeSucc w) := by rfl 
+                  by
+                    rw lem
+                    exact (rc.forwardWit l (leOfSuccLeSucc w))
+                    done
+            let reverseN : (k : Nat) →  k < codomN → Nat := 
+              fun k w => (rc.reverse k w) + 1
+            let reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
+              fun k w => (rc.reverseWit k w)
+            let droppedN : 
+              (k : Nat) → (w: k < domN) → forwardN k w = none → 
+                  clausesN ⟨k, w⟩ focus = some branch :=
+                fun k =>
+                  match k with
+                  | 0 => fun x y => 
+                    let lem : forwardN 0 x = some p.val := by rfl
+                    let lem2 := (Eq.trans (Eq.symm lem) y)
+                    Option.noConfusion lem2
+                  | l + 1 => 
+                    fun w nw =>
+                      let lem1 : forwardN (l + 1) w = 
+                        rc.forward l (leOfSuccLeSucc w) := by rfl
+                      let lem2 := Eq.trans (Eq.symm lem1) nw
+                      let lem3 := rc.dropped l (leOfSuccLeSucc w) lem2
+                      by
+                        exact lem3
+                        done
+            let compositionN: (k : Nat) → (w : k < codomN) → (ww : reverseN k w < domN) → 
+                  forwardN (reverseN k w) ww = some k := 
+              fun k w ww =>
+                let lem1 : forwardN (reverseN k w) ww = rc.forward (rc.reverse k w) ww := by rfl                  
+                by 
+                  rw lem1
+                  exact rc.composition k w ww
+                  done
+            let restClausesN := rc.restClauses 
+            let relationN : (k : Nat) → (w: k < codomN) → 
+                 restClausesN ⟨k, w⟩ = 
+                  dropAt _ focus.val focus.isLt (clausesN (⟨reverseN k w, reverseWitN k w⟩)) := 
+                  fun k w =>
+                  let lem1 : clausesN (⟨reverseN k w, reverseWitN k w⟩) =
+                    clauses (⟨rc.reverse k w, rc.reverseWit k w⟩ ) :=  by rfl
+                    by
+                      rw lem1
+                      exact rc.relation k w
+                      done
+            let pureN : (k : Nat) → (w: k < codomN)  → 
+                Not (clausesN (⟨reverseN k w, reverseWitN k w⟩) (focus) = some branch) :=
+                  fun k w =>
+                  let lem1 : clausesN (⟨reverseN k w, reverseWitN k w⟩) =
+                    clauses (⟨rc.reverse k w, rc.reverseWit k w⟩) :=  by rfl
+                    by
+                      rw lem1
+                      exact rc.pure k w
+                      done 
+            RestrictionClauses.mk codomN restClausesN forwardN forwardWitN droppedN 
+                reverseN reverseWitN compositionN relationN pureN

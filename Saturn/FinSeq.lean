@@ -498,6 +498,98 @@ def updateEqDiag{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
       fun n k lt fn   =>
         (provedUpdate value n k lt fn ⟨k, lt⟩).checkDiag rfl
 
+-- transpose index j in tail with initial element
+def transposeZero{α: Type}{n: Nat} :(j: Nat) → j < n + 1 →  (Fin (n + 2)→ α) → Fin (n + 2) → α := 
+  fun j lt seq =>
+    let tail := dropHead _ seq 
+    let head := seq ⟨0, zeroLtSucc _⟩
+    let elem := tail ⟨j, lt⟩
+    prepend _ elem (update head n j lt tail)
+
+def transpJ{α: Type}{n: Nat}: (j: Nat) → (lt :j < n + 1) → (seq : Fin (n + 2)→ α) → 
+  transposeZero j lt seq ⟨j + 1, succ_lt_succ lt⟩ = seq ⟨0, zeroLtSucc _⟩ := 
+    fun j lt seq =>
+      let tail := dropHead _ seq 
+      let head := seq ⟨0, zeroLtSucc _⟩
+      let elem := tail ⟨j, lt⟩
+      let lem1 : transposeZero j lt seq ⟨j + 1, succ_lt_succ lt⟩ =
+        update head n j lt tail ⟨j, lt⟩ := by rfl
+          -- prependPlusOne _ elem (update head n j lt tail) ⟨j, lt⟩
+      let lem2 : update head n j lt tail ⟨j, lt⟩ = head := 
+        updateEqDiag head n j lt tail
+      by
+        rw lem1
+        rw lem2
+        done
+
+def transpNotJ{α: Type}{n: Nat}: (j: Nat) → (lt :j < n + 1) → (seq : Fin (n + 2)→ α) → 
+  (i: Nat) → (wi : i < n + 1) → Not (Fin.mk  j lt =Fin.mk i wi) → 
+  transposeZero j lt seq ⟨i + 1, succ_lt_succ wi⟩ = seq  ⟨i + 1, succ_lt_succ wi⟩ := 
+    fun j lt seq i wi neq =>
+      let tail := dropHead _ seq 
+      let head := seq ⟨0, zeroLtSucc _⟩
+      let elem := tail ⟨j, lt⟩
+      let lem1 : transposeZero j lt seq  ⟨i + 1, succ_lt_succ wi⟩ =
+        update head n j lt tail ⟨i, wi⟩ := 
+          prependPlusOne _ elem (update head n j lt tail) ⟨i, wi⟩
+      let lem2  := 
+        updateEq head n j lt tail ⟨i, wi⟩ neq
+      by
+        rw lem1
+        rw lem2
+        rfl
+        done
+
+theorem involuteTrans{α: Type}(n: Nat): (j: Nat) → (lt :j < n + 1) →
+  (seq : Fin (n + 2)→ α) → 
+    transposeZero j lt (transposeZero j lt seq)  = seq  := 
+    fun j lt seq =>
+      let tSeq := transposeZero j lt seq
+      let transpTail := dropHead _ tSeq
+      let tHead := tSeq ⟨0, zeroLtSucc _⟩
+      funext (
+        fun k => 
+        match k with
+        | ⟨0, w⟩ => 
+          let lem1 : transposeZero j lt (transposeZero j lt seq) ⟨0, w⟩ =
+                tSeq ⟨j + 1, succ_lt_succ lt⟩ := by rfl
+          let lem2 := dropOnePrepend _ tHead transpTail ⟨j, lt⟩
+          by
+            rw lem1
+            exact (transpJ j lt seq)
+            done
+        | ⟨l + 1, w⟩ => 
+           if c : l = j then
+            let lem0 : l +1 = j + 1 := congrArg (. + 1) c
+            let lem1 : (⟨l + 1, w⟩ : Fin (n + 2)) = ⟨j + 1, succ_lt_succ lt⟩ := 
+              by 
+                apply Fin.eqOfVeq
+                exact lem0
+                done
+            let lem2 := congrArg (transposeZero j lt (transposeZero j lt seq)) lem1
+            let lem3 := transpJ j lt (transposeZero j lt seq)
+            let lem4 : transposeZero j lt seq ⟨0, zeroLtSucc _⟩ =
+                          seq ⟨j + 1, succ_lt_succ lt⟩ := by rfl
+            by
+              rw lem2
+              rw lem3
+              rw lem4
+              apply (congrArg seq)
+              apply Fin.eqOfVeq
+              exact (Eq.symm lem0)
+              done
+           else
+            let lem0 : Not (Fin.mk j lt = Fin.mk l w) := 
+              fun hyp =>
+                c (Eq.symm (congrArg Fin.val hyp))
+            let lem1 := transpNotJ j lt (transposeZero j lt seq) l w lem0
+            let lem2 := transpNotJ j lt seq l w lem0
+            by
+              rw lem1
+              rw lem2
+              done
+           )
+
 def shiftIsSectionProp (n: Nat): (k j: Fin (n + 1)) →  
     Or (k = j) (∃ i : Fin n, (shiftAt n k.val k.isLt i) = j) :=
       fun k j =>  getProof (shiftIsSection n k j)
