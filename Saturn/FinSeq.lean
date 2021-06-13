@@ -1,6 +1,10 @@
 import Saturn.Basic
 open Nat
 
+macro_rules
+  | `(scowl) => `(sorry)
+
+
 class Prover(α: Type) where
   statement : (x : α) → Prop
   proof : (x : α) → statement x
@@ -511,24 +515,59 @@ theorem shiftSkipsEq(n: Nat): (k: Nat) → (lt : k < n + 1)→
                 done
               base (contra)
 
+structure ProvedLift{α : Type}(value : α) (n: Nat)(fn : Fin n →  α) (k j: Fin (n + 1)) where
+  result : α
+  checkImage : (i : Fin n) → (shiftAt n k.val k.isLt i = j) → result = fn i
+  checkFocus : k = j → result = value
 
-
-
-def liftAtSwitch{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
-    (lt : k < succ n) → (Fin n →  α) →  
-      (j : Fin (Nat.succ n)) → SectionCase n ⟨k, lt⟩ j → α := 
-  fun n k lt fn j switch =>  
+def provedLift{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (fn : Fin n →  α) →  
+      (j : Fin (Nat.succ n)) →  ProvedLift value n fn ⟨k, lt⟩ j := 
+  fun n k lt fn j =>  
+    let switch := shiftIsSection n ⟨k, lt⟩ j
     match switch with
-    | SectionCase.diagonal _ => value
-    | SectionCase.image i _ => fn i
+    | SectionCase.diagonal w => 
+        let result := value
+        let checkFocus : ⟨k, lt⟩ = j → result = value := fun _ => rfl
+        let checkImage : (i : Fin n) → (shiftAt n k lt i = j) → result = fn i :=
+          fun i =>
+            fun hyp =>
+            let lem1 := shiftSkipsEq n k lt i
+            let lem2 := Eq.trans hyp (Eq.symm w)
+            absurd lem2 lem1
+        ⟨result, checkImage, checkFocus⟩
+    | SectionCase.image i w => 
+        let result := fn i
+        let checkFocus : ⟨k, lt⟩ = j → result = value := 
+          fun hyp => 
+            let lem1 := shiftSkipsEq n k lt i
+            let lem2 := Eq.trans w (Eq.symm hyp)
+            absurd lem2 lem1
+        let checkImage : (i : Fin n) → (shiftAt n k lt i = j) → result = fn i := 
+          fun i1 =>
+            fun hyp =>
+              let lem1 := Eq.trans w (Eq.symm hyp)
+              let lem2 := shifAtInjective n k lt i i1 lem1
+              congrArg fn lem2
+        ⟨result, checkImage, checkFocus⟩
+
 
 def liftAt{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (Fin n →  α) →  (Fin (Nat.succ n) → α) := 
   fun n k lt fn j =>  
-    let switch := shiftIsSection n ⟨k, lt⟩ j
-    match switch with
-    | SectionCase.diagonal _ => value
-    | SectionCase.image i _ => fn i
+    (provedLift value n k lt fn j).result
+
+def liftAtFocus{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (fn :Fin n →  α) →  
+      liftAt value n k lt fn ⟨k, lt⟩ = value :=
+    fun n k lt fn  =>  
+      (provedLift value n k lt fn ⟨k, lt⟩).checkFocus rfl
+
+def liftAtImage{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (fn :Fin n →  α) → (i : Fin n) →   
+      liftAt value n k lt fn (shiftAt n k lt i) = fn i :=
+    fun n k lt fn i =>  
+      (provedLift value n k lt fn (shiftAt n k lt i)).checkImage i rfl
 
 structure ProvedUpdate{α : Type}(value : α) (n: Nat)(fn : Fin (n + 1) →  α) (k j: Fin (n + 1)) where
   result : α
