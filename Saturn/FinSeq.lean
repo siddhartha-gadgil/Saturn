@@ -569,6 +569,38 @@ def liftAtImage{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
     fun n k lt fn i =>  
       (provedLift value n k lt fn (shiftAt n k lt i)).checkImage i rfl
 
+def liftDrop{α : Type}: (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (fn :Fin (n + 1) →  α)  →   
+      liftAt (fn ⟨k, lt⟩) n k lt 
+        (dropAt n k lt fn)  = fn := 
+      fun n k lt fn  =>
+      funext (fun j =>
+        let switch := shiftIsSection n ⟨k, lt⟩ j
+          match switch with
+          | SectionCase.diagonal w => 
+            let lem :=
+              congrArg (liftAt (fn ⟨k, lt⟩) n k lt  (dropAt n k lt fn)) w
+            by
+              rw (Eq.symm lem)
+              apply Eq.symm
+              rw Eq.symm (congrArg fn w)
+              apply Eq.symm
+              apply liftAtFocus 
+              done              
+          | SectionCase.image i w => 
+            let lem :=
+              congrArg (liftAt (fn ⟨k, lt⟩) n k lt  (dropAt n k lt fn)) w
+              let lem2 := liftAtImage (fn ⟨k, lt⟩) n k lt  (dropAt n k lt fn) i
+            by 
+              rw (Eq.symm lem)
+              apply Eq.symm
+              rw Eq.symm (congrArg fn w)
+              apply Eq.symm
+              rw lem2 
+              apply dropAtShift
+              done
+      )
+
 structure ProvedUpdate{α : Type}(value : α) (n: Nat)(fn : Fin (n + 1) →  α) (k j: Fin (n + 1)) where
   result : α
   check : Not (k = j) → result = fn j
