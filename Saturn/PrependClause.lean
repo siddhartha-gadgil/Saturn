@@ -55,6 +55,32 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
 
 namespace PrependClause
 
+theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some 0) :=
+  match n with
+  | none => fun hyp => 
+    Option.noConfusion hyp
+  | some j => 
+    fun hyp : some (j + 1) = some 0 =>
+    let lem : j + 1 = 0 := by
+      injection hyp
+      assumption
+    Nat.noConfusion lem
+
+theorem mapPlusOneShift{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1) → 
+  n = some m :=
+    match n with
+  | none => fun hyp => 
+    Option.noConfusion hyp
+  | some j => 
+    fun hyp : some (j + 1) = some (m + 1) => 
+      let lem1 : j + 1 = m + 1 := by
+        injection hyp
+        assumption
+      let lem2 : j = m := by
+        injection lem1
+        assumption 
+    congrArg some lem2
+
 def forwardRelation{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
     (clauses: Fin dom →  Clause (n + 1)):
       (rc: RestrictionClauses branch focus clauses) → 
@@ -88,9 +114,33 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                       exact Eq.symm lem3
                       done
                 | l + 1 => 
-                  fun w j => 
-                    fun sw jw =>
-                      sorry
+                  fun w  => 
+                    let lem1 : rcN.forward (l + 1) w = 
+                      (rc.forward l (leOfSuccLeSucc w)).map (. + 1) := by rfl
+                    if c : Option.isNone (rcN.forward (l + 1) w) then 
+                      fun j sw jw => 
+                        let lem2 : Option.isNone (rcN.forward (l + 1) w) = false 
+                          := congrArg Option.isNone sw
+                        let lem3 := Eq.trans (Eq.symm c) lem2 
+                        Bool.noConfusion lem3
+                    else   
+                      fun j =>
+                      match j with
+                      | 0 =>
+                        fun sw jw =>
+                          let lem2 : (rc.forward l (leOfSuccLeSucc w)).map (. + 1) =
+                            some 0 := sw
+                         let lem2  : False := mapPlusOneZero lem2
+                         absurd lem2 (fun x => x)
+                      | i + 1 =>
+                        fun sw jw =>
+                          let lem2 : (rc.forward l (leOfSuccLeSucc w)).map (. + 1) =
+                            some (i + 1) := sw
+                          let lem3 : rc.forward l (leOfSuccLeSucc w) = some i 
+                            := mapPlusOneShift lem2
+                          let lem4 := 
+                            frc.forwardRelation l (leOfSuccLeSucc w) i lem3 (leOfSuccLeSucc jw)
+                          lem4
           ⟨forwardRelationN⟩
 
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
