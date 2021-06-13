@@ -200,6 +200,62 @@ def shiftAtNat : Nat → Nat → Nat :=
             | i + 1 => 
                 (shiftAtNat l i) + 1
 
+theorem shiftSuccNotZero : (n: Nat) → (j: Nat) → Not (shiftAtNat n (succ j) = 0) :=
+  fun n =>
+  match n with 
+  | 0 => 
+    fun j =>
+      fun hyp : succ (succ j) = 0 =>
+        Nat.noConfusion hyp
+  | m + 1 => 
+    fun j =>
+            match j with
+            | 0 => 
+              fun hyp : succ (shiftAtNat m 0)  = 0 =>
+                Nat.noConfusion hyp
+            | i + 1 => 
+              fun hyp =>
+                let lem1 : shiftAtNat (m + 1) (succ (i + 1)) = shiftAtNat m (succ i) + 1 := by rfl
+                let lem2 := Eq.trans (Eq.symm hyp) lem1
+                Nat.noConfusion lem2
+
+theorem shiftNatInjective: (n: Nat) → (j1 : Nat) → (j2 : Nat) → 
+                              (shiftAtNat n j1 = shiftAtNat n j2) → j1 = j2 :=
+      fun n =>
+      match n with
+      | 0 =>
+        fun j1 j2 =>
+          fun eqn : succ j1 = succ j2 =>  
+              by 
+                injection eqn
+                assumption
+                done
+      | m + 1 => 
+        fun j1 =>
+        match j1 with
+        | 0 =>
+          fun j2 =>
+            match j2 with
+            | 0 => fun _ => rfl
+            | i2 + 1 => 
+              fun hyp : 0 = shiftAtNat (m + 1) (i2 + 1) =>
+                let lem := shiftSuccNotZero (m + 1) i2
+                absurd (Eq.symm hyp) lem
+        | i1 + 1 => 
+          fun j2 =>
+            match j2 with
+            | 0 => fun hyp : shiftAtNat (m + 1) (i1 + 1) = 0 =>
+                let lem := shiftSuccNotZero (m + 1) i1
+                absurd hyp lem
+            | i2 + 1 => 
+              fun hyp : shiftAtNat m i1 + 1 = shiftAtNat m i2 + 1 =>
+                let hyp1 : shiftAtNat m i1 = shiftAtNat m i2 := by
+                  injection hyp
+                  assumption
+                  done
+                let lem := shiftNatInjective m i1 i2 hyp1
+                congrArg succ lem
+
 theorem shiftBound: (k j: Nat) →  shiftAtNat k j < j + 2 :=
     fun k =>
       match k with
@@ -237,6 +293,18 @@ def shiftAt : (n : Nat) →  (k: Nat) → (lt : k < succ n) →
       fun n k lt =>
         fun ⟨i, w⟩ => 
           ⟨shiftAtNat k i, (shiftInheritBound n k i w)⟩
+
+def shifAtInjective: (n : Nat) →  (k: Nat) → (lt : k < succ n) → 
+    (j1 :Fin n) → (j2 : Fin n) → 
+      shiftAt n k lt j1 = shiftAt n k  lt j2 → j1 = j2 :=
+      fun n k lt ⟨j1, w1⟩ ⟨j2, w2⟩  =>
+        fun hyp =>
+        let hyp1 : shiftAtNat k j1 = shiftAtNat k j2 := congrArg Fin.val hyp
+        by
+          apply Fin.eqOfVeq
+          apply shiftNatInjective k j1 j2
+          exact hyp1
+          done
 
 theorem seqShiftNatLemma: (l: Nat) → (i : Nat) →   
     (shiftAtNat (l + 1)  (i + 1)) = (shiftAtNat  l  i) + 1 := 
@@ -442,6 +510,9 @@ theorem shiftSkipsEq(n: Nat): (k: Nat) → (lt : k < n + 1)→
                 assumption
                 done
               base (contra)
+
+
+
 
 def liftAtSwitch{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (Fin n →  α) →  
