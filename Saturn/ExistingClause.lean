@@ -94,8 +94,23 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                 fun k =>
                 match k with
                 | 0 => fun w j => 
-                  fun sw =>
-                    sorry
+                  fun sw jw =>
+                    let lem1 : rcN.forward 0 w = some p.val := by rfl 
+                    let lem2 : some j = some p.val := Eq.trans (Eq.symm sw) lem1
+                    let lem3 : j = p.val := by 
+                      injection lem2
+                      assumption
+                      done
+                    let lem4 : rc.restClauses p = rcN.restClauses p := by rfl
+                    let lem5 : clausesN ⟨0, w⟩ = head := by rfl
+                    by
+                      rw (congrArg (dropAt n focus.val focus.isLt) lem5)
+                      rw (Eq.symm eqf)
+                      rw lem4
+                      apply (congrArg rcN.restClauses)
+                      apply Fin.eqOfVeq
+                      exact Eq.symm lem3
+                      done
                 | l + 1 => 
                   fun w j => 
                     fun sw =>

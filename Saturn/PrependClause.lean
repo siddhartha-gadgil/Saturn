@@ -72,7 +72,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                 fun k =>
                 match k with
                 | 0 => fun w j => 
-                  fun sw =>
+                  fun sw jw =>
                     let lem1 : rcN.forward 0 w = some 0 := by rfl 
                     let lem2 : some j = some 0 := Eq.trans (Eq.symm sw) lem1
                     let lem3 : j = 0 := by 
@@ -83,11 +83,13 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                         rcN.restClauses ⟨0, zeroLtSucc _⟩ := by rfl
                     by
                       rw lem4
-                      exact sorry
+                      apply (congrArg rcN.restClauses)
+                      apply Fin.eqOfVeq
+                      exact Eq.symm lem3
                       done
                 | l + 1 => 
                   fun w j => 
-                    fun sw =>
+                    fun sw jw =>
                       sorry
           ⟨forwardRelationN⟩
 
