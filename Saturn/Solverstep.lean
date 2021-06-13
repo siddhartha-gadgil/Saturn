@@ -2,7 +2,6 @@ import Saturn.Basic
 import Saturn.FinSeq 
 open Nat
 
-set_option maxHeartbeats 500000
 
 theorem liftSatHead {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
   ClauseSat (dropHead n clause) (dropHead n sect) → ClauseSat clause sect := 
@@ -51,22 +50,34 @@ structure RestrictionClauses{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
   restClauses : Fin codom → Clause n
   forward : (k: Nat) → k < dom → Option Nat
   forwardWit : (k: Nat) → (w: k < dom) → boundOpt codom (forward k w)
-  dropped : (k : Nat) → (w: k < dom) → forward k w = none → 
-    clauses ⟨k, w⟩ focus = some branch
-  forwardRelation : (k : Nat) → (w: k < dom) → (j: Nat) →  forward k w = some j →
-    (jw : j < codom) →  dropAt _ focus.val focus.isLt (clauses (⟨k, w⟩) ) = 
-      restClauses ⟨j, jw⟩
   reverse : (k : Nat) → (k < codom) → Nat
   reverseWit : (k : Nat) → (w : k < codom) → reverse k w < dom
-  composition: (k : Nat) → (w : k < codom) → (ww : reverse k w < dom) → 
-    forward (reverse k w) ww = some k
-  relation : (k : Nat) → (w: k < codom) → 
-    restClauses ⟨k, w⟩ = dropAt _ focus.val focus.isLt (clauses (⟨reverse k w, reverseWit k w⟩))
-  pure : (k : Nat) → (w: k < codom)  → 
-    Not (clauses (⟨reverse k w, reverseWit k w⟩) (focus) = some branch)
+  
+structure DroppedProof{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
+    {clauses: Fin dom →  Clause (n + 1)}(
+        rc: RestrictionClauses branch focus clauses)  where
+    dropped : (k : Nat) → (w: k < dom) → rc.forward k w = 
+        none → (clauses ⟨k, w⟩ focus = some branch)
 
+structure ForwardRelation{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
+    {clauses: Fin dom →  Clause (n + 1)}(
+        rc: RestrictionClauses branch focus clauses)  where
+    forwardRelation : (k : Nat) → (w: k < dom) → (j: Nat) →  rc.forward k w = some j →
+    (jw : j < rc.codom) →  dropAt _ focus.val focus.isLt (clauses (⟨k, w⟩) ) = 
+      rc.restClauses ⟨j, jw⟩
 
+structure ReverseRelation{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
+    {clauses: Fin dom →  Clause (n + 1)}(
+        rc: RestrictionClauses branch focus clauses)  where
+    relation : (k : Nat) → (w: k < rc.codom) → 
+      rc.restClauses ⟨k, w⟩ = dropAt _ focus.val focus.isLt 
+        (clauses (⟨rc.reverse k w, rc.reverseWit k w⟩))
 
+structure PureReverse{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
+    {clauses: Fin dom →  Clause (n + 1)}(
+        rc: RestrictionClauses branch focus clauses)  where
+    pure : (k : Nat) → (w: k < rc.codom)  → 
+      Not (clauses (⟨rc.reverse k w, rc.reverseWit k w⟩) (focus) = some branch)
 
 theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none :=
   fun x =>
