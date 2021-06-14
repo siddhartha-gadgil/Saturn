@@ -776,3 +776,74 @@ def someUnitClause {l : Nat} : (n : Nat) →  (clauses : Fin l → (Clause (n + 
             some ⟨⟨i + 1, leOfSuccLeSucc w⟩, u⟩
           | none => none
 
+structure HasPureVar{dom n : Nat}(clauses : Fin dom → Clause n) where
+  index : Fin n
+  parity : Bool
+  evidence : (k : Fin dom) → Or (clauses k index = none) (clauses k index = some parity)
+
+structure IsPureVar{dom n : Nat}(clauses : Fin dom → Clause n)
+                      (index: Fin n)(parity : Bool) where
+  evidence : (k : Fin dom) → Or (clauses k index = none) (clauses k index = some parity)
+
+def varIsPure{n : Nat}(index: Fin n)(parity : Bool) : 
+  (dom: Nat) →  (clauses : Fin dom → Clause n) → Option (IsPureVar clauses index parity) :=
+  fun dom =>
+  match dom with
+  | 0 => 
+    fun clauses =>
+      let evidence : (k : Fin 0) → 
+        Or (clauses k index = none) (clauses k index = some parity) := 
+          fun k => nomatch k
+      some ⟨evidence⟩
+  | m + 1 => 
+      fun clauses =>
+        let head := clauses ⟨0, zeroLtSucc _⟩ index
+        if c : Or (head = none) (head = some parity) then
+          let tail : Fin m → Clause n := dropHead _ clauses
+          (varIsPure index parity _ tail).map (
+            fun ⟨ tpf ⟩ =>
+              let pf : (j :Fin (m +1)) → 
+                Or (clauses j index = none) (clauses j index = some parity) := 
+                fun j =>
+                  match j with 
+                  | ⟨0, w⟩ => c
+                  | ⟨i + 1, w⟩ =>
+                    let tailWit : i < m := leOfSuccLeSucc w 
+                    tpf (⟨i, tailWit⟩)
+              ⟨ pf ⟩
+          )
+        else none
+
+def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Fin dom → Clause (n +1)) → 
+  (ub: Nat) → (lt : ub < n + 1) → 
+      Option (HasPureVar clauses) :=
+      fun dom clauses ub => 
+        match ub with
+        | 0 =>
+          fun lt =>
+           ((varIsPure ⟨0, lt⟩ true dom clauses).map (
+            fun ⟨evidence⟩ =>
+              HasPureVar.mk ⟨0, lt⟩ true evidence
+              )).orElse (
+                (varIsPure ⟨0, lt⟩ false dom clauses).map (
+            fun ⟨evidence⟩ =>
+              HasPureVar.mk ⟨0, lt⟩ false evidence
+              )
+              )
+        | l + 1 =>
+          fun lt =>
+            ((findPureAux dom clauses l (leStep lt)).orElse (              
+              (varIsPure ⟨l, leStep lt⟩ true dom clauses).map (
+            fun ⟨evidence⟩ =>
+              HasPureVar.mk ⟨l, leStep lt⟩ true evidence
+              )
+              )).orElse (              
+              (varIsPure ⟨l, leStep lt⟩ false dom clauses).map (
+            fun ⟨evidence⟩ =>
+              HasPureVar.mk ⟨l, leStep lt⟩ false evidence
+              )
+              )
+            
+def hasPure{n : Nat}(dom: Nat)(clauses : Fin dom → Clause (n +1)) 
+            (ub: Nat)(lt : ub < n + 1) : Option (HasPureVar clauses) :=
+          findPureAux dom clauses n (Nat.leRefl _)

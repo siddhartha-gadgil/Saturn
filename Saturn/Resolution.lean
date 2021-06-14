@@ -297,3 +297,9 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                         done
                       goal
           ⟨topFoc, ⟨pivotN, leftPivotN, rightPivotN, topPivotN, joinRestN⟩⟩
+
+inductive ResolutionTree{dom n: Nat}(clauses : Fin dom →  Clause (n + 1)) where
+  | assumption : (index : Fin dom) → ResolutionTree clauses
+  | resolve : (left right top : Clause (n + 1)) → ResolutionTriple left right top 
+                → ResolutionTree clauses
+
