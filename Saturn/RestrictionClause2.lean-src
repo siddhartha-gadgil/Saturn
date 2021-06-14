@@ -152,6 +152,6 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                         clausesN (⟨reverseN (l + 1) w, reverseWitN (l + 1) w⟩) focus =
                           clauses ⟨rc.reverse l w, rc.reverseWit l w⟩ focus := by rfl
                     let lem2 := Eq.trans (Eq.symm lem) hyp
-                    rc.pure l w lem2
+                    rc.nonPosRev l w lem2
             RestrictionClauses.mk codomN restClausesN forwardN forwardWitN droppedN 
                 forwardRelationN reverseN reverseWitN compositionN relationN pureN

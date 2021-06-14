@@ -93,7 +93,7 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                     clauses (⟨rc.reverse k w, rc.reverseWit k w⟩) :=  by rfl
                     by
                       rw lem1
-                      exact rc.pure k w
+                      exact rc.nonPosRev k w
                       done 
             RestrictionClauses.mk codomN restClausesN forwardN forwardWitN droppedN 
               forwardRelationN reverseN reverseWitN compositionN relationN pureN

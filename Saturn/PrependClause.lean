@@ -181,8 +181,8 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
     (clauses: Fin dom →  Clause (n + 1)):
       (rc: RestrictionClauses branch focus clauses) → 
         (head : Clause (n + 1)) → (neg : Not (head focus = some branch)) →
-          PureReverse rc → 
-          PureReverse (prependClause  branch focus clauses rc head neg) := 
+          NonPosReverse rc → 
+          NonPosReverse (prependClause  branch focus clauses rc head neg) := 
         fun rc head neg prc =>
           let rcN := prependClause  branch focus clauses rc head neg  
           let domN := dom + 1
@@ -206,5 +206,5 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                           clauses ⟨rc.reverse l (leOfSuccLeSucc w), 
                             rc.reverseWit l (leOfSuccLeSucc w)⟩ focus := by rfl
                     let lem2 := Eq.trans (Eq.symm lem) hyp
-                    prc.pure l (leOfSuccLeSucc w) lem2
+                    prc.nonPosRev l (leOfSuccLeSucc w) lem2
           ⟨pureN⟩

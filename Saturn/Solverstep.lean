@@ -73,10 +73,10 @@ structure ReverseRelation{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
       rc.restClauses ⟨k, w⟩ = dropAt _ focus.val focus.isLt 
         (clauses (⟨rc.reverse k w, rc.reverseWit k w⟩))
 
-structure PureReverse{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
+structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
     {clauses: Fin dom →  Clause (n + 1)}(
         rc: RestrictionClauses branch focus clauses)  where
-    pure : (k : Nat) → (w: k < rc.codom)  → 
+    nonPosRev : (k : Nat) → (w: k < rc.codom)  → 
       Not (clauses (⟨rc.reverse k w, rc.reverseWit k w⟩) (focus) = some branch)
 
 theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none :=

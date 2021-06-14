@@ -14,6 +14,7 @@ theorem notNot(bf b bb : Bool) : Not (b = bf) → Not (bb = bf) → b = bb :=
     Eq.trans (eqFalseOfNeTrue w) (Eq.symm (eqFalseOfNeTrue ww))
   | false => fun w ww => 
     Eq.trans (eqTrueOfNeFalse w) (Eq.symm (eqTrueOfNeFalse ww))
+
 def getJoin (bf : Bool)(left right : Option Bool) :
   Not (left = some bf) → Not (right = some bf) → 
     Σ (top : Option Bool),  Join left right top :=
@@ -123,7 +124,7 @@ structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
           (right (shiftAt _ pivot.val pivot.isLt k)) 
           (top (shiftAt _ pivot.val pivot.isLt k))
 
-def tripleStep{n: Nat}(left right top : Clause (n + 1))
+def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
         (sect: Sect (n + 1))  → (clauseSat left sect) → 
         (clauseSat right sect) → (clauseSat top sect) := 
