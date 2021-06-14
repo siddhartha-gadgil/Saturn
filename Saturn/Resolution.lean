@@ -198,3 +198,102 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                         varResolution (left j) (right j) (top j) (triple.joinRest i) 
                           (sect j) (Or.inr lem2)
                       ⟨j , lem3⟩
+
+def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
+  (left right top : Clause (n + 1)) : (k: Nat) → 
+    (lt : k < succ (n + 1)) → Not (leftFoc = some bf) → Not (rightFoc = some bf) → 
+       ResolutionTriple left right top → 
+       Σ topFoc: Option Bool, 
+        ResolutionTriple 
+          (liftAt  leftFoc (n + 1) k lt   left) 
+          (liftAt  rightFoc (n + 1) k lt right) 
+          (liftAt  topFoc (n + 1) k lt top)  := 
+      fun k lt lbf rbf rt =>
+          let ⟨topFoc, focJoin⟩ := 
+            getJoin bf leftFoc rightFoc lbf rbf
+          let pivotN := shiftAt (n + 1) k lt rt.pivot
+          let leftN := liftAt leftFoc (n + 1) k lt left
+          let rightN := liftAt rightFoc (n + 1) k lt right
+          let topN := liftAt topFoc (n + 1) k lt top
+          let leftPivotN : leftN pivotN = some false := 
+            let lem1 : leftN pivotN = left rt.pivot := 
+              liftAtImage leftFoc (n + 1) k lt left rt.pivot
+            by
+              rw lem1
+              exact rt.leftPivot
+              done
+          let rightPivotN : rightN pivotN = some true := 
+            let lem1 : rightN pivotN = right rt.pivot := 
+              liftAtImage rightFoc (n + 1) k lt right rt.pivot
+            by
+              rw lem1
+              exact rt.rightPivot
+              done
+          let topPivotN : topN pivotN = none := 
+            let lem1 : topN pivotN = top rt.pivot := 
+              liftAtImage topFoc (n + 1) k lt top rt.pivot
+            by
+              rw lem1
+              exact rt.topPivot
+              done
+
+          let joinRestN : (j : Fin (n + 1)) → 
+            Join  (leftN (shiftAt _ pivotN.val pivotN.isLt j)) 
+                  (rightN (shiftAt _ pivotN.val pivotN.isLt j)) 
+                  (topN (shiftAt _ pivotN.val pivotN.isLt j)) := 
+                  fun j =>
+                  let jj := shiftAt (n + 1) pivotN.val pivotN.isLt j
+                  let notPivotAux : Not (jj = ⟨pivotN.val, pivotN.isLt⟩) :=
+                    shiftSkipsEq (n + 1) pivotN.val pivotN.isLt j
+                  let notPivot : Not (jj = pivotN) := 
+                    fun hyp =>
+                      let lem1 := congrArg Fin.val hyp
+                      let lem2 : jj = ⟨pivotN.val, pivotN.isLt⟩ := by
+                        apply Fin.eqOfVeq
+                        exact lem1
+                        done 
+                      notPivotAux lem2
+                  match shiftIsSection (n + 1) ⟨k, lt⟩ 
+                    (jj) with
+                  | SectionCase.diagonal w =>  
+                    let lem0 := focJoin
+                    let eqL : leftN ⟨k, lt⟩ = leftFoc := 
+                      liftAtFocus leftFoc (n + 1) k lt left 
+                    let eqR : rightN ⟨k, lt⟩ = rightFoc := 
+                      liftAtFocus rightFoc (n + 1) k lt right
+                    let eqT : topN ⟨k, lt⟩ = topFoc := 
+                      liftAtFocus topFoc (n + 1) k lt top
+                    let goal : Join (leftN jj) (rightN jj) (topN jj) := by
+                      rw (Eq.symm w)
+                      rw eqL
+                      rw eqR
+                      rw eqT
+                      exact lem0
+                      done
+                    goal
+                  | SectionCase.image i w => 
+                    match shiftIsSection n rt.pivot i with
+                    | SectionCase.diagonal ww => 
+                      let lem1 := congrArg (shiftAt (n + 1) k lt) ww
+                      let lem2 : pivotN = jj := Eq.trans lem1 w
+                      absurd (Eq.symm lem2) notPivot
+                    | SectionCase.image ii ww => 
+                      let eqL : leftN (shiftAt (n + 1) k lt i) =
+                        left i := 
+                        liftAtImage leftFoc (n + 1) k lt left i
+                      let eqR : rightN (shiftAt (n + 1) k lt i) =
+                        right i := 
+                        liftAtImage rightFoc (n + 1) k lt right i
+                      let eqT : topN (shiftAt (n + 1) k lt i) =
+                        top i := 
+                        liftAtImage topFoc (n + 1) k lt top i
+                      let goal : Join (leftN jj) (rightN jj) (topN jj) := by
+                        rw (Eq.symm w)
+                        rw eqL
+                        rw eqR
+                        rw eqT
+                        rw (Eq.symm ww)
+                        apply rt.joinRest
+                        done
+                      goal
+          ⟨topFoc, ⟨pivotN, leftPivotN, rightPivotN, topPivotN, joinRestN⟩⟩
