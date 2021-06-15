@@ -476,7 +476,34 @@ def resolutionToSat{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : Cla
 
 inductive SatSolution{dom n: Nat}(clauses : Fin dom →  Clause (n + 1)) where
   | unsat : (tree : ResolutionTree clauses) → 
-        treeCheck tree (contradiction (n + 1))  → SatSolution clauses
+        treeCheck tree (contradiction (n + 1))  →  treeTop tree = contradiction (n + 1) 
+          →  SatSolution clauses
   | sat : (sect : Sect (n + 1)) → ((k : Fin dom) → ClauseSat (clauses k) sect) → SatSolution clauses 
 
-#check And True False
+def solutionProp{dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
+                  (sol : SatSolution clauses) : Prop :=
+  match sol with
+  | SatSolution.unsat _ _ _   => 
+          ∀ sect : Sect (n + 1),  
+           Not (∀ (p : Fin dom),  ∃ (k : Fin (n + 1)), (clauses p k) = some (sect k))
+  | SatSolution.sat _ _ =>
+          ∃ sect : Sect (n + 1),  
+            ∀ (p : Fin dom),  ∃ (k : Fin (n + 1)), (clauses p k) = some (sect k) 
+
+def solutionProof{dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
+                  (sol : SatSolution clauses) :
+                    solutionProp sol :=
+  match sol with
+  | SatSolution.unsat tree check checkTop   => 
+          fun sect =>
+            fun hyp : ∀ p : Fin dom, clauseSat (clauses p) sect =>
+              let lem := resolutionToProof clauses (contradiction (n + 1))
+                            tree check checkTop sect hyp
+              contradictionFalse _ sect lem
+  | SatSolution.sat sect evidence =>
+          ⟨sect, fun k => getProof (evidence k)⟩
+
+instance {dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
+                  (sol : SatSolution clauses) : Prover (SatSolution clauses) where
+      statement := fun sol => solutionProp sol 
+      proof := fun sol => solutionProof sol
