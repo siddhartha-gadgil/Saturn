@@ -199,6 +199,81 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                           (sect j) (Or.inr lem2)
                       ⟨j , lem3⟩
 
+def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
+  (triple : ResolutionTriple left right top) :
+        (sect: Sect (n + 1))  → (ClauseSat left sect) → 
+        (ClauseSat right sect) → (ClauseSat top sect) := 
+          fun sect =>
+            fun ⟨kl, wl⟩ =>
+              fun ⟨kr, wr⟩ =>
+                 if c : sect (triple.pivot)  then 
+                    -- the left branch survives
+                    match shiftIsSection _ triple.pivot kl  with
+                    | SectionCase.diagonal eql => 
+                      let lem1 := congrArg sect (Eq.symm eql)
+                      let lem2 :=  congrArg some (Eq.trans lem1 c)
+                      let lem3 := Eq.trans wl lem2
+                      let lem4 : left kl = some false := by
+                        rw (congrArg left (Eq.symm eql))
+                        exact triple.leftPivot
+                        done 
+                      let lem5 : some true = some false := 
+                        Eq.trans (Eq.symm lem3) lem4
+                      let lem6 : true = false := by 
+                        injection lem5
+                        assumption
+                        done
+                      Bool.noConfusion lem6
+                    | SectionCase.image i eql => 
+                      let j := shiftAt n triple.pivot.val triple.pivot.isLt i
+                      let lem1 : left j = left kl := congrArg left eql
+                      let lem2 : left j = some (sect j) := by
+                        rw lem1
+                        rw wl
+                        apply congrArg some
+                        apply congrArg sect
+                        apply Eq.symm
+                        exact eql
+                        done
+                      let lem3 := 
+                        varResolution (left j) (right j) (top j) (triple.joinRest i) 
+                          (sect j) (Or.inl lem2)
+                      ⟨j , lem3⟩
+                  else
+                    let cc := eqFalseOfNeTrue c  
+                    -- the right branch survives
+                    match shiftIsSection _ triple.pivot kr  with
+                    | SectionCase.diagonal eqr => 
+                      let lem1 := congrArg sect (Eq.symm eqr)
+                      let lem2 :=  congrArg some (Eq.trans lem1 cc)
+                      let lem3 := Eq.trans wr lem2
+                      let lem4 : right kr = some true := by
+                        rw (congrArg right (Eq.symm eqr))
+                        exact triple.rightPivot
+                        done 
+                      let lem5 : some false = some true := 
+                        Eq.trans (Eq.symm lem3) lem4
+                      let lem6 : false = true := by 
+                        injection lem5
+                        assumption
+                        done
+                      Bool.noConfusion lem6
+                    | SectionCase.image i eqr => 
+                      let j := shiftAt n triple.pivot.val triple.pivot.isLt i
+                      let lem1 : right j = right kr := congrArg right eqr
+                      let lem2 : right j = some (sect j) := by
+                        rw lem1
+                        rw wr
+                        apply congrArg some
+                        apply congrArg sect
+                        apply Eq.symm
+                        exact eqr
+                        done
+                      let lem3 := 
+                        varResolution (left j) (right j) (top j) (triple.joinRest i) 
+                          (sect j) (Or.inr lem2)
+                      ⟨j , lem3⟩
+
 def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
   (left right top : Clause (n + 1)) : (k: Nat) → 
     (lt : k < succ (n + 1)) → Not (leftFoc = some bf) → Not (rightFoc = some bf) → 
@@ -362,6 +437,38 @@ def resolutionToProof{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : C
               let rightBase : clauseSat right sect := 
                 resolutionToProof clauses right rightTree lemRc lemRt sect base 
               let lemStep := tripleStepProof left right topt triple sect leftBase rightBase
+            by
+              rw (Eq.symm tt)
+              exact lemStep
+              done
+
+def resolutionToSat{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : Clause (n + 1)):
+  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (sect :Sect (n + 1))→ 
+    ((j : Fin dom) → ClauseSat (clauses j) sect) → ClauseSat top sect := 
+      fun tree  => 
+        match tree with
+        | ResolutionTree.assumption j => 
+          fun tpf _ sect base  => 
+            let lem0 : clauses j = top := tpf
+            let lem1 : ClauseSat (clauses j) sect := base j
+          by
+            rw (Eq.symm lem0)
+            exact lem1
+        | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
+          fun tpf (tt : topt = top) sect base => 
+            let lem0 :  
+              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
+               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+                := tpf
+              let lemLc : treeCheck leftTree left := lem0.left.left
+              let lemRc := lem0.left.right
+              let lemLt := lem0.right.left
+              let lemRt := lem0.right.right
+              let leftBase : ClauseSat left sect := 
+                resolutionToSat clauses left leftTree lemLc lemLt sect base 
+              let rightBase : ClauseSat right sect := 
+                resolutionToSat clauses right rightTree lemRc lemRt sect base 
+              let lemStep := tripleStepSat left right topt triple sect leftBase rightBase
             by
               rw (Eq.symm tt)
               exact lemStep
