@@ -298,8 +298,78 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                       goal
           ⟨topFoc, ⟨pivotN, leftPivotN, rightPivotN, topPivotN, joinRestN⟩⟩
 
+def shiftOne{α: Type}{n m: Nat} : (n = m + 1) → (Fin n → α) → (Fin (m + 1) → α) :=
+  fun eq fn =>
+    fun j => 
+      let i : Fin n := by
+        rw eq
+        exact j
+        done
+      fn i
+
 inductive ResolutionTree{dom n: Nat}(clauses : Fin dom →  Clause (n + 1)) where
-  | assumption : (index : Fin dom) → ResolutionTree clauses
-  | resolve : (left right top : Clause (n + 1)) → ResolutionTriple left right top 
+  | assumption : (index : Fin dom) →   ResolutionTree clauses 
+  | resolve : (left right top : Clause (n + 1)) → 
+                (leftTree : ResolutionTree clauses) → 
+                (rightTree: ResolutionTree clauses) →
+                ResolutionTriple left right top 
                 → ResolutionTree clauses
 
+def treeTop{dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
+              (tree: ResolutionTree clauses) : Clause (n + 1) :=
+      match tree with
+      | ResolutionTree.assumption j => clauses j
+      | ResolutionTree.resolve left right  top leftTree rightTree triple  => top 
+
+def treeCheck{dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
+              (tree: ResolutionTree clauses)(top : Clause (n + 1)) : Prop :=
+      match tree with
+      | ResolutionTree.assumption j => clauses j = top
+      | ResolutionTree.resolve left right  top leftTree rightTree triple  => 
+          And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
+          (And (treeTop leftTree = left) ((treeTop rightTree = right)))
+
+structure ResolutionProof{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : Clause (n + 1)) where
+  tree : ResolutionTree clauses
+  check : treeCheck tree top
+  checkTop : treeTop tree = top
+  -- need separate checks for the cases of the tree
+
+def resolutionToProof{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : Clause (n + 1)):
+  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (sect :Sect (n + 1))→ 
+    ((j : Fin dom) → clauseSat (clauses j) sect) → clauseSat top sect := 
+      fun tree  => 
+        match tree with
+        | ResolutionTree.assumption j => 
+          fun tpf _ sect base  => 
+            let lem0 : clauses j = top := tpf
+            let lem1 : clauseSat (clauses j) sect := base j
+          by
+            rw (Eq.symm lem0)
+            exact lem1
+        | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
+          fun tpf (tt : topt = top) sect base => 
+            let lem0 :  
+              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
+               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+                := tpf
+              let lemLc : treeCheck leftTree left := lem0.left.left
+              let lemRc := lem0.left.right
+              let lemLt := lem0.right.left
+              let lemRt := lem0.right.right
+              let leftBase : clauseSat left sect := 
+                resolutionToProof clauses left leftTree lemLc lemLt sect base 
+              let rightBase : clauseSat right sect := 
+                resolutionToProof clauses right rightTree lemRc lemRt sect base 
+              let lemStep := tripleStepProof left right topt triple sect leftBase rightBase
+            by
+              rw (Eq.symm tt)
+              exact lemStep
+              done
+
+inductive SatSolution{dom n: Nat}(clauses : Fin dom →  Clause (n + 1)) where
+  | unsat : (tree : ResolutionTree clauses) → 
+        treeCheck tree (contradiction (n + 1))  → SatSolution clauses
+  | sat : (sect : Sect (n + 1)) → ((k : Fin dom) → ClauseSat (clauses k) sect) → SatSolution clauses 
+
+#check And True False
