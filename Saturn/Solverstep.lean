@@ -66,6 +66,26 @@ structure ForwardRelation{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
     (jw : j < rc.codom) →  dropAt _ focus.val focus.isLt (clauses (⟨k, w⟩) ) = 
       rc.restClauses ⟨j, jw⟩
 
+def optCasesProp : (x : Option Nat) → Or (x = none) (∃ j, x = some j) :=
+  fun x =>
+    match x with
+    | none =>  
+      Or.inl rfl
+    | some j => 
+      Or.inr ⟨j, rfl⟩
+
+inductive OptCase{α: Type} (opt: Option α) where
+  | noneCase : opt = none → OptCase opt
+  | someCase : (x : α) → (opt = some x) → OptCase opt
+
+def optCase{α: Type} : (opt: Option α) →  OptCase opt :=
+    fun x =>
+    match x with
+    | none =>  
+      OptCase.noneCase rfl
+    | some j => 
+      OptCase.someCase j rfl
+
 structure ReverseRelation{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
     {clauses: Fin dom →  Clause (n + 1)}(
         rc: RestrictionClauses branch focus clauses)  where
@@ -85,5 +105,66 @@ theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn
   | none => fun _ => by rfl
   | some a => 
     fun eq : some (fn a) = none => Option.noConfusion eq
+
+def pullBackSolution{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
+    (clauses: Fin dom →  Clause (n + 1))(rc: RestrictionClauses branch focus clauses) 
+    (dp : DroppedProof rc) (fr: ForwardRelation rc): 
+      (sect : Sect n) → 
+        ((j : Fin rc.codom) → ClauseSat (rc.restClauses j) sect) → 
+        (j : Fin dom) →  
+          ClauseSat (clauses j) (liftAt branch n focus.val focus.isLt sect) := 
+        fun sect pf =>
+          fun ⟨k, w⟩ => 
+            let splitter := optCase (rc.forward k w)
+            match splitter with
+            | OptCase.noneCase eqn => 
+              let lem0 : ⟨focus.val, focus.isLt⟩ = focus := 
+                by
+                apply Fin.eqOfVeq
+                rfl
+                done
+              let lem1 := dp.dropped k w eqn
+              let lem2 := liftAtFocus branch n focus.val focus.isLt sect
+              let lem3 : liftAt branch n focus.val focus.isLt sect focus = branch := 
+                Eq.trans (congrArg (liftAt branch n focus.val focus.isLt sect) 
+                  (Eq.symm lem0)) lem2
+              let lem4 : clauses ⟨k, w⟩ focus = 
+                some (liftAt branch n focus.val focus.isLt sect focus) := 
+                Eq.trans lem1 (congrArg some (Eq.symm lem3))
+              ⟨focus, lem4⟩
+            | OptCase.someCase j eqn => 
+              let bound := rc.forwardWit k w 
+              let jWitAux : boundOpt rc.codom (some j) := by
+                rw (Eq.symm eqn)
+                exact bound
+                done
+              let jWit : j < rc.codom := jWitAux
+              let lem1 := fr.forwardRelation k w j eqn jWit
+              let ⟨i, vs⟩ := pf ⟨j, jWit⟩
+              let lem2 : rc.restClauses ⟨j, jWit⟩ i = some (sect i) := vs
+              let lem3 : dropAt _ focus.val focus.isLt (clauses ⟨k, w⟩) i =
+                  some (sect i) := 
+                    by
+                    rw (Eq.symm lem2)
+                    rw lem1
+                    done
+              let lem4 : dropAt _ focus.val focus.isLt (clauses ⟨k, w⟩) i =
+                clauses ⟨k, w⟩ (shiftAt n focus.val focus.isLt i) := by
+                  apply dropAtShift
+                  done
+              let lem5 : clauses ⟨k, w⟩ (shiftAt n focus.val focus.isLt i) =
+                          some (sect i) := Eq.trans (Eq.symm lem4) lem3
+              let lem6 : liftAt branch n focus.val focus.isLt sect 
+                              (shiftAt n focus.val focus.isLt i) =
+                                  sect i := by
+                                    apply liftAtImage
+                                    done
+              let lem7 : clauses ⟨k, w⟩ (shiftAt n focus.val focus.isLt i) =
+                          some (liftAt branch n focus.val focus.isLt sect 
+                              (shiftAt n focus.val focus.isLt i)) := by
+                              rw lem5
+                              rw lem6
+                              done
+              ⟨shiftAt n focus.val focus.isLt i, lem7⟩
 
 
