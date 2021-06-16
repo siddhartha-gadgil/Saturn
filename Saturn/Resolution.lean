@@ -44,7 +44,7 @@ def getJoin (bf : Bool)(left right : Option Bool) :
                 let lem2 : bb = b := notNot bf bb b lem1 c
                 ⟨some b, Join.someSome b rfl (congrArg some lem2) rfl⟩
 
-def topJoin(bf : Bool)(left right top: Option Bool): Join left right top →
+def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top →
     Not (left = some bf) → Not (right = some bf) → 
        Not (top = some bf) := 
         fun join =>
@@ -274,18 +274,26 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                           (sect j) (Or.inr lem2)
                       ⟨j , lem3⟩
 
-def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
-  (left right top : Clause (n + 1)) : (k: Nat) → 
-    (lt : k < succ (n + 1)) → Not (leftFoc = some bf) → Not (rightFoc = some bf) → 
-       ResolutionTriple left right top → 
-       Σ topFoc: Option Bool, 
-        ResolutionTriple 
+
+structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
+  (left right top : Clause (n + 1))(k: Nat)(lt : k < succ (n + 1)) where
+    topFoc : Option Bool
+    triple : ResolutionTriple 
           (liftAt  leftFoc (n + 1) k lt   left) 
           (liftAt  rightFoc (n + 1) k lt right) 
-          (liftAt  topFoc (n + 1) k lt top)  := 
+          (liftAt  topFoc (n + 1) k lt top)
+    topNonPos : Not (topFoc = some bf) 
+
+def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
+  (left right top : Clause (n + 1)) : (k: Nat) → 
+    (lt : k < succ (n + 1)) → (lbf : Not (leftFoc = some bf)) → (rbf :Not (rightFoc = some bf)) → 
+       ResolutionTriple left right top → 
+        LiftedTriple bf leftFoc rightFoc left right top k lt  := 
       fun k lt lbf rbf rt =>
           let ⟨topFoc, focJoin⟩ := 
             getJoin bf leftFoc rightFoc lbf rbf
+          let topNonPos : Not (topFoc = some bf) := 
+            topJoinNonPos bf leftFoc rightFoc topFoc focJoin lbf rbf
           let pivotN := shiftAt (n + 1) k lt rt.pivot
           let leftN := liftAt leftFoc (n + 1) k lt left
           let rightN := liftAt rightFoc (n + 1) k lt right
@@ -371,7 +379,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                         apply rt.joinRest
                         done
                       goal
-          ⟨topFoc, ⟨pivotN, leftPivotN, rightPivotN, topPivotN, joinRestN⟩⟩
+          ⟨topFoc, ⟨pivotN, leftPivotN, rightPivotN, topPivotN, joinRestN⟩, topNonPos⟩
 
 def shiftOne{α: Type}{n m: Nat} : (n = m + 1) → (Fin n → α) → (Fin (m + 1) → α) :=
   fun eq fn =>
