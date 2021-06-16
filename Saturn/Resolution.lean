@@ -1,5 +1,6 @@
 import Saturn.Basic
 import Saturn.FinSeq 
+import Saturn.Solverstep
 open Nat
 
 inductive Join (left right top : Option Bool) where
@@ -515,3 +516,65 @@ instance {dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
                   (sol : SatSolution clauses) : Prover (SatSolution clauses) where
       statement := fun sol => solutionProp sol 
       proof := fun sol => solutionProof sol
+
+
+structure BranchResolutionProof{dom n: Nat}(bf: Bool)(focus : Fin (n + 1))
+  (clauses : Fin dom →  Clause (n + 1))(top : Clause (n))  where
+    topFocus : Option Bool
+    nonPos : Not (topFocus = some bf)
+    provedTree : ResolutionProof clauses (liftAt topFocus n focus.val focus.isLt top)
+
+def pullBackTree{dom n: Nat}(branch: Bool)(focus: Fin (n + 2))
+    (clauses: Fin dom →  Clause (n + 2))(rc: RestrictionClauses branch focus clauses) 
+    (np : NonPosReverse rc) (rr: ReverseRelation rc): (top : Clause (n + 1)) → 
+      (tree : ResolutionTree (rc.restClauses)) → treeCheck tree top → treeTop tree = top
+       → BranchResolutionProof branch focus clauses top  := 
+      fun top tree =>
+        match tree with
+        | ResolutionTree.assumption ⟨j, jw⟩ => 
+          fun tpf ttp =>
+            let lem0 : rc.restClauses ⟨j, jw⟩ = top := tpf
+            let k := rc.reverse j jw
+            let kw : k < dom := rc.reverseWit j jw
+            let tree := ResolutionTree.assumption ⟨k, kw⟩
+            let cl := clauses ⟨k, kw⟩
+            let topFocus := cl focus
+            let checkCl : treeCheck tree cl := by rfl
+            let checkTopCl : treeTop tree = cl := by rfl
+            let nonPosLem : Not (topFocus = some branch)  := 
+                np.nonPosRev j jw
+            let lem1 : rc.restClauses ⟨j, jw⟩ = 
+                  dropAt (n + 1) focus.val focus.isLt (clauses ⟨k, kw⟩) 
+                       := by
+                       apply rr.relation
+                       done
+            let lem2 := Eq.trans (Eq.symm lem0) lem1
+            let lem3 : liftAt (cl ⟨focus.val, focus.isLt⟩) (n + 1) focus.val focus.isLt 
+                          (dropAt (n + 1) focus.val focus.isLt cl) = cl 
+                          := liftDrop (n + 1) focus.val focus.isLt cl
+            let lemSilly : ⟨focus.val, focus.isLt⟩ = focus := by
+                              apply Fin.eqOfVeq
+                              rfl
+                              done
+            let lem4 : liftAt (cl ⟨focus.val, focus.isLt⟩) (n + 1) focus.val focus.isLt 
+                          (dropAt (n + 1) focus.val focus.isLt cl) =
+                          liftAt topFocus (n + 1) focus.val focus.isLt 
+                          (dropAt (n + 1) focus.val focus.isLt cl) := congrArg (fun foc : Fin (n + 2) => 
+                      liftAt (cl foc ) (n + 1) focus.val focus.isLt 
+                          (dropAt (n + 1) focus.val focus.isLt cl)) lemSilly
+            let lem : liftAt topFocus (n + 1) focus.val focus.isLt top = cl := by
+                      rw lem2
+                      rw (Eq.symm lem4)
+                      rw lem3
+                      done 
+            let check : treeCheck tree (liftAt topFocus (n + 1) focus.val focus.isLt top) := by
+                      rw lem 
+                      rfl
+                      done 
+            let checkTop : treeTop tree = liftAt topFocus (n + 1) focus.val focus.isLt top := by
+                      rw lem 
+                      rfl
+                      done 
+            ⟨topFocus, nonPosLem, ⟨tree, check, checkTop⟩⟩
+        | ResolutionTree.resolve left right  topt leftTree rightTree triple  => sorry
+      
