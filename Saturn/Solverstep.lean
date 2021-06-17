@@ -167,4 +167,13 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                               done
               ⟨shiftAt n focus.val focus.isLt i, lem7⟩
 
+def dominates{n: Nat} (cl1 cl2 : Clause n) : Prop :=
+  ∀ (k : Fin n), ∀ b : Bool, cl2 k = some b → cl1 k = some b
 
+theorem dominateSat{n: Nat} (cl1 cl2 : Clause n) :
+  dominates cl1 cl2 → (sect : Sect n) → ClauseSat cl2 sect → ClauseSat cl1 sect :=
+    fun dom sect  =>
+      fun ⟨j, vs⟩ =>
+        let lem0 :  cl2 j = some (sect j) := vs 
+        let lem1 := dom j (sect j) lem0
+        ⟨j, lem1⟩

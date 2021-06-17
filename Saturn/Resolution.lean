@@ -576,5 +576,35 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Fin (n + 2))
                       rfl
                       done 
             ⟨topFocus, nonPosLem, ⟨tree, check, checkTop⟩⟩
-        | ResolutionTree.resolve left right  topt leftTree rightTree triple  => sorry
-      
+        | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
+            fun tpf (tt : topt = top)  => 
+            let lem0 :  
+              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
+               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+                := tpf
+              let lemLc : treeCheck leftTree left := lem0.left.left
+              let lemRc := lem0.left.right
+              let lemLt := lem0.right.left
+              let lemRt := lem0.right.right
+              let leftBase : BranchResolutionProof branch focus clauses left := 
+                        pullBackTree branch focus clauses rc np rr left leftTree lemLc lemLt
+              let rightBase : BranchResolutionProof branch focus clauses right := 
+                        pullBackTree branch focus clauses rc np rr right rightTree lemRc lemRt
+              let ⟨leftFoc, leftNP, ⟨leftLiftTree, leftCheck, leftCheckTop⟩⟩ := leftBase
+              let ⟨rightFoc, rightNP, ⟨rightLiftTree, rightCheck, rightCheckTop⟩⟩ := rightBase
+              let trip : ResolutionTriple left right top := by
+                    rw (Eq.symm tt)
+                    exact triple
+                    done 
+              let liftedTriple := 
+                    liftResolutionTriple branch leftFoc rightFoc left right top 
+                          focus.val focus.isLt leftNP rightNP trip
+              let ⟨topFoc, liftTriple, topNonPos⟩ := liftedTriple
+              let tree := ResolutionTree.resolve
+                              (liftAt leftFoc _ focus.val focus.isLt left)
+                              (liftAt rightFoc _ focus.val focus.isLt right)
+                              (liftAt topFoc _ focus.val focus.isLt top)
+                              leftLiftTree rightLiftTree liftTriple
+              let check := And.intro (And.intro leftCheck rightCheck) 
+                                      (And.intro leftCheckTop rightCheckTop)
+              ⟨topFoc, topNonPos, ⟨tree, check, rfl⟩⟩
