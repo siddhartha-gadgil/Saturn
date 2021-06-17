@@ -177,3 +177,128 @@ theorem dominateSat{n: Nat} (cl1 cl2 : Clause n) :
         let lem0 :  cl2 j = some (sect j) := vs 
         let lem1 := dom j (sect j) lem0
         ⟨j, lem1⟩
+
+def varDominates (v1 v2 : Option Bool) : Prop :=
+  ∀ b : Bool, v2 = some b → v1  = some b
+
+def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (varDominates v1 v2) :=
+  fun v1 v2 =>
+  match v2 with 
+  | none => 
+     let lem : varDominates v1 none := 
+      fun b =>
+        fun hyp =>
+          Option.noConfusion hyp
+     isTrue lem
+  | some b2 => 
+    match v1  with
+    | none => 
+      let lem : Not (varDominates none (some b2)) := 
+         fun hyp => 
+          Option.noConfusion (hyp b2 rfl)
+      isFalse lem
+    | some b1 => 
+          if c : b1 = b2 then 
+            isTrue (fun b => 
+                      fun hyp =>
+                       by
+                        rw c
+                        exact hyp
+                        done)
+          else 
+            isFalse (
+              fun hyp =>
+                  let lem1 := hyp b2 rfl
+                  let lem2 : b1 = b2 := by
+                      injection lem1
+                      assumption
+                      done
+                  c (lem2) 
+            )
+
+def dominatePrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
+          varDominates v1 v2 → dominates cl1 cl2 → 
+                dominates (prepend n v1 cl1) (prepend n v2 cl2) := 
+           fun hyp1 hyp2 =>
+            fun k =>
+            match k with
+            | ⟨0, w⟩ => fun b =>
+              fun hb => 
+                hyp1 b hb
+            | ⟨j + 1, w⟩  =>  
+              fun b =>
+                fun hb =>
+                  hyp2 ⟨j, leOfSuccLeSucc w⟩ b hb
+
+structure DominateList{n dom codom : Nat}
+      (l1 : Fin dom → Clause n)(l2 : Fin codom → Clause n) where
+    incl : (j : Fin codom) → SigmaEqElem l1 (l2 j)
+    proj : (j : Fin dom) → SigmaPredElem l2 (dominates (l1 j))
+  
+structure RelDominateList{n dom codom prev : Nat}
+      (l1 : Fin dom → Clause n)(l2 : Fin codom → Clause n)
+      (givens : Fin prev → Clause n) where
+    incl : (j : Fin codom) → SigmaEqElem l1 (l2 j)
+    proj : (j : Fin dom) → 
+              Sum  
+                (SigmaPredElem l2 (dominates (l1 j)))
+                (SigmaPredElem givens (dominates (l1 j)))
+
+def domTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
+        dominates cl1 cl2 → dominates (dropHead n cl1) (dropHead n cl2) :=
+        fun hyp =>
+          fun ⟨k, w⟩ b =>
+            fun dHyp =>
+              hyp ⟨k + 1, succ_lt_succ w⟩ b dHyp              
+
+def domDecide(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) → 
+                                          Decidable (dominates cl1 cl2) :=
+    match n with
+    | 0 => 
+        fun cl1 cl2 => isTrue (fun i => nomatch i)
+    | m + 1 => 
+      fun cl1 cl2 =>
+      match domDecide m (dropHead m cl1) (dropHead m cl2) with
+      | isFalse contra =>
+          isFalse (fun hyp =>
+                      contra (domTail cl1 cl2 hyp))
+      | isTrue pfTail =>
+          match varDomDecide (cl1 ⟨0, zeroLtSucc _⟩) (cl2 ⟨0, zeroLtSucc _⟩) with
+          | isTrue pfHead =>
+              let lem0 := 
+                (dominatePrepend (cl1 ⟨0, zeroLtSucc _⟩) (cl2 ⟨0, zeroLtSucc _⟩) 
+                    (dropHead m cl1) (dropHead m cl2) pfHead) pfTail 
+              let lem1a :
+                (j: Fin (m + 1)) → 
+                   prepend m (cl1 ⟨0, zeroLtSucc _⟩) (dropHead m cl1) j = cl1 j := 
+                   fun j =>
+                   match j with 
+                   | ⟨0, w⟩ => by rfl
+                   | ⟨i + 1, w⟩ => by rfl
+              let lem1b : prepend m (cl1 ⟨0, zeroLtSucc _⟩) (dropHead m cl1)  = cl1  := 
+                funext lem1a
+              let lem2a :
+                (j: Fin (m + 1)) → 
+                   prepend m (cl2 ⟨0, zeroLtSucc _⟩) (dropHead m cl2) j = cl2 j := 
+                   fun j =>
+                   match j with 
+                   | ⟨0, w⟩ => by rfl
+                   | ⟨i + 1, w⟩ => by rfl
+              let lem2b : prepend m (cl2 ⟨0, zeroLtSucc _⟩) (dropHead m cl2)  = cl2  := 
+                funext lem2a
+              let lem : dominates cl1 cl2 := by
+                rw (Eq.symm lem1b)
+                rw (Eq.symm lem2b)
+                exact lem0
+                done
+              isTrue (
+                lem
+              )
+          | isFalse contra => 
+            isFalse (fun hyp =>
+                        contra ( 
+                          fun b => 
+                             hyp ⟨0, zeroLtSucc _⟩ b 
+                          )                           
+                          )
+
