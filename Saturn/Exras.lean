@@ -193,3 +193,28 @@ inductive RestrictionsAt{n q: Nat}(k : Fin (n + 1))
         (i: Fin q) →   
           DropAtMatch k clause (restrictions i) → 
             (RestrictionsAt k branch restrictions clause)
+
+def shiftAtFin : (n : Nat) →  (k: Nat) → (lt : k < succ n) → 
+    Fin n → Fin (n + 1) :=
+      fun n => 
+        match n with 
+        | 0 => 
+          fun k =>
+            fun lt =>
+                  fun _ => 
+                    ⟨0, zeroLtSucc 0⟩
+        | m + 1 => 
+          fun k =>
+            match k with
+            | 0 => 
+              fun lt =>
+                fun ⟨i, w⟩ =>
+                  let wit : i < m + 2 := leStep w
+                  ⟨i + 1, succ_lt_succ w⟩
+            | l+1 => 
+              fun lt =>
+                fun j =>
+                  match j with
+                  | ⟨0, _⟩ => ⟨0, zeroLtSucc _⟩
+                  | ⟨i + 1, w⟩ => 
+                      plusOne (m + 1) (shiftAtFin m l (leOfSuccLeSucc lt) ⟨i, leOfSuccLeSucc w⟩)

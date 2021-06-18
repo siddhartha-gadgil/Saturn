@@ -222,7 +222,7 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
 
 def containPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
           v1 ≥  v2 → cl1 ⊃  cl2 → 
-                (prepend n v1 cl1) ⊃  (prepend n v2 cl2) := 
+                (v1 ::: cl1) ⊃  (v2 ::: cl2) := 
            fun hyp1 hyp2 =>
             fun k =>
             match k with
@@ -274,21 +274,21 @@ def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) →
                     (dropHead m cl1) (dropHead m cl2) pfHead) pfTail 
               let lem1a :
                 (j: Fin (m + 1)) → 
-                   prepend m (cl1 ⟨0, zeroLtSucc _⟩) (dropHead m cl1) j = cl1 j := 
+                   ((cl1 ⟨0, zeroLtSucc _⟩) ::: (dropHead m cl1)) j = cl1 j := 
                    fun j =>
                    match j with 
                    | ⟨0, w⟩ => by rfl
                    | ⟨i + 1, w⟩ => by rfl
-              let lem1b : prepend m (cl1 ⟨0, zeroLtSucc _⟩) (dropHead m cl1)  = cl1  := 
+              let lem1b : (cl1 ⟨0, zeroLtSucc _⟩) ::: (dropHead m cl1)  = cl1  := 
                 funext lem1a
               let lem2a :
                 (j: Fin (m + 1)) → 
-                   prepend m (cl2 ⟨0, zeroLtSucc _⟩) (dropHead m cl2) j = cl2 j := 
+                   ((cl2 ⟨0, zeroLtSucc _⟩) ::: (dropHead m cl2)) j = cl2 j := 
                    fun j =>
                    match j with 
                    | ⟨0, w⟩ => by rfl
                    | ⟨i + 1, w⟩ => by rfl
-              let lem2b : prepend m (cl2 ⟨0, zeroLtSucc _⟩) (dropHead m cl2)  = cl2  := 
+              let lem2b : (cl2 ⟨0, zeroLtSucc _⟩) ::: (dropHead m cl2)  = cl2  := 
                 funext lem2a
               let lem : cl1 ⊃  cl2 := by
                 rw (Eq.symm lem1b)
