@@ -348,6 +348,15 @@ def liftAtImage{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
 
 namespace leaner
 
+def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
+    match n with
+    | 0 => fun _ => none
+    | m + 1 => 
+      fun seq => 
+        (f (seq 0 (zeroLtSucc m))).orElse (
+          findSome? f (fun t : Nat => fun w : t < m => seq (t + 1) w )
+        ) 
+
 def Clause(n : Nat) : Type := FinSeq n (Option Bool)
 
 def Sect(n: Nat) : Type := FinSeq n  Bool
@@ -365,6 +374,196 @@ def clauseSat {n: Nat}(clause : Clause n)(sect: Sect n) :=
 instance {n: Nat}(clause : Clause n)(sect: Sect n): Prover (ClauseSat clause sect) where 
   statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (sect k b)
   proof := fun cs => ⟨cs.coord, ⟨cs.bound, cs.witness⟩⟩
+
+def contradiction(n: Nat) : Clause n :=
+  fun _ _ => none
+
+theorem contradictionFalse (n: Nat) : ∀ sect : Sect n, Not (clauseSat (contradiction n) sect) :=
+  fun sect => fun ⟨k, ⟨b, p⟩⟩ => 
+    let lem1 : (contradiction n) k b = none := by rfl
+    let lem2 := congrArg varSat lem1
+    let lem3 : varSat (contradiction n k b) (sect k b) = 
+                varSat none (sect k b) := congr lem2 rfl
+    let lem4 : (varSat none (sect k b)) = (none = some (sect k b)) := rfl
+    let lem5 : (none = some (sect k b)) := by
+      rw (Eq.symm lem4)
+      rw lem4
+      assumption
+      done 
+    Option.noConfusion lem5
+
+def deqSeq {α : Type}[DecidableEq α] (n: Nat) : (c1 : FinSeq n  α) → 
+                              (c2: FinSeq n  α) → Decidable (c1 = c2) := 
+  match n with
+  | 0 => 
+    fun c1 c2 => 
+      isTrue (funext 
+        (fun x => 
+          funext (fun w => nomatch w)))
+  | m + 1 => 
+    fun c1 c2 =>
+      match deqSeq _ (tail c1) (tail c2) with
+      | isTrue h => 
+          if c : c1 0 (zeroLtSucc m) = c2 (0) (zeroLtSucc m) then
+            isTrue 
+              (funext fun k =>
+                match k with
+                | 0 => funext (fun w =>  c)
+                | j+ 1 => funext (fun  w => 
+                  let l1 : tail c1 j w = c1 (j + 1) w := by rfl
+                  let l2 : tail c2 j w = c2 (j + 1) w := by rfl
+                  by 
+                    rw (Eq.symm l1)                    
+                    rw (Eq.symm l2)
+                    rw h
+                    done
+                    ))
+          else 
+            isFalse (
+              fun hyp =>
+                let lem : c1 0 (zeroLtSucc m) = c2 0 (zeroLtSucc m) := by
+                  rw hyp
+                c lem
+            )
+      |isFalse h => 
+        isFalse (
+          fun hyp => 
+            let lem : (tail c1) = (tail c2) := 
+              funext (
+                fun j =>
+                funext (
+                fun w =>
+                  let l1 : tail c1 j w = c1 (j + 1) w := by rfl 
+                  let l2 : tail c2 j w = c2 (j + 1) w := by rfl                   
+                  by 
+                    rw l1
+                    rw hyp
+                    apply Eq.symm
+                    exact l2
+                    done
+                    )
+              )
+            h lem)
+
+instance {n: Nat}[DecidableEq α] : DecidableEq (FinSeq n  α) := fun c1 c2 => deqSeq _ c1 c2
+
+
+def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
+  insert (some b) n k w (contradiction n) 
+
+structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
+  index: Nat 
+  bound : index < n + 1
+  parity: Bool
+  equality : clause = unitClause n parity index bound
+
+def clauseUnit{n: Nat}(clause: Clause (n + 1)) : Option (IsUnitClause clause) :=
+  let f : Fin (n + 1) →   (Option (IsUnitClause clause)) := 
+    fun ⟨k, w⟩ =>
+      match deqSeq _ clause  (unitClause n true k w) with 
+      | isTrue pf => 
+        let cl : IsUnitClause clause := IsUnitClause.mk k w true pf 
+        some (cl)
+      | isFalse _ => 
+        match deqSeq _ clause  (unitClause n false k w) with 
+      | isTrue pf => 
+        let cl : IsUnitClause clause := IsUnitClause.mk k w false pf 
+        some (cl)
+      | isFalse _ => none  
+  let seq : FinSeq (n + 1) (Fin (n + 1)) := fun k w => ⟨k, w⟩
+  findSome? f seq
+
+def someUnitClause {l : Nat} : (n : Nat) →  (clauses : Fin l → (Clause (n + 1))) →  
+  Option (Σ k : Fin l, IsUnitClause (clauses k))  := 
+    match l with 
+    | 0 => fun _ _ =>  none
+    | m + 1 => 
+      fun n cls =>
+        match clauseUnit (cls ⟨0, (zeroLtSucc m)⟩) with
+        | some u => some ⟨⟨0, (zeroLtSucc m)⟩, u⟩ 
+        | none => 
+          let tcls := dropHead _ cls
+          let tail := someUnitClause n tcls
+          match tail with
+          | some ⟨⟨i, w⟩, u⟩ => 
+            some ⟨⟨i + 1, leOfSuccLeSucc w⟩, u⟩
+          | none => none
+
+structure HasPureVar{dom n : Nat}(clauses : FinSeq dom  (Clause n)) where
+  index : Nat
+  bound : index < n
+  parity : Bool
+  evidence : (k : Nat) → (lt : k < dom) → 
+          Or (clauses k lt index bound = none) (clauses k lt index bound = some parity)
+
+structure IsPureVar{dom n : Nat}(clauses : FinSeq dom  (Clause n))
+                      (index: Nat)(bound : index < n)(parity : Bool) where
+  evidence : (k : Nat) → (lt : k < dom) → Or (clauses k lt index bound = none) 
+                                (clauses k lt index bound = some parity)
+
+def varIsPure{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) : 
+  (dom: Nat) →  (clauses : FinSeq dom  (Clause n)) → 
+    Option (IsPureVar clauses index bound parity) :=
+  fun dom =>
+  match dom with
+  | 0 => 
+    fun clauses =>
+      let evidence : (k : Nat) → (lt : k < 0) →  
+        Or (clauses k lt index bound = none) (clauses k lt index bound = some parity) := 
+          fun k lt => nomatch lt
+      some ⟨evidence⟩
+  | m + 1 => 
+      fun clauses =>
+        let head := clauses 0 (zeroLtSucc _) index bound
+        if c : Or (head = none) (head = some parity) then
+          let tailSeq  := tail clauses
+          (varIsPure index bound parity _ tailSeq).map (
+            fun ⟨ tpf ⟩ =>
+              let pf : (j : Nat) → (w : j < (m +1)) → 
+                Or (clauses j w index bound = none) (clauses j w index bound = some parity) := 
+                fun j =>
+                  match j with 
+                  | 0 => fun w => c
+                  | i + 1 => fun w =>
+                    let tailWit : i < m := leOfSuccLeSucc w 
+                    tpf i tailWit
+              ⟨ pf ⟩
+          )
+        else none
+
+def findPureAux{n : Nat} : (dom: Nat) →  (clauses : FinSeq dom (Clause (n +1))) → 
+  (ub: Nat) → (lt : ub < n + 1) → 
+      Option (HasPureVar clauses) :=
+      fun dom clauses ub => 
+        match ub with
+        | 0 =>
+          fun lt =>
+           ((varIsPure 0 lt true dom clauses).map (
+            fun ⟨evidence⟩ =>
+              HasPureVar.mk 0 lt true evidence
+              )).orElse (
+                (varIsPure 0 lt false dom clauses).map (
+            fun ⟨evidence⟩ =>
+              HasPureVar.mk 0 lt false evidence
+              )
+              )
+        | l + 1 =>
+          fun lt =>
+            ((findPureAux dom clauses l (leStep lt)).orElse (              
+              (varIsPure l (leStep lt) true dom clauses).map (
+            fun ⟨evidence⟩ =>
+              HasPureVar.mk l (leStep lt) true evidence
+              )
+              )).orElse (              
+              (varIsPure l (leStep lt) false dom clauses).map (
+            fun ⟨evidence⟩ =>
+              HasPureVar.mk l (leStep lt) false evidence
+              )
+              )
+            
+def hasPure{n : Nat}(dom: Nat)(clauses : FinSeq dom  (Clause (n +1))) 
+            (ub: Nat)(lt : ub < n + 1) : Option (HasPureVar clauses) :=
+          findPureAux dom clauses n (Nat.leRefl _)
 
 
 end leaner
