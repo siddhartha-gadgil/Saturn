@@ -4,6 +4,16 @@ open Nat
 macro_rules
   | `(scowl) => `(sorry)
 
+class Prover(α: Type) where
+  statement : (x : α) → Prop
+  proof : (x : α) → statement x
+
+def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x 
+
+def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
+
+
+
 def skip : Nat → Nat → Nat :=
     fun k =>
       match k with
@@ -146,7 +156,7 @@ theorem skipBound: (k j: Nat) →  skip k j < j + 2 :=
         by 
           rw eqn
           apply Nat.leRefl
-          done
+          done 
 
 theorem skipLowerBound :(k j: Nat) →  j ≤ skip k j  :=
     fun k j =>
@@ -238,7 +248,7 @@ structure ProvedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
                 (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) where
   result : α
   checkImage : (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw
-  checkFocus : j= k → result = value
+  checkFocus : j = k → result = value
 
 theorem propValue(p: Prop) : (a b: p) → a = b :=
                 fun a b => by rfl
@@ -261,7 +271,10 @@ theorem witnessIndependent{α : Type}{n : Nat}(seq: FinSeq n α) :
             exact eqc
             done
 
-def provedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
+#print witnessIndependent
+#check Eq.ndrec 
+
+def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
                 (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) : 
                   ProvedInsert value seq k kw j jw := 
           match skipImageCase k j with
@@ -316,16 +329,47 @@ def provedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
                   nomatch contra 
             ⟨result, checkImage, checkFocus⟩
 
-class Prover(α: Type) where
-  statement : (x : α) → Prop
-  proof : (x : α) → statement x
+def insert{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (FinSeq n   α) →  (FinSeq (Nat.succ n)  α) := 
+  fun n k lt seq j w =>  
+    (provedInsert n value seq k lt j w).result
 
-def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x 
+def insertAtFocus{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (seq :FinSeq n   α) →  
+      insert value n k lt seq k lt = value :=
+    fun n k lt seq  =>   
+      (provedInsert n value seq k lt k lt).checkFocus rfl
 
-def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
+def liftAtImage{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (seq :FinSeq n  α) → (i : Nat) → (w : i < n) →    
+      insert value n k lt seq (skip k i) (skipPlusOne w) = seq i w :=
+    fun n k lt seq i w =>  
+      (provedInsert n value seq k lt (skip k i) (skipPlusOne w)).checkImage i w rfl
+
+namespace leaner
+
+def Clause(n : Nat) : Type := FinSeq n (Option Bool)
+
+def Sect(n: Nat) : Type := FinSeq n  Bool
+
+def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
+
+structure ClauseSat{n: Nat}(clause : Clause n)(sect: Sect n) where
+  coord : Nat
+  bound : coord < n  
+  witness: varSat (clause coord bound) (sect coord bound)
+
+def clauseSat {n: Nat}(clause : Clause n)(sect: Sect n) := 
+  ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (sect k b)
+
+instance {n: Nat}(clause : Clause n)(sect: Sect n): Prover (ClauseSat clause sect) where 
+  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (sect k b)
+  proof := fun cs => ⟨cs.coord, ⟨cs.bound, cs.witness⟩⟩
 
 
--- theorems about old style finite sequences 
+end leaner
+
+-- helpers and theorems for old style finite sequences 
 
 namespace clunky
 
@@ -574,41 +618,6 @@ def dropAtShift{α : Type} : (n : Nat) →
                       rw unfold2
                       rw base
                       done
-
--- More specific to SAT
-
-def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
-
-structure ClauseSat{n: Nat}(clause : Clause n)(sect: Sect n) where
-  coord : Fin n
-  witness: varSat (clause coord) (sect coord)
-
-def clauseSat {n: Nat}(clause : Clause n)(sect: Sect n) := 
-  ∃ (k : Fin n), varSat (clause k) (sect k)
-
-instance {n: Nat}(clause : Clause n)(sect: Sect n): Prover (ClauseSat clause sect) where 
-  statement := fun cs => ∃ (k : Fin n), varSat (clause k) (sect k)
-  proof := fun cs => ⟨cs.coord, cs.witness⟩
-
-
-theorem contradictionFalse (n: Nat) : ∀ sect : Sect n, Not (clauseSat (contradiction n) sect) :=
-  fun sect => fun ⟨k, p⟩ => 
-    let lem1 : (contradiction n) (k) = none := by rfl
-    let lem2 := congrArg varSat lem1
-    let lem3 : varSat (contradiction n k) (sect k) = 
-                varSat none (sect k) := congr lem2 rfl
-    let lem4 : (varSat none (sect k)) = (none = some (sect k)) := rfl
-    let lem5 : (none = some (sect k)) := by
-      rw (Eq.symm lem4)
-      rw lem4
-      assumption
-      done 
-    Option.noConfusion lem5
-
-
-def isUnit{n: Nat}(k: Fin (n + 1))(b: Bool)(cl: Clause (n + 1)) :=
-  (cl k = some b) &&
-  ((dropAt n k.val k.isLt cl) =  contradiction n)
 
 inductive SectionCase (n: Nat) (k j: Fin (n + 1)) where
   | diagonal : k = j → SectionCase n k j
@@ -949,6 +958,45 @@ theorem involuteTrans{α: Type}(n: Nat): (j: Nat) → (lt :j < n + 1) →
 def shiftIsSectionProp (n: Nat): (k j: Fin (n + 1)) →  
     Or (k = j) (∃ i : Fin n, (shiftAt n k.val k.isLt i) = j) :=
       fun k j =>  getProof (shiftIsSection n k j)
+
+
+-- theorems with old style finite sequences
+
+
+def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
+
+structure ClauseSat{n: Nat}(clause : Clause n)(sect: Sect n) where
+  coord : Fin n
+  witness: varSat (clause coord) (sect coord)
+
+def clauseSat {n: Nat}(clause : Clause n)(sect: Sect n) := 
+  ∃ (k : Fin n), varSat (clause k) (sect k)
+
+instance {n: Nat}(clause : Clause n)(sect: Sect n): Prover (ClauseSat clause sect) where 
+  statement := fun cs => ∃ (k : Fin n), varSat (clause k) (sect k)
+  proof := fun cs => ⟨cs.coord, cs.witness⟩
+
+
+theorem contradictionFalse (n: Nat) : ∀ sect : Sect n, Not (clauseSat (contradiction n) sect) :=
+  fun sect => fun ⟨k, p⟩ => 
+    let lem1 : (contradiction n) (k) = none := by rfl
+    let lem2 := congrArg varSat lem1
+    let lem3 : varSat (contradiction n k) (sect k) = 
+                varSat none (sect k) := congr lem2 rfl
+    let lem4 : (varSat none (sect k)) = (none = some (sect k)) := rfl
+    let lem5 : (none = some (sect k)) := by
+      rw (Eq.symm lem4)
+      rw lem4
+      assumption
+      done 
+    Option.noConfusion lem5
+
+
+def isUnit{n: Nat}(k: Fin (n + 1))(b: Bool)(cl: Clause (n + 1)) :=
+  (cl k = some b) &&
+  ((dropAt n k.val k.isLt cl) =  contradiction n)
+
+
 
 def unitClause(n : Nat)(b : Bool)(k : Fin (n + 1)):   Clause (n + 1):=
   liftAt (some b) n k.val k.isLt (contradiction n) 
