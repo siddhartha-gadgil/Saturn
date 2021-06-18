@@ -148,10 +148,59 @@ theorem skipBound: (k j: Nat) →  skip k j < j + 2 :=
           apply Nat.leRefl
           done
 
+theorem skipLowerBound :(k j: Nat) →  j ≤ skip k j  :=
+    fun k j =>
+      match skipEquations k j with
+      | SkipEquations.lt ineqn eqn => 
+          by 
+            rw eqn
+            apply Nat.leRefl
+            done
+      | SkipEquations.ge ineqn eqn => 
+        by 
+          rw eqn
+          apply Nat.leStep
+          apply Nat.leRefl
+          done
+
+theorem skipSharpLowerBound :(k j: Nat) →  Or (j + 1 ≤ skip k j) (j <  k)  :=
+    fun k j =>
+      match skipEquations k j with
+      | SkipEquations.lt ineqn eqn => 
+          Or.inr ineqn
+      | SkipEquations.ge ineqn eqn => 
+          Or.inl (by 
+                    rw eqn
+                    apply Nat.leRefl
+                    done)
+
 def skipPlusOne {n k j : Nat} : j < n → skip k j < n + 1 := 
   fun h =>
     Nat.leTrans (skipBound k j) h
 
+#check Nat.leTrans
+
+theorem skipNotDiag (k: Nat) : (j: Nat) → Not (skip k j = k) :=
+  fun j =>
+    match skipEquations k j with
+    | SkipEquations.lt ineqn eqn => 
+      fun hyp =>
+        let lem1 : k ≤  j := by
+          rw (Eq.symm hyp) 
+          rw eqn
+          apply Nat.leRefl
+          done
+        let lem2  := Nat.ltOfLtOfLe ineqn lem1
+        notSuccLeSelf j lem2
+    | SkipEquations.ge ineqn eqn => 
+      fun hyp =>  
+        let lem1 : j + 1 ≤ k := by
+          rw (Eq.symm hyp) 
+          rw eqn
+          apply Nat.leRefl
+          done
+        let lem2 : j < j := Nat.leTrans lem1 ineqn
+        Nat.ltIrrefl j lem2
 
 def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 
@@ -186,19 +235,86 @@ def delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) 
     seq (skip k j) (skipPlusOne w)
 
 structure ProvedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
-                (k : Nat)(kw : k < n)(j: Nat) (jw : j < n + 1) where
+                (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) where
   result : α
   checkImage : (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw
   checkFocus : j= k → result = value
 
+theorem propValue(p: Prop) : (a b: p) → a = b :=
+                fun a b => by rfl
+
+theorem witnessIndependent{α : Type}{n : Nat}(seq: FinSeq n α) :
+    (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
+        (i = j) → seq i iw = seq j jw :=
+        fun i j iw jw eqn =>
+          let fn : Fin n → α := fun ⟨i, w⟩ => seq i w
+          let lem : (⟨i, iw⟩ : Fin n) = ⟨j, jw⟩ := by
+                apply Fin.eqOfVeq
+                exact eqn
+                done
+          let eq1 : fn ⟨i, iw⟩ = seq i iw := by rfl
+          let eq2 : fn ⟨j, jw⟩ = seq j jw := by rfl
+          let eqc := congrArg fn lem
+          by 
+            rw (Eq.symm eq1)
+            rw (Eq.symm eq2)
+            exact eqc
+            done
+
 def provedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
-                (k : Nat)(kw : k < n)(j: Nat) (jw : j < n + 1) : 
+                (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) : 
                   ProvedInsert value seq k kw j jw := 
           match skipImageCase k j with
           | SkipImageCase.diag eqn => 
             let result := value
-            sorry
-          | SkipImageCase.image i eqn => sorry
+            let checkImage : 
+              (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw := 
+                fun i iw hyp =>
+                  let lem : skip k i = k := by
+                    rw hyp
+                    rw eqn
+                    done
+                  let contra := skipNotDiag k i lem
+                  nomatch contra
+            let  checkFocus : j = k → result = value := fun  _  => rfl
+            ⟨result, checkImage, checkFocus⟩
+          | SkipImageCase.image i eqn => 
+            let bound : i < n  := 
+              match skipSharpLowerBound k i with
+              | Or.inl ineq =>
+                let lem1 : i <  j := by 
+                  rw (Eq.symm eqn)
+                  exact ineq
+                  done 
+                let lem2 := Nat.ltOfLtOfLe lem1 jw
+                by 
+                  exact lem2
+                  done
+              | Or.inr ineqn => 
+                  Nat.ltOfLtOfLe ineqn kw
+            let result := seq i bound
+            let checkImage : 
+              (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw := 
+                fun i1 iw1 hyp =>
+                  let lem1 : i1 = i := by 
+                    apply (skipInjective k)
+                    rw hyp
+                    rw (Eq.symm eqn)
+                    done
+                  let lem2 : seq i1 iw1 = seq i bound := 
+                    witnessIndependent seq i1 i iw1 bound lem1
+                  by
+                    rw lem2
+                    done
+            let  checkFocus : j = k → result = value := 
+              fun  hyp  => 
+                let lem : skip k i = k := by
+                    rw eqn
+                    rw hyp
+                    done
+                  let contra := skipNotDiag k i lem
+                  nomatch contra 
+            ⟨result, checkImage, checkFocus⟩
 
 class Prover(α: Type) where
   statement : (x : α) → Prop
