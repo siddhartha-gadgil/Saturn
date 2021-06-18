@@ -3,6 +3,7 @@ import Saturn.FinSeq
 import Saturn.Solverstep
 open Nat
 
+
 inductive Join (left right top : Option Bool) where
   | noneNone : (left = none) → (right = none) → (top = none)→ Join left right top 
   | noneSome : (b : Bool) → (left = none) → (right = some b) → (top = some b)→ Join left right top
@@ -114,6 +115,8 @@ theorem varResolution (left right top : Option Bool)(join: Join left right top)(
       | Or.inr heq => 
         let lem : top = right := Eq.trans pt (Eq.symm pr)
         Eq.trans lem heq
+
+namespace clunky
 
 structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
   pivot : Fin (n + 1)

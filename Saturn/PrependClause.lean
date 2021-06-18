@@ -2,6 +2,7 @@ import Saturn.Basic
 import Saturn.FinSeq 
 import Saturn.Solverstep
 open Nat
+open clunky
 
 def prependClause{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
     (clauses: Fin dom →  Clause (n + 1)):

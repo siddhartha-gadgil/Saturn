@@ -1,8 +1,14 @@
 open Nat
 
+namespace clunky
+
 def Clause(n : Nat) : Type := (Fin n) → Option Bool
 
 def Sect(n: Nat) : Type := Fin n → Bool
+
+end clunky
+
+open clunky
 
 def plusOne(n: Nat) : Fin n → Fin (n + 1) :=
   fun arg => Fin.mk (succ (Fin.val arg)) (succ_lt_succ (Fin.isLt arg))
@@ -31,7 +37,7 @@ def prepend{α : Type}(n : Nat)(zeroVal : α)(fn : (Fin n → α))(arg: Fin (n +
     | ⟨k + 1, witness⟩ =>
       fn (⟨k, leOfSuccLeSucc witness⟩)
 
-infixr:80 ":::" => prepend _
+infixr:80 "::::" => prepend _
 
 def dropAt{α : Type} : (n : Nat) →  
   (k: Nat) → (lt : k < succ n) →  (Fin (Nat.succ n) → α) → Fin n →  α := 
@@ -137,10 +143,10 @@ def findUnit(n: Nat) : Clause n → Option ((Fin n) × Bool) :=
             else
               none
           | none =>
-            let shift : (Fin k) × Bool → (Fin (k + 1)) × Bool :=
+            let skip : (Fin k) × Bool → (Fin (k + 1)) × Bool :=
               fun (x, b) => (plusOne k x, b)
            (findUnit k (dropHead
-           k clause)).map shift
+           k clause)).map skip
 
 def pureSign (l : List (Option Bool)) :  Option Bool :=
   match l with
@@ -168,21 +174,12 @@ def findPure (n: Nat) : List (Clause n) →  Option ((Fin n) × Bool) :=
           match (pureSign zeroSect) with 
             | some (b) => (0, b)
             | none =>
-              let shift : (Fin k) × Bool → (Fin (k + 1)) × Bool :=
+              let skip : (Fin k) × Bool → (Fin (k + 1)) × Bool :=
                 fun (x, b) => (plusOne k x, b)
               let shorterClauses := clauses.map (dropHead
              k)
-              (findPure k (shorterClauses)).map (shift)
+              (findPure k (shorterClauses)).map (skip)
               
--- def transposeZero {α : Type}{n: Nat} (k: Fin (succ n)) (fn :Fin (succ n) → α) : (Fin (succ n) → α) :=
---   fun l =>
---     if l == k then 
---       fn 0
---     else 
---       if l == 0 then
---         fn k
---       else 
---         fn l
 
 def preAssign {n: Nat}(clauses : List (Clause (succ n))) : Option ((Fin (succ n)) × Bool) :=
   Option.orElse (List.findSome? (findUnit (succ n)) clauses) 

@@ -4,12 +4,214 @@ open Nat
 macro_rules
   | `(scowl) => `(sorry)
 
+def skip : Nat → Nat → Nat :=
+    fun k =>
+      match k with
+      | 0 => 
+          fun i =>
+            i + 1
+      | l + 1 => 
+          fun j =>
+            match j with
+            | 0 => 0
+            | i + 1 => 
+                (skip l i) + 1
+
+inductive SkipEquations(n m : Nat) where
+  | lt : m < n → skip n m = m → SkipEquations n m
+  | ge : n ≤ m → skip n m = m + 1 → SkipEquations n m   
+
+inductive SkipImageCase(n m : Nat) where
+  | diag : m = n → SkipImageCase n m
+  | image : (k : Nat) → skip n k = m →  SkipImageCase n m
+
+def skipEquations: (n : Nat) →  (m : Nat) →  SkipEquations n m := 
+  fun k =>
+      match k with
+      | 0 => 
+          fun i =>
+            SkipEquations.ge (zeroLe _) rfl
+      | l+1 => 
+          fun j =>
+            match j with
+            | 0 => 
+              let lem : skip (l + 1) 0 = 0 := by rfl
+              SkipEquations.lt (zeroLtSucc _) rfl
+            | i + 1 =>
+              let unfold : skip (l + 1) (i + 1) = skip l i + 1 := by rfl 
+                match skipEquations l i with
+                | SkipEquations.lt ineq eqn => 
+                  SkipEquations.lt 
+                    (succ_lt_succ ineq) (
+                      by  
+                        rw unfold
+                        rw eqn
+                        done)
+                | SkipEquations.ge ineq eqn =>
+                    let fst := succLeSucc ineq 
+                    SkipEquations.ge (succLeSucc ineq) (
+                      by  
+                        rw unfold
+                        rw eqn
+                        done)
+
+def skipImageCase : (n : Nat) →  (m : Nat) →  SkipImageCase n m := 
+  fun k =>
+      match k with
+      | 0 => 
+          fun j =>
+            match j with 
+            | 0 => SkipImageCase.diag rfl
+            | i + 1 => SkipImageCase.image i rfl
+      | l + 1 => 
+          fun j =>
+            match j with
+            | 0 => 
+              SkipImageCase.image 0 rfl
+            | i + 1 =>               
+                match skipImageCase l i with
+                | SkipImageCase.diag  eqn => 
+                    SkipImageCase.diag (by rw eqn)
+                | SkipImageCase.image p eqn =>
+                    let unfold : skip (l + 1) (p + 1) = skip l p + 1 := by rfl
+                    SkipImageCase.image (p + 1) (by (rw unfold) (rw eqn))
+
+theorem skipSuccNotZero : (n: Nat) → (j: Nat) → Not (skip n (succ j) = 0) :=
+  fun n =>
+  match n with 
+  | 0 => 
+    fun j =>
+      fun hyp : succ (succ j) = 0 =>
+        Nat.noConfusion hyp
+  | m + 1 => 
+    fun j =>
+            match j with
+            | 0 => 
+              fun hyp : succ (skip m 0)  = 0 =>
+                Nat.noConfusion hyp
+            | i + 1 => 
+              fun hyp =>
+                let lem1 : skip (m + 1) (succ (i + 1)) = skip m (succ i) + 1 := by rfl
+                let lem2 := Eq.trans (Eq.symm hyp) lem1
+                Nat.noConfusion lem2
+
+theorem skipInjective: (n: Nat) → (j1 : Nat) → (j2 : Nat) → 
+                              (skip n j1 = skip n j2) → j1 = j2 :=
+      fun n =>
+      match n with
+      | 0 =>
+        fun j1 j2 =>
+          fun eqn : succ j1 = succ j2 =>  
+              by 
+                injection eqn
+                assumption
+                done
+      | m + 1 => 
+        fun j1 =>
+        match j1 with
+        | 0 =>
+          fun j2 =>
+            match j2 with
+            | 0 => fun _ => rfl
+            | i2 + 1 => 
+              fun hyp : 0 = skip (m + 1) (i2 + 1) =>
+                let lem := skipSuccNotZero (m + 1) i2
+                absurd (Eq.symm hyp) lem
+        | i1 + 1 => 
+          fun j2 =>
+            match j2 with
+            | 0 => fun hyp : skip (m + 1) (i1 + 1) = 0 =>
+                let lem := skipSuccNotZero (m + 1) i1
+                absurd hyp lem
+            | i2 + 1 => 
+              fun hyp : skip m i1 + 1 = skip m i2 + 1 =>
+                let hyp1 : skip m i1 = skip m i2 := by
+                  injection hyp
+                  assumption
+                  done
+                let lem := skipInjective m i1 i2 hyp1
+                congrArg succ lem
+
+
+theorem skipBound: (k j: Nat) →  skip k j < j + 2 :=
+    fun k j =>
+      match skipEquations k j with
+      | SkipEquations.lt _ eqn => 
+          by 
+            rw eqn
+            apply Nat.leStep
+            apply Nat.leRefl
+            done
+      | SkipEquations.ge _ eqn => 
+        by 
+          rw eqn
+          apply Nat.leRefl
+          done
+
+def skipPlusOne {n k j : Nat} : j < n → skip k j < n + 1 := 
+  fun h =>
+    Nat.leTrans (skipBound k j) h
+
+
+def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
+
+def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α :=
+  fun k =>
+  match k with
+  | 0 => fun _ => head
+  | j + 1 => 
+    fun w =>
+      tail j (leOfSuccLeSucc w)
+
+infixr:66 ":::" => FinSeq.cons
+
+def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
+  fun k w =>
+      seq (k + 1) (succ_lt_succ w)
+
+def head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
+  seq 0 (zeroLtSucc _)
+
+theorem headTail{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): 
+      (head seq) ::: (tail seq) = seq := 
+        funext (
+          fun k => 
+            match k with
+            | 0 => by rfl 
+            | i + 1 => by rfl
+        )
+
+def delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α := 
+  fun j w =>
+    seq (skip k j) (skipPlusOne w)
+
+structure ProvedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
+                (k : Nat)(kw : k < n)(j: Nat) (jw : j < n + 1) where
+  result : α
+  checkImage : (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw
+  checkFocus : j= k → result = value
+
+def provedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
+                (k : Nat)(kw : k < n)(j: Nat) (jw : j < n + 1) : 
+                  ProvedInsert value seq k kw j jw := 
+          match skipImageCase k j with
+          | SkipImageCase.diag eqn => 
+            let result := value
+            sorry
+          | SkipImageCase.image i eqn => sorry
 
 class Prover(α: Type) where
   statement : (x : α) → Prop
   proof : (x : α) → statement x
 
--- theorems about finite sequences
+def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x 
+
+def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
+
+
+-- theorems about old style finite sequences 
+
+namespace clunky
 
 theorem dropPlusOne{α : Type}(n: Nat)(zeroVal : α)(j: Fin n)(g: (Fin (succ n)) → α) 
         : (dropHead n g j) = g (plusOne n j) := by
@@ -192,127 +394,26 @@ def showForAll{α: Type}(pred: α → Prop)[DecidablePred pred]{n: Nat}:
       else 
         none
 
-def shiftAtNat : Nat → Nat → Nat :=
-    fun k =>
-      match k with
-      | 0 => 
-          fun i =>
-            i + 1
-      | l+1 => 
-          fun j =>
-            match j with
-            | 0 => 0
-            | i + 1 => 
-                (shiftAtNat l i) + 1
-
-theorem shiftSuccNotZero : (n: Nat) → (j: Nat) → Not (shiftAtNat n (succ j) = 0) :=
-  fun n =>
-  match n with 
-  | 0 => 
-    fun j =>
-      fun hyp : succ (succ j) = 0 =>
-        Nat.noConfusion hyp
-  | m + 1 => 
-    fun j =>
-            match j with
-            | 0 => 
-              fun hyp : succ (shiftAtNat m 0)  = 0 =>
-                Nat.noConfusion hyp
-            | i + 1 => 
-              fun hyp =>
-                let lem1 : shiftAtNat (m + 1) (succ (i + 1)) = shiftAtNat m (succ i) + 1 := by rfl
-                let lem2 := Eq.trans (Eq.symm hyp) lem1
-                Nat.noConfusion lem2
-
-theorem shiftNatInjective: (n: Nat) → (j1 : Nat) → (j2 : Nat) → 
-                              (shiftAtNat n j1 = shiftAtNat n j2) → j1 = j2 :=
-      fun n =>
-      match n with
-      | 0 =>
-        fun j1 j2 =>
-          fun eqn : succ j1 = succ j2 =>  
-              by 
-                injection eqn
-                assumption
-                done
-      | m + 1 => 
-        fun j1 =>
-        match j1 with
-        | 0 =>
-          fun j2 =>
-            match j2 with
-            | 0 => fun _ => rfl
-            | i2 + 1 => 
-              fun hyp : 0 = shiftAtNat (m + 1) (i2 + 1) =>
-                let lem := shiftSuccNotZero (m + 1) i2
-                absurd (Eq.symm hyp) lem
-        | i1 + 1 => 
-          fun j2 =>
-            match j2 with
-            | 0 => fun hyp : shiftAtNat (m + 1) (i1 + 1) = 0 =>
-                let lem := shiftSuccNotZero (m + 1) i1
-                absurd hyp lem
-            | i2 + 1 => 
-              fun hyp : shiftAtNat m i1 + 1 = shiftAtNat m i2 + 1 =>
-                let hyp1 : shiftAtNat m i1 = shiftAtNat m i2 := by
-                  injection hyp
-                  assumption
-                  done
-                let lem := shiftNatInjective m i1 i2 hyp1
-                congrArg succ lem
-
-theorem shiftBound: (k j: Nat) →  shiftAtNat k j < j + 2 :=
-    fun k =>
-      match k with
-      | 0 => 
-          fun i =>
-            let unfold : shiftAtNat 0 i = i + 1 := by rfl
-            by
-              rw unfold
-              apply Nat.leRefl
-              done
-      | l+1 => 
-          fun j =>
-            match j with
-            | 0 => 
-              let isZero : shiftAtNat (l + 1) 0 = 0 := by rfl
-              by
-                rw isZero
-                exact zeroLtSucc 0
-                done 
-            | i + 1 => 
-              let  unfold : shiftAtNat (l + 1) (i + 1) = (shiftAtNat  l  i) + 1 := by rfl
-              let base : shiftAtNat l i < i + 2  :=  shiftBound l i
-              let baseP1 : succ (shiftAtNat l i) < succ (i + 2) := succ_lt_succ base
-              by
-                rw unfold
-                exact baseP1
-                done
-
-def shiftInheritBound (n k j : Nat) : j < n → shiftAtNat k j < n + 1 := 
-  fun h =>
-    Nat.leTrans (shiftBound k j) h
-
 def shiftAt : (n : Nat) →  (k: Nat) → (lt : k < succ n) → 
     Fin n → Fin (n + 1) :=
       fun n k lt =>
         fun ⟨i, w⟩ => 
-          ⟨shiftAtNat k i, (shiftInheritBound n k i w)⟩
+          ⟨skip k i, (skipPlusOne w)⟩
 
 def shifAtInjective: (n : Nat) →  (k: Nat) → (lt : k < succ n) → 
     (j1 :Fin n) → (j2 : Fin n) → 
       shiftAt n k lt j1 = shiftAt n k  lt j2 → j1 = j2 :=
       fun n k lt ⟨j1, w1⟩ ⟨j2, w2⟩  =>
         fun hyp =>
-        let hyp1 : shiftAtNat k j1 = shiftAtNat k j2 := congrArg Fin.val hyp
+        let hyp1 : skip k j1 = skip k j2 := congrArg Fin.val hyp
         by
           apply Fin.eqOfVeq
-          apply shiftNatInjective k j1 j2
+          apply skipInjective k j1 j2
           exact hyp1
           done
 
 theorem seqShiftNatLemma: (l: Nat) → (i : Nat) →   
-    (shiftAtNat (l + 1)  (i + 1)) = (shiftAtNat  l  i) + 1 := 
+    (skip (l + 1)  (i + 1)) = (skip  l  i) + 1 := 
       fun l => fun i => rfl
 
 
@@ -404,10 +505,6 @@ instance {n: Nat} {k j: Fin (n + 1)}: Prover (SectionCase n k j) where
     match s with
     | SectionCase.diagonal w => Or.inl w
     | SectionCase.image i w => Or.inr ⟨i, w⟩
-
-def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x 
-
-def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
 
 def shiftIsSection (n: Nat): (k j: Fin (n + 1)) →  
     SectionCase n k j := 
@@ -641,7 +738,7 @@ def updateEqDiag{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
       fun n k lt fn   =>
         (provedUpdate value n k lt fn ⟨k, lt⟩).checkDiag rfl
 
--- transpose index j in tail with initial element
+-- transpose index j in tail with initial element (actually not used)
 def transposeZero{α: Type}{n: Nat} :(j: Nat) → j < n + 1 →  (Fin (n + 2)→ α) → Fin (n + 2) → α := 
   fun j lt seq =>
     let tail := dropHead _ seq 

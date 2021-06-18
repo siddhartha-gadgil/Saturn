@@ -1,7 +1,8 @@
 import Saturn.Basic
 import Saturn.FinSeq
 
-open Nat 
+open Nat
+open clunky 
 
 #check Nat.rec
 
