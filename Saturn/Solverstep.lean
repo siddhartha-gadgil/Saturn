@@ -1,7 +1,25 @@
 import Saturn.Basic
 import Saturn.FinSeq 
 open Nat
-open clunky
+
+def boundOpt(n: Nat) : Option (Nat) → Prop
+  | none => True
+  | some b => b < n
+
+def boundOptSucc(n: Nat)(p: Option Nat) : boundOpt n p → boundOpt (n + 1) (p.map (. + 1)) :=
+  match p with
+  | none => fun h => True.intro
+  | some a => fun h : a < n => succ_lt_succ h
+
+theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none :=
+  fun x =>
+  match x with
+  | none => fun _ => by rfl
+  | some a => 
+    fun eq : some (fn a) = none => Option.noConfusion eq
+
+
+namespace clunky
 
 
 theorem liftSatHead {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
@@ -36,14 +54,6 @@ theorem liftSatAt {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
         done
       ⟨(shiftAt n j lt ⟨k, w⟩), pf⟩
 
-def boundOpt(n: Nat) : Option (Nat) → Prop
-  | none => True
-  | some b => b < n
-
-def boundOptSucc(n: Nat)(p: Option Nat) : boundOpt n p → boundOpt (n + 1) (p.map (. + 1)) :=
-  match p with
-  | none => fun h => True.intro
-  | some a => fun h : a < n => succ_lt_succ h
 
 structure RestrictionClauses{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
     (clauses: Fin dom →  Clause (n + 1)) where
@@ -100,12 +110,6 @@ structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
     nonPosRev : (k : Nat) → (w: k < rc.codom)  → 
       Not (clauses (⟨rc.reverse k w, rc.reverseWit k w⟩) (focus) = some branch)
 
-theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none :=
-  fun x =>
-  match x with
-  | none => fun _ => by rfl
-  | some a => 
-    fun eq : some (fn a) = none => Option.noConfusion eq
 
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
     (clauses: Fin dom →  Clause (n + 1))(rc: RestrictionClauses branch focus clauses) 
