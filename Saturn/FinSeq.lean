@@ -341,6 +341,12 @@ def insertAtFocus{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
     fun n k lt seq  =>   
       (provedInsert n value seq k lt k lt).checkFocus rfl
 
+def insertAtImage(value: α) : (n : Nat) →  (k: Nat) → 
+    (lt : k < succ n) → (seq :FinSeq n   α) → (i : Nat) → (iw : i < n) → 
+      insert value n k lt seq (skip k i) (skipPlusOne iw) = seq i iw :=
+      fun n k lt seq i iw => 
+       (provedInsert n value seq k lt (skip k i) (skipPlusOne iw)).checkImage i iw rfl 
+
 def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
 namespace leaner
 

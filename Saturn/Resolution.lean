@@ -257,6 +257,148 @@ structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
           (insert  topFoc (n + 1) k lt top)
     topNonPos : Not (topFoc = some bf) 
 
+def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
+  (left right top : Clause (n + 1)) : (k: Nat) → 
+    (lt : k < succ (n + 1)) → (lbf : Not (leftFoc = some bf)) → (rbf :Not (rightFoc = some bf)) → 
+       ResolutionTriple left right top → 
+        LiftedTriple bf leftFoc rightFoc left right top k lt  := 
+      fun k lt lbf rbf rt =>
+          let ⟨topFoc, focJoin⟩ := 
+            getJoin bf leftFoc rightFoc lbf rbf
+          let topNonPos : Not (topFoc = some bf) := 
+            topJoinNonPos bf leftFoc rightFoc topFoc focJoin lbf rbf
+          let pivotN := skip k  rt.pivot
+          let pivotNLt : pivotN < n + 2 := skipPlusOne rt.pivotLt
+          let leftN := insert leftFoc (n + 1) k lt left
+          let rightN := insert rightFoc (n + 1) k lt right
+          let topN := insert topFoc (n + 1) k lt top
+          let leftPivotN : leftN pivotN pivotNLt = some false := 
+            let lem1 : leftN pivotN pivotNLt = left rt.pivot rt.pivotLt := 
+              insertAtImage leftFoc (n + 1) k lt left rt.pivot rt.pivotLt
+            by
+              rw lem1
+              exact rt.leftPivot
+              done
+          let rightPivotN : rightN pivotN pivotNLt = some true := 
+            let lem1 : rightN pivotN pivotNLt = right rt.pivot rt.pivotLt := 
+              insertAtImage rightFoc (n + 1) k lt right rt.pivot rt.pivotLt
+            by
+              rw lem1
+              exact rt.rightPivot
+              done
+          let topPivotN : topN pivotN pivotNLt = none := 
+            let lem1 : topN pivotN pivotNLt = top rt.pivot rt.pivotLt := 
+              insertAtImage topFoc (n + 1) k lt top rt.pivot rt.pivotLt
+            by
+              rw lem1
+              exact rt.topPivot
+              done
+
+          let joinRestN : (j : Nat) → (jw : j < n + 1) →  
+            Join  (leftN (skip pivotN j) (skipPlusOne jw)) 
+                  (rightN (skip pivotN j) (skipPlusOne jw)) 
+                  (topN (skip pivotN j) (skipPlusOne jw)) := 
+                  fun j jw => 
+                  let jj := skip pivotN j
+                  let jjw : jj < n + 2 := skipPlusOne jw
+                  let notPivot : Not (jj = pivotN) := skipNotDiag pivotN j
+                  match skipImageCase k jj with
+                  | SkipImageCase.diag w =>  
+                    let lem0 := focJoin
+                    let eqL : leftN k lt = leftFoc := 
+                      insertAtFocus leftFoc (n + 1) k lt left 
+                    let eqR : rightN k lt = rightFoc := 
+                      insertAtFocus rightFoc (n + 1) k lt right
+                    let eqT : topN k lt = topFoc := 
+                      insertAtFocus topFoc (n + 1) k lt top
+                    let leftLem : leftN jj jjw = leftN k lt := by
+                      apply witnessIndependent
+                      exact w
+                      done
+                    let rightLem : rightN jj jjw = rightN k lt := by
+                      apply witnessIndependent
+                      exact w
+                      done 
+                    let topLem : topN jj jjw = topN k lt := by
+                      apply witnessIndependent
+                      exact w
+                      done
+                    let goal : Join (leftN jj jjw) (rightN jj jjw) (topN jj jjw) := by
+                      rw leftLem
+                      rw rightLem
+                      rw topLem
+                      rw eqL
+                      rw eqR
+                      rw eqT
+                      exact lem0
+                      done
+                    goal
+                  | SkipImageCase.image i w => 
+                    let iw : i < n + 1 := skipPreImageBound lt jjw w
+                    match skipImageCase rt.pivot i with
+                    | SkipImageCase.diag ww => 
+                      let lem1 : skip k i = skip k rt.pivot := congrArg (skip k) ww
+                      let lem2 : skip k  rt.pivot = jj := by 
+                            rw (Eq.symm lem1)
+                            exact w
+                            done
+                      absurd (Eq.symm lem2) notPivot
+                    | SkipImageCase.image ii ww => 
+                      let iiw : ii < n := skipPreImageBound rt.pivotLt iw ww
+                      let eqL : 
+                        leftN (skip k i) (skipPlusOne iw) = 
+                          left i iw := 
+                          insertAtImage leftFoc (n + 1) k lt left i iw
+                      let eqR : 
+                        rightN (skip k i) (skipPlusOne iw) = 
+                          right i iw := 
+                          insertAtImage rightFoc (n + 1) k lt right i iw              
+                      let eqT :
+                        topN (skip k i) (skipPlusOne iw) = 
+                          top i iw := 
+                          insertAtImage topFoc (n + 1) k lt top i iw
+                      let leftLem :
+                        leftN jj jjw = leftN (skip k i) (skipPlusOne iw) := 
+                          witnessIndependent leftN jj (skip k i) jjw (skipPlusOne iw) (Eq.symm w)
+                      let rightLem :
+                        rightN jj jjw = rightN (skip k i) (skipPlusOne iw) := 
+                          witnessIndependent rightN jj (skip k i) jjw (skipPlusOne iw) (Eq.symm w)
+                      let topLem :
+                        topN jj jjw = topN (skip k i) (skipPlusOne iw) := 
+                          witnessIndependent topN jj (skip k i) jjw (skipPlusOne iw) (Eq.symm w)
+                      let leftLem2 :
+                        left (skip rt.pivot ii) (skipPlusOne iiw) = left i iw := by
+                          apply witnessIndependent
+                          exact ww
+                          done
+                      let rightLem2 :
+                        right (skip rt.pivot ii) (skipPlusOne iiw) = right i iw := by
+                          apply witnessIndependent
+                          exact ww
+                          done
+                      let topLem2 :
+                        top (skip rt.pivot ii) (skipPlusOne iiw) = top i iw := by
+                          apply witnessIndependent
+                          exact ww
+                          done
+                      let prevJoin := rt.joinRest ii iiw
+                      let goal : Join (leftN jj jjw) (rightN jj jjw) (topN jj jjw) := by
+                        rw leftLem
+                        rw rightLem
+                        rw topLem
+                        rw eqL
+                        rw eqR
+                        rw eqT
+                        rw (Eq.symm leftLem2)
+                        rw (Eq.symm rightLem2)
+                        rw (Eq.symm topLem2)
+                        exact prevJoin
+                        done
+                      goal
+      ⟨topFoc, ⟨pivotN, pivotNLt,
+                       leftPivotN, rightPivotN, topPivotN, joinRestN⟩, topNonPos⟩
+      
+
 end leaner
 
 namespace clunky
