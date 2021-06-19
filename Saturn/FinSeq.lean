@@ -271,8 +271,21 @@ theorem witnessIndependent{α : Type}{n : Nat}(seq: FinSeq n α) :
             exact eqc
             done
 
-#print witnessIndependent
-#check Eq.ndrec 
+theorem skipPreImageBound {i j k n : Nat}: (k < n + 1) → (j < n + 1) → 
+                                skip k i = j → i < n :=
+          fun kw jw eqn =>
+            match skipSharpLowerBound k i with
+              | Or.inl ineq =>
+                let lem1 : i <  j := by 
+                  rw (Eq.symm eqn)
+                  exact ineq
+                  done 
+                let lem2 := Nat.ltOfLtOfLe lem1 jw
+                by 
+                  exact lem2
+                  done
+              | Or.inr ineqn => 
+                  Nat.ltOfLtOfLe ineqn kw
 
 def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
                 (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) : 
@@ -292,19 +305,7 @@ def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
             let  checkFocus : j = k → result = value := fun  _  => rfl
             ⟨result, checkImage, checkFocus⟩
           | SkipImageCase.image i eqn => 
-            let bound : i < n  := 
-              match skipSharpLowerBound k i with
-              | Or.inl ineq =>
-                let lem1 : i <  j := by 
-                  rw (Eq.symm eqn)
-                  exact ineq
-                  done 
-                let lem2 := Nat.ltOfLtOfLe lem1 jw
-                by 
-                  exact lem2
-                  done
-              | Or.inr ineqn => 
-                  Nat.ltOfLtOfLe ineqn kw
+            let bound : i < n  := skipPreImageBound kw jw eqn
             let result := seq i bound
             let checkImage : 
               (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw := 
@@ -340,12 +341,7 @@ def insertAtFocus{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
     fun n k lt seq  =>   
       (provedInsert n value seq k lt k lt).checkFocus rfl
 
-def liftAtImage{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
-    (lt : k < succ n) → (seq :FinSeq n  α) → (i : Nat) → (w : i < n) →    
-      insert value n k lt seq (skip k i) (skipPlusOne w) = seq i w :=
-    fun n k lt seq i w =>  
-      (provedInsert n value seq k lt (skip k i) (skipPlusOne w)).checkImage i w rfl
-
+def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
 namespace leaner
 
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
@@ -361,7 +357,7 @@ def Clause(n : Nat) : Type := FinSeq n (Option Bool)
 
 def Sect(n: Nat) : Type := FinSeq n  Bool
 
-def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
+
 
 structure ClauseSat{n: Nat}(clause : Clause n)(sect: Sect n) where
   coord : Nat
@@ -1161,8 +1157,6 @@ def shiftIsSectionProp (n: Nat): (k j: Fin (n + 1)) →
 
 -- theorems with old style finite sequences
 
-
-def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
 
 structure ClauseSat{n: Nat}(clause : Clause n)(sect: Sect n) where
   coord : Fin n

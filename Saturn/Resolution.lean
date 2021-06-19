@@ -79,7 +79,8 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
                 done
               nwl lem
 
-theorem varResolution (left right top : Option Bool)(join: Join left right top)(sectVal : Bool) :
+
+theorem varResolution {left right top : Option Bool}(join: Join left right top)(sectVal : Bool) :
   Or (varSat left sectVal) (varSat right sectVal) → (varSat top sectVal)  :=
   fun hyp  =>
     match join with
@@ -115,6 +116,148 @@ theorem varResolution (left right top : Option Bool)(join: Join left right top)(
       | Or.inr heq => 
         let lem : top = right := Eq.trans pt (Eq.symm pr)
         Eq.trans lem heq
+
+namespace leaner 
+
+structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
+  pivot : Nat
+  pivotLt : pivot < n + 1
+  leftPivot : left pivot pivotLt = some false
+  rightPivot : right pivot pivotLt = some true
+  topPivot : top pivot pivotLt = none
+  joinRest : (k : Nat) → (w : k < n) →  
+    Join  (left (skip pivot k) (skipPlusOne w)) 
+          (right (skip pivot k) (skipPlusOne w)) 
+          (top (skip pivot k) (skipPlusOne w))
+
+def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
+  (triple : ResolutionTriple left right top) :
+        (sect: Sect (n + 1))  → (ClauseSat left sect) → 
+        (ClauseSat right sect) → (ClauseSat top sect) := 
+          fun sect =>
+            fun ⟨kl, llt, wl⟩ =>
+              fun ⟨kr, rlt, wr⟩ =>
+                 if c : sect (triple.pivot) (triple.pivotLt)  then 
+                    -- the left branch survives
+                    match skipImageCase triple.pivot kl  with
+                    | SkipImageCase.diag eql => 
+                      let lem1 : left kl llt = 
+                            left triple.pivot triple.pivotLt := by
+                            apply witnessIndependent
+                            apply eql
+                            done 
+                      let lem2 : sect kl llt = 
+                            sect triple.pivot triple.pivotLt := by
+                            apply witnessIndependent
+                            apply eql
+                            done 
+                      let lem3 : left kl llt = some true := by
+                        rw wl
+                        rw lem2
+                        rw c
+                        done
+                      let lem4 : left kl llt = some false := by
+                        rw lem1
+                        exact triple.leftPivot
+                        done 
+                      let lem5 : some true = some false := 
+                        Eq.trans (Eq.symm lem3) lem4
+                      let lem6 : true = false := by 
+                        injection lem5
+                        assumption
+                        done
+                      Bool.noConfusion lem6
+                    | SkipImageCase.image i eql => 
+                      let iw : i < n := skipPreImageBound triple.pivotLt llt eql 
+                      let jj := triple.joinRest i iw
+                      let leftLem : 
+                        left kl llt = left (skip triple.pivot i) (skipPlusOne iw) := by
+                          apply witnessIndependent
+                          apply (Eq.symm eql)
+                          done
+                      let rightLem : 
+                        right kl llt = right (skip triple.pivot i) (skipPlusOne iw) := by
+                          apply witnessIndependent
+                          apply (Eq.symm eql)
+                          done
+                      let topLem : 
+                        top kl llt = top (skip triple.pivot i) (skipPlusOne iw) := by
+                          apply witnessIndependent
+                          apply (Eq.symm eql)
+                          done
+                      let join : Join (left kl llt) (right kl llt) (top kl llt)  := by
+                        rw leftLem
+                        rw rightLem
+                        rw topLem
+                        exact triple.joinRest i iw
+                        done 
+                      ⟨kl, llt, varResolution join (sect kl llt) (Or.inl (wl))⟩
+                  else
+                    let cc := eqFalseOfNeTrue c  
+                    match skipImageCase triple.pivot kr  with
+                    | SkipImageCase.diag eql => 
+                      let lem1 : right kr rlt = 
+                            right triple.pivot triple.pivotLt := by
+                            apply witnessIndependent
+                            apply eql
+                            done 
+                      let lem2 : sect kr rlt = 
+                            sect triple.pivot triple.pivotLt := by
+                            apply witnessIndependent
+                            apply eql
+                            done 
+                      let lem3 : right kr rlt = some false := by
+                        rw wr
+                        rw lem2
+                        rw cc
+                        done
+                      let lem4 : right kr rlt = some true := by
+                        rw lem1
+                        exact triple.rightPivot
+                        done 
+                      let lem5 : some false = some true := 
+                        Eq.trans (Eq.symm lem3) lem4
+                      let lem6 : false = true := by 
+                        injection lem5
+                        assumption
+                        done
+                      Bool.noConfusion lem6
+                    | SkipImageCase.image i eql => 
+                      let iw : i < n := skipPreImageBound triple.pivotLt rlt eql 
+                      let jj := triple.joinRest i iw
+                      let leftLem : 
+                        left kr rlt = left (skip triple.pivot i) (skipPlusOne iw) := by
+                          apply witnessIndependent
+                          apply (Eq.symm eql)
+                          done
+                      let rightLem : 
+                        right kr rlt = right (skip triple.pivot i) (skipPlusOne iw) := by
+                          apply witnessIndependent
+                          apply (Eq.symm eql)
+                          done
+                      let topLem : 
+                        top kr rlt = top (skip triple.pivot i) (skipPlusOne iw) := by
+                          apply witnessIndependent
+                          apply (Eq.symm eql)
+                          done
+                      let join : Join (left kr rlt) (right kr rlt) (top kr rlt)  := by
+                        rw leftLem
+                        rw rightLem
+                        rw topLem
+                        exact triple.joinRest i iw
+                        done 
+                      ⟨kr, rlt, varResolution join (sect kr rlt) (Or.inr (wr))⟩
+
+structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
+  (left right top : Clause (n + 1))(k: Nat)(lt : k < succ (n + 1)) where
+    topFoc : Option Bool
+    triple : ResolutionTriple 
+          (insert  leftFoc (n + 1) k lt   left) 
+          (insert  rightFoc (n + 1) k lt right) 
+          (insert  topFoc (n + 1) k lt top)
+    topNonPos : Not (topFoc = some bf) 
+
+end leaner
 
 namespace clunky
 
@@ -165,7 +308,7 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                         exact eql
                         done
                       let lem3 := 
-                        varResolution (left j) (right j) (top j) (triple.joinRest i) 
+                        varResolution  (triple.joinRest i) 
                           (sect j) (Or.inl lem2)
                       ⟨j , lem3⟩
                   else
@@ -199,7 +342,7 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                         exact eqr
                         done
                       let lem3 := 
-                        varResolution (left j) (right j) (top j) (triple.joinRest i) 
+                        varResolution  (triple.joinRest i) 
                           (sect j) (Or.inr lem2)
                       ⟨j , lem3⟩
 
@@ -240,7 +383,7 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                         exact eql
                         done
                       let lem3 := 
-                        varResolution (left j) (right j) (top j) (triple.joinRest i) 
+                        varResolution  (triple.joinRest i) 
                           (sect j) (Or.inl lem2)
                       ⟨j , lem3⟩
                   else
@@ -274,7 +417,7 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                         exact eqr
                         done
                       let lem3 := 
-                        varResolution (left j) (right j) (top j) (triple.joinRest i) 
+                        varResolution  (triple.joinRest i) 
                           (sect j) (Or.inr lem2)
                       ⟨j , lem3⟩
 
