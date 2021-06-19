@@ -18,6 +18,132 @@ theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn
   | some a => 
     fun eq : some (fn a) = none => Option.noConfusion eq
 
+inductive OptCase{α: Type} (opt: Option α) where
+  | noneCase : opt = none → OptCase opt
+  | someCase : (x : α) → (opt = some x) → OptCase opt
+
+def optCase{α: Type} : (opt: Option α) →  OptCase opt :=
+    fun x =>
+    match x with
+    | none =>  
+      OptCase.noneCase rfl
+    | some j => 
+      OptCase.someCase j rfl
+
+def varContains (v1 v2 : Option Bool) : Prop :=
+  ∀ b : Bool, v2 = some b → v1  = some b
+
+infix:65 " ≥ " => varContains
+
+def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 ≥  v2) :=
+  fun v1 v2 =>
+  match v2 with 
+  | none => 
+     let lem : v1 ≥  none := 
+      fun b =>
+        fun hyp =>
+          Option.noConfusion hyp
+     isTrue lem
+  | some b2 => 
+    match v1  with
+    | none => 
+      let lem : Not (none ≥  (some b2)) := 
+         fun hyp => 
+          Option.noConfusion (hyp b2 rfl)
+      isFalse lem
+    | some b1 => 
+          if c : b1 = b2 then 
+            isTrue (fun b => 
+                      fun hyp =>
+                       by
+                        rw c
+                        exact hyp
+                        done)
+          else 
+            isFalse (
+              fun hyp =>
+                  let lem1 := hyp b2 rfl
+                  let lem2 : b1 = b2 := by
+                      injection lem1
+                      assumption
+                      done
+                  c (lem2) 
+            )
+
+
+namespace leaner
+
+
+structure RestrictionClauses{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: FinSeq dom (Clause (n + 1))) where
+  codom : Nat
+  restClauses : FinSeq codom  (Clause n)
+  forward : (k: Nat) → k < dom → Option Nat
+  forwardWit : (k: Nat) → (w: k < dom) → boundOpt codom (forward k w)
+  reverse : (k : Nat) → (k < codom) → Nat
+  reverseWit : (k : Nat) → (w : k < codom) → reverse k w < dom
+  
+structure DroppedProof{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
+    {clauses: FinSeq dom (Clause (n + 1))}(
+        rc: RestrictionClauses branch focus focusLt clauses)  where
+    dropped : (k : Nat) → (w: k < dom) → rc.forward k w = 
+        none → (clauses k w focus focusLt = some branch)
+
+structure ForwardRelation{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
+    {clauses: FinSeq dom (Clause (n + 1))}(
+        rc: RestrictionClauses branch focus focusLt clauses)  where
+    forwardRelation : (k : Nat) → (w: k < dom) → (j: Nat) →  rc.forward k w = some j →
+    (jw : j < rc.codom) →  delete focus focusLt (clauses k w) = 
+      rc.restClauses j jw
+
+structure ReverseRelation{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
+    {clauses: FinSeq dom (Clause (n + 1))}(
+        rc: RestrictionClauses branch focus focusLt clauses)  where
+    relation : (k : Nat) → (w: k < rc.codom) → 
+      rc.restClauses k w = delete focus focusLt 
+        (clauses (rc.reverse k w) (rc.reverseWit k w))
+
+structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
+    {clauses: FinSeq dom (Clause (n + 1))}(
+        rc: RestrictionClauses branch focus focusLt clauses)  where
+    nonPosRev : (k : Nat) → (w: k < rc.codom)  → 
+      Not ((clauses (rc.reverse k w) (rc.reverseWit k w)) focus focusLt = some branch)
+
+def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
+  ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2 k kw = some b → cl1 k kw = some b
+
+infix:65 " ⊇  " => contains
+
+theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
+  cl1 ⊇  cl2 → (sect : Sect n) → ClauseSat cl2 sect → ClauseSat cl1 sect :=
+    fun dom sect  =>
+      fun ⟨j, jw, vs⟩ =>
+        let lem0 :  cl2 j jw = some (sect j jw) := vs 
+        let lem1 := dom j jw (sect j jw) lem0
+        ⟨j, jw, lem1⟩
+
+def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
+          v1 ≥  v2 → cl1 ⊇  cl2 → 
+                (v1 ::: cl1) ⊇ (v2 ::: cl2) := 
+           fun hyp1 hyp2 =>
+            fun k =>
+            match k with
+            | 0 => fun w b =>
+              fun hb => 
+                hyp1 b hb
+            | j + 1  =>  
+              fun  kw b =>
+                fun hb =>
+                  hyp2 j  (leOfSuccLeSucc kw) b hb
+
+def containsTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
+        cl1 ⊇  cl2 → (tail cl1) ⊇ (tail cl2) :=
+        fun hyp =>
+          fun k w b =>
+            fun dHyp =>
+              hyp (k + 1) (succ_lt_succ w) b dHyp           
+
+end leaner
 
 namespace clunky
 
@@ -76,26 +202,6 @@ structure ForwardRelation{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
     forwardRelation : (k : Nat) → (w: k < dom) → (j: Nat) →  rc.forward k w = some j →
     (jw : j < rc.codom) →  dropAt _ focus.val focus.isLt (clauses (⟨k, w⟩) ) = 
       rc.restClauses ⟨j, jw⟩
-
-def optCasesProp : (x : Option Nat) → Or (x = none) (∃ j, x = some j) :=
-  fun x =>
-    match x with
-    | none =>  
-      Or.inl rfl
-    | some j => 
-      Or.inr ⟨j, rfl⟩
-
-inductive OptCase{α: Type} (opt: Option α) where
-  | noneCase : opt = none → OptCase opt
-  | someCase : (x : α) → (opt = some x) → OptCase opt
-
-def optCase{α: Type} : (opt: Option α) →  OptCase opt :=
-    fun x =>
-    match x with
-    | none =>  
-      OptCase.noneCase rfl
-    | some j => 
-      OptCase.someCase j rfl
 
 structure ReverseRelation{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
     {clauses: Fin dom →  Clause (n + 1)}(
@@ -185,47 +291,8 @@ theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
         let lem1 := dom j (sect j) lem0
         ⟨j, lem1⟩
 
-def varContains (v1 v2 : Option Bool) : Prop :=
-  ∀ b : Bool, v2 = some b → v1  = some b
 
-infix:65 " ≥ " => varContains
-
-def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 ≥  v2) :=
-  fun v1 v2 =>
-  match v2 with 
-  | none => 
-     let lem : v1 ≥  none := 
-      fun b =>
-        fun hyp =>
-          Option.noConfusion hyp
-     isTrue lem
-  | some b2 => 
-    match v1  with
-    | none => 
-      let lem : Not (none ≥  (some b2)) := 
-         fun hyp => 
-          Option.noConfusion (hyp b2 rfl)
-      isFalse lem
-    | some b1 => 
-          if c : b1 = b2 then 
-            isTrue (fun b => 
-                      fun hyp =>
-                       by
-                        rw c
-                        exact hyp
-                        done)
-          else 
-            isFalse (
-              fun hyp =>
-                  let lem1 := hyp b2 rfl
-                  let lem2 : b1 = b2 := by
-                      injection lem1
-                      assumption
-                      done
-                  c (lem2) 
-            )
-
-def containPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
+def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
           v1 ≥  v2 → cl1 ⊃  cl2 → 
                 (v1 :::: cl1) ⊃  (v2 :::: cl2) := 
            fun hyp1 hyp2 =>
@@ -239,19 +306,6 @@ def containPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
                 fun hb =>
                   hyp2 ⟨j, leOfSuccLeSucc w⟩ b hb
 
-structure DominateList{n dom codom : Nat}
-      (l1 : Fin dom → Clause n)(l2 : Fin codom → Clause n) where
-    incl : (j : Fin codom) → SigmaEqElem l1 (l2 j)
-    proj : (j : Fin dom) → SigmaPredElem l2 ((l1 j) ⊃ .)
-  
-structure RelDominateList{n dom codom prev : Nat}
-      (l1 : Fin dom → Clause n)(l2 : Fin codom → Clause n)
-      (givens : Fin prev → Clause n) where
-    incl : (j : Fin codom) → SigmaEqElem l1 (l2 j)
-    proj : (j : Fin dom) → 
-              Sum  
-                (SigmaPredElem l2 ((l1 j) ⊃ .))
-                (SigmaPredElem givens ((l1 j) ⊃ .))
 
 def containsTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
         cl1 ⊃  cl2 → (dropHead n cl1) ⊃ (dropHead n cl2) :=
@@ -275,7 +329,7 @@ def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) →
           match varDomDecide (cl1 ⟨0, zeroLtSucc _⟩) (cl2 ⟨0, zeroLtSucc _⟩) with
           | isTrue pfHead =>
               let lem0 := 
-                (containPrepend (cl1 ⟨0, zeroLtSucc _⟩) (cl2 ⟨0, zeroLtSucc _⟩) 
+                (containsPrepend (cl1 ⟨0, zeroLtSucc _⟩) (cl2 ⟨0, zeroLtSucc _⟩) 
                     (dropHead m cl1) (dropHead m cl2) pfHead) pfTail 
               let lem1a :
                 (j: Fin (m + 1)) → 
@@ -313,3 +367,27 @@ def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) →
 
 instance {n: Nat}{cl: Clause n} : DecidablePred (contains cl) :=
   decideContains n cl
+
+def optCasesProp : (x : Option Nat) → Or (x = none) (∃ j, x = some j) :=
+  fun x =>
+    match x with
+    | none =>  
+      Or.inl rfl
+    | some j => 
+      Or.inr ⟨j, rfl⟩
+
+
+
+structure DominateList{n dom codom : Nat}
+      (l1 : Fin dom → Clause n)(l2 : Fin codom → Clause n) where
+    incl : (j : Fin codom) → SigmaEqElem l1 (l2 j)
+    proj : (j : Fin dom) → SigmaPredElem l2 ((l1 j) ⊃ .)
+  
+structure RelDominateList{n dom codom prev : Nat}
+      (l1 : Fin dom → Clause n)(l2 : Fin codom → Clause n)
+      (givens : Fin prev → Clause n) where
+    incl : (j : Fin codom) → SigmaEqElem l1 (l2 j)
+    proj : (j : Fin dom) → 
+              Sum  
+                (SigmaPredElem l2 ((l1 j) ⊃ .))
+                (SigmaPredElem givens ((l1 j) ⊃ .))
