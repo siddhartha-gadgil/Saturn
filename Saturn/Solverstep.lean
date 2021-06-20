@@ -30,6 +30,33 @@ def optCase{α: Type} : (opt: Option α) →  OptCase opt :=
     | some j => 
       OptCase.someCase j rfl
 
+
+theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some 0) :=
+  match n with
+  | none => fun hyp => 
+    Option.noConfusion hyp
+  | some j => 
+    fun hyp : some (j + 1) = some 0 =>
+    let lem : j + 1 = 0 := by
+      injection hyp
+      assumption
+    Nat.noConfusion lem
+
+theorem mapPlusOneShift{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1) → 
+  n = some m :=
+    match n with
+  | none => fun hyp => 
+    Option.noConfusion hyp
+  | some j => 
+    fun hyp : some (j + 1) = some (m + 1) => 
+      let lem1 : j + 1 = m + 1 := by
+        injection hyp
+        assumption
+      let lem2 : j = m := by
+        injection lem1
+        assumption 
+    congrArg some lem2
+
 def varContains (v1 v2 : Option Bool) : Prop :=
   ∀ b : Bool, v2 = some b → v1  = some b
 

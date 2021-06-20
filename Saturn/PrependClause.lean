@@ -56,31 +56,33 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
 
 namespace PrependClause
 
-theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some 0) :=
-  match n with
-  | none => fun hyp => 
-    Option.noConfusion hyp
-  | some j => 
-    fun hyp : some (j + 1) = some 0 =>
-    let lem : j + 1 = 0 := by
-      injection hyp
-      assumption
-    Nat.noConfusion lem
-
-theorem mapPlusOneShift{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1) → 
-  n = some m :=
-    match n with
-  | none => fun hyp => 
-    Option.noConfusion hyp
-  | some j => 
-    fun hyp : some (j + 1) = some (m + 1) => 
-      let lem1 : j + 1 = m + 1 := by
-        injection hyp
-        assumption
-      let lem2 : j = m := by
-        injection lem1
-        assumption 
-    congrArg some lem2
+def droppedProof{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
+    (clauses: Fin dom →  Clause (n + 1)):
+      (rc: RestrictionClauses branch focus clauses) → 
+        (head : Clause (n + 1)) → (neg : Not (head focus = some branch)) →
+          DroppedProof rc → 
+          DroppedProof (prependClause  branch focus clauses rc head neg) := 
+          fun rc head neg drc =>
+            let rcN := prependClause  branch focus clauses rc head neg 
+            let domN := dom + 1
+            let codomN := rc.codom + 1
+            let clausesN := prepend _ head clauses
+            let droppedN : 
+              (k : Nat) → (w: k < domN) → rcN.forward k w = none → 
+                  clausesN ⟨k, w⟩ focus = some branch :=
+                fun k =>
+                  match k with
+                  | 0 => fun w wf => 
+                    Option.noConfusion wf
+                  | l + 1 => 
+                    fun w nw =>
+                      let lem1 : rcN.forward (l + 1) w = 
+                        (rc.forward l (leOfSuccLeSucc w)).map (. + 1)  := by rfl
+                      let lem2 := Eq.trans (Eq.symm lem1) nw
+                      let lem3 := mapNoneIsNone _ _ lem2
+                      let lem4 := drc.dropped l (leOfSuccLeSucc w) lem3
+                      lem4
+            ⟨droppedN⟩
 
 def forwardRelation{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
     (clauses: Fin dom →  Clause (n + 1)):
@@ -88,8 +90,8 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
         (head : Clause (n + 1)) → (neg : Not (head focus = some branch)) →
           ForwardRelation rc → 
           ForwardRelation (prependClause  branch focus clauses rc head neg) := 
-        fun rc head pos frc =>
-          let rcN := prependClause  branch focus clauses rc head pos  
+        fun rc head neg frc =>
+          let rcN := prependClause  branch focus clauses rc head neg 
           let domN := dom + 1
           let codomN := rc.codom + 1
           let clausesN := prepend _ head clauses
