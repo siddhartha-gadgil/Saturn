@@ -143,6 +143,66 @@ def containsTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
             fun dHyp =>
               hyp (k + 1) (succ_lt_succ w) b dHyp           
 
+def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
+    (clauses: FinSeq dom (Clause (n + 1)))(rc: RestrictionClauses branch focus focusLt clauses) 
+    (dp : DroppedProof rc) (fr: ForwardRelation rc): 
+      (sect : Sect n) → 
+        ((j : Nat) → (jw : j < rc.codom) → ClauseSat (rc.restClauses j jw) sect) → 
+        (j : Nat) → (jw : j < dom) →  
+          ClauseSat (clauses j jw) (insert branch n focus focusLt sect) := 
+        fun sect pf =>
+          fun k w => 
+            let splitter := optCase (rc.forward k w)
+            match splitter with
+            | OptCase.noneCase eqn => 
+              let lem1 : clauses k w focus focusLt = some branch := dp.dropped k w eqn
+              let lem2 : insert branch n focus focusLt sect focus focusLt = branch := by 
+                apply insertAtFocus
+                done
+              let lem3 : clauses k w focus focusLt = 
+                some (insert branch n focus focusLt sect focus focusLt) := 
+                by
+                  rw lem1
+                  apply (congrArg some)
+                  exact Eq.symm lem2
+                  done
+                -- Eq.trans lem1 (congrArg some (Eq.symm lem3))
+              ⟨focus, focusLt, lem3⟩
+            | OptCase.someCase j eqn => 
+              let bound := rc.forwardWit k w 
+              let jWitAux : boundOpt rc.codom (some j) := by
+                rw (Eq.symm eqn)
+                exact bound
+                done
+              let jWit : j < rc.codom := jWitAux
+              let lem1 := fr.forwardRelation k w j eqn jWit
+              let ⟨i, iw, vs⟩ := pf j jWit
+              let lem2 : rc.restClauses j jWit i iw = some (sect i iw) := vs
+              let lem3 : delete focus focusLt (clauses k w) i iw =
+                  some (sect i iw) := 
+                    by
+                    rw (Eq.symm lem2)
+                    rw lem1
+                    done
+              let lem4 : delete focus focusLt (clauses k w) i iw =
+                clauses k w (skip focus i) (skipPlusOne iw) := by
+                  rfl
+                  done
+              let lem5 : insert branch n focus focusLt sect 
+                              (skip focus i) (skipPlusOne iw) =
+                                  sect i iw := by
+                                    apply insertAtImage
+                                    done
+              let lem6 : clauses k w (skip focus i) (skipPlusOne iw) =
+                          some (insert branch n focus focusLt sect 
+                              (skip focus i) (skipPlusOne iw)) := by
+                              rw (Eq.symm lem4)
+                              rw lem3
+                              rw lem5
+                              done
+              ⟨skip focus i, skipPlusOne iw, lem6⟩
+
+
 end leaner
 
 namespace clunky
