@@ -654,6 +654,78 @@ structure BranchResolutionProof{dom n: Nat}(bf: Bool)(focus : Nat)(focusLt : foc
     nonPos : Not (topFocus = some bf)
     provedTree : ResolutionProof clauses (insert topFocus n focus focusLt top)
 
+def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
+    (clauses: FinSeq dom (Clause (n + 2)))(rc: RestrictionClauses branch focus focusLt clauses) 
+    (np : NonPosReverse rc) (rr: ReverseRelation rc): (top : Clause (n + 1)) → 
+      (tree : ResolutionTree (rc.restClauses)) → treeCheck tree top → treeTop tree = top
+       → BranchResolutionProof branch focus focusLt clauses top  := 
+      fun top tree =>
+        match tree with
+        | ResolutionTree.assumption j jw => 
+          fun tpf ttp =>
+            let k := rc.reverse j jw
+            let kw : k < dom := rc.reverseWit j jw
+            let tree := ResolutionTree.assumption k kw
+            let cl := clauses k kw
+            let topFocus := cl focus focusLt
+            let checkCl : treeCheck tree cl := by rfl
+            let checkTopCl : treeTop tree = cl := by rfl
+            let nonPosLem : Not (topFocus = some branch)  := 
+                np.nonPosRev j jw
+            let lem1 : rc.restClauses j jw = 
+                  delete focus focusLt (clauses k kw) 
+                       := by
+                       apply rr.relation
+                       done
+            let lem3 : insert (cl focus focusLt) (n + 1) focus focusLt 
+                          (delete focus focusLt cl) = cl 
+                          := insertDelete focus focusLt cl
+            let lem : insert topFocus (n + 1) focus focusLt top = cl := by
+                      rw (Eq.symm tpf)
+                      rw lem1
+                      rw lem3
+                      done 
+            let check : treeCheck tree (insert topFocus (n + 1) focus focusLt top) := by
+                      rw lem 
+                      rfl
+                      done 
+            let checkTop : treeTop tree = insert topFocus (n + 1) focus focusLt top := by
+                      rw lem 
+                      rfl
+                      done 
+            ⟨topFocus, nonPosLem, ⟨tree, check, checkTop⟩⟩
+        | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
+            fun tpf (tt : topt = top)  => 
+            let lem0 :  
+              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
+               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+                := tpf
+              let lemLc : treeCheck leftTree left := lem0.left.left
+              let lemRc := lem0.left.right
+              let lemLt := lem0.right.left
+              let lemRt := lem0.right.right
+              let leftBase : BranchResolutionProof branch focus focusLt clauses left := 
+                        pullBackTree branch focus focusLt clauses rc np rr left leftTree lemLc lemLt
+              let rightBase : BranchResolutionProof branch focus focusLt clauses right := 
+                        pullBackTree branch focus focusLt clauses rc np rr right rightTree lemRc lemRt
+              let ⟨leftFoc, leftNP, ⟨leftLiftTree, leftCheck, leftCheckTop⟩⟩ := leftBase
+              let ⟨rightFoc, rightNP, ⟨rightLiftTree, rightCheck, rightCheckTop⟩⟩ := rightBase
+              let trip : ResolutionTriple left right top := by
+                    rw (Eq.symm tt)
+                    exact triple
+                    done 
+              let liftedTriple := 
+                    liftResolutionTriple branch leftFoc rightFoc left right top 
+                          focus focusLt leftNP rightNP trip
+              let ⟨topFoc, liftTriple, topNonPos⟩ := liftedTriple
+              let tree := ResolutionTree.resolve
+                              (insert leftFoc _ focus focusLt left)
+                              (insert rightFoc _ focus focusLt right)
+                              (insert topFoc _ focus focusLt top)
+                              leftLiftTree rightLiftTree liftTriple
+              let check := And.intro (And.intro leftCheck rightCheck) 
+                                      (And.intro leftCheckTop rightCheckTop)
+              ⟨topFoc, topNonPos, ⟨tree, check, rfl⟩⟩
 
 end leaner
 
@@ -1093,7 +1165,6 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Fin (n + 2))
                        := by
                        apply rr.relation
                        done
-            let lem2 := Eq.trans (Eq.symm tpf) lem1
             let lem3 : liftAt (cl ⟨focus.val, focus.isLt⟩) (n + 1) focus.val focus.isLt 
                           (dropAt (n + 1) focus.val focus.isLt cl) = cl 
                           := liftDrop (n + 1) focus.val focus.isLt cl
@@ -1108,7 +1179,8 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Fin (n + 2))
                       liftAt (cl foc ) (n + 1) focus.val focus.isLt 
                           (dropAt (n + 1) focus.val focus.isLt cl)) lemSilly
             let lem : liftAt topFocus (n + 1) focus.val focus.isLt top = cl := by
-                      rw lem2
+                      rw (Eq.symm tpf)
+                      rw lem1
                       rw (Eq.symm lem4)
                       rw lem3
                       done 
