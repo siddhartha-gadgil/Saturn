@@ -1079,7 +1079,6 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Fin (n + 2))
         match tree with
         | ResolutionTree.assumption ⟨j, jw⟩ => 
           fun tpf ttp =>
-            let lem0 : rc.restClauses ⟨j, jw⟩ = top := tpf
             let k := rc.reverse j jw
             let kw : k < dom := rc.reverseWit j jw
             let tree := ResolutionTree.assumption ⟨k, kw⟩
@@ -1094,7 +1093,7 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Fin (n + 2))
                        := by
                        apply rr.relation
                        done
-            let lem2 := Eq.trans (Eq.symm lem0) lem1
+            let lem2 := Eq.trans (Eq.symm tpf) lem1
             let lem3 : liftAt (cl ⟨focus.val, focus.isLt⟩) (n + 1) focus.val focus.isLt 
                           (dropAt (n + 1) focus.val focus.isLt cl) = cl 
                           := liftDrop (n + 1) focus.val focus.isLt cl

@@ -347,6 +347,46 @@ def insertAtImage(value: α) : (n : Nat) →  (k: Nat) →
       fun n k lt seq i iw => 
        (provedInsert n value seq k lt (skip k i) (skipPlusOne iw)).checkImage i iw rfl 
 
+def insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α) :
+  insert (seq k kw) n k kw (delete k kw seq) = seq := 
+    let delSeq := delete k kw seq
+    funext (
+      fun j =>
+        funext (
+          fun jw => 
+            match skipImageCase k j with
+            | SkipImageCase.diag eqn => 
+              let lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw =
+                insert (seq k kw) n k kw (delete k kw seq) k kw := by
+                  apply witnessIndependent
+                  apply eqn
+                  done
+              by 
+                rw lem1
+                rw (insertAtFocus (seq k kw) n k kw (delete k kw seq))
+                apply witnessIndependent
+                apply (Eq.symm eqn)
+                done  
+            | SkipImageCase.image i eqn => 
+              let iw : i < n := skipPreImageBound kw jw eqn
+              let lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw
+                = insert (seq k kw) n k kw (delete k kw seq) (skip k i) (skipPlusOne iw) := 
+                  by 
+                    apply witnessIndependent
+                    apply (Eq.symm eqn)
+                    done
+              let lem2 := insertAtImage (seq k kw) n k kw (delete k kw seq) i iw
+              let lem3 : delete k kw seq i iw = seq (skip k i) (skipPlusOne iw) := by rfl
+              by
+                rw lem1
+                rw lem2
+                rw lem3
+                apply witnessIndependent
+                exact eqn
+                done
+        )
+    )
+
 def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
 namespace leaner
 
