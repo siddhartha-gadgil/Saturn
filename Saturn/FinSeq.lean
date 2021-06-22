@@ -525,15 +525,142 @@ def depUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :α) → β x)
             ( x : α) : updateType β a ValType x := 
           (provedDepUpdate fn a ValType val x).result
 
+structure Sect{α β : Type}{n m : Nat}(total : FinSeq n α) (base : FinSeq m β)
+        (proj: (i: Nat) → i < n → Nat)(bound : (i : Nat) → (w : i < n) → proj i w < m) where
+    sect: (j : Nat) → j < m → Nat
+    sectBound : (j : Nat) → (bd : j < m) → sect j bd < n
+    equation: (j : Nat) → (bd : j < m) → proj (sect j bd) (sectBound j bd) = j
 
-structure GroupedSequence (n: Nat) (α β : Type)(part : α → β) where
-  seq : FinSeq n α
+
+structure GroupedSequence {n: Nat} {α β : Type}(part : α → β)(seq : FinSeq n α) where
   length : β → Nat
   seqs : (b : β) → FinSeq (length b) α
   proj: (j : Nat) → (jw : j < n) → ElemInSeq (seqs (part (seq j jw))) (seq j jw)
-  incl : (b : β) → (j : Nat) → (jw : j < length b) → ElemInSeq seq (seqs b j jw)  
+  sects : (b : β) → (j : Nat) → (jw : j < length b) → Nat
+  sectsBound : (b : β) → (j : Nat) → (jw : j < length b) → sects b j jw < n
+  equations: (b : β) → (j : Nat) → (jw : j < length b) → 
+          (proj (sects b j jw) (sectsBound b j jw)).index = j
 
 
+structure GroupedSequenceBranch{n: Nat} {α β : Type}(part : α → β)
+      (seq : FinSeq n α)(b : β) where
+  length : Nat
+  seqs : FinSeq (length) α
+  proj: (j : Nat) → (jw : j < n) → part (seq j jw) = b  → ElemInSeq seqs (seq j jw)
+  sects : (j : Nat) → (jw : j < length) → ElemInSeq seq (seqs j jw)
+  
+def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq : FinSeq n α} 
+      (gps : (b: β) →   GroupedSequenceBranch part seq b) :
+              (head: α) → 
+                ((b: β) →  GroupedSequenceBranch part (head ::: seq) b) := 
+                fun head b =>
+                  let seqN := head ::: seq
+                  let br := gps b 
+                  if c : part head = b then                    
+                    let lengthN := br.length + 1
+                    let seqsN := head ::: br.seqs
+                    let projN : 
+                      (j : Nat) → (jw : j < n + 1) → part (seqN j jw) = 
+                          b  → ElemInSeq seqsN (seqN j jw) := 
+                          fun j =>
+                          match j with
+                          | 0 =>
+                            fun jw eqn =>
+                            ⟨0, zeroLtSucc _, rfl⟩
+                          | l + 1 => 
+                            fun jw eqn =>
+                            let lw : l < n := leOfSuccLeSucc jw
+                            let ⟨i, iw, ieq⟩ := br.proj l lw eqn
+                            let lem1 : seqN (l + 1) jw = seq l lw := rfl
+                            let lem2 : seqsN (i + 1) (succ_lt_succ iw) =
+                                    br.seqs i iw := by rfl
+                            ⟨i + 1, succ_lt_succ iw, by (
+                              rw lem2
+                              rw lem1
+                              exact ieq
+                            )⟩
+                    let sectsN : (j : Nat) → (jw : j < lengthN) → 
+                          ElemInSeq seqN (seqsN j jw) :=
+                        fun j =>
+                          match j with
+                          | 0 =>
+                            fun jw  =>
+                            ⟨0, zeroLtSucc _, rfl⟩
+                          | l + 1 => 
+                            fun jw  =>
+                            let lw : l < br.length := leOfSuccLeSucc jw
+                            let ⟨i, iw, ieq⟩ := br.sects l lw
+                            let lem1 : seqsN (l + 1) jw = br.seqs l lw := rfl
+                            let lem2 : seqN (i + 1) (succ_lt_succ iw) =
+                                    seq i iw := by rfl
+                            ⟨i + 1, succ_lt_succ iw, by (
+                              rw lem2
+                              rw lem1
+                              exact ieq
+                            )⟩
+                    ⟨lengthN, seqsN, projN, sectsN⟩
+                  else
+                    let lengthN := br.length
+                    let seqsN := br.seqs 
+                    let projN : 
+                      (j : Nat) → (jw : j < n + 1) → part (seqN j jw) = 
+                          b  → ElemInSeq seqsN (seqN j jw) := 
+                          fun j =>
+                          match j with
+                          | 0 =>
+                            fun jw eqn =>
+                              absurd eqn c
+                          | l + 1 => 
+                            fun jw eqn =>
+                            let lw : l < n := leOfSuccLeSucc jw
+                            br.proj l lw eqn
+                    let sectsN : (j : Nat) → (jw : j < lengthN) → 
+                          ElemInSeq seqN (seqsN j jw) := 
+                          fun j jw =>
+                            let ⟨i, iw, ieq⟩ := br.sects j jw
+                            let lem1 : seqsN j jw = br.seqs j jw := rfl
+                            let lem2 : seqN (i + 1) (succ_lt_succ iw) =
+                                    seq i iw := by rfl
+                            ⟨i + 1, succ_lt_succ iw, by (
+                              rw lem2
+                              rw lem1
+                              exact ieq
+                            )⟩
+                    ⟨lengthN, seqsN, projN, sectsN⟩ 
+
+-- def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq : FinSeq n α} 
+--       (gp: GroupedSequence part seq) :
+--               (head: α) → GroupedSequence part (head ::: seq) := 
+--             fun head =>
+--               let group := part head
+--               let lengthN := update gp.length group (gp.length group + 1)
+--               let seqsN : (b : β) → FinSeq (lengthN b) α := 
+--                 fun b =>
+--                 if c : b = group then
+--                   let lem1 : lengthN b = 
+--                     (update gp.length group (gp.length group + 1)) b := by rfl
+--                   let lem2 : lengthN b = gp.length group + 1 := by
+--                     rw lem1
+--                     rw (congrArg (update gp.length group (gp.length group + 1)) c)
+--                     rw updateAtFocus
+--                     done 
+--                   by 
+--                     rw lem2
+--                     exact head ::: (gp.seqs group)
+--                 else
+--                   let lem1 : lengthN b = 
+--                     (update gp.length group (gp.length group + 1)) b := by rfl
+--                   let lem2 : lengthN b = gp.length b := by
+--                     rw lem1
+--                     rw updateNotAtFocus
+--                     exact c
+--                     done
+--                   by 
+--                     rw lem2
+--                     exact gp.seqs b 
+--                     done
+
+--               ⟨lengthN, seqsN, sorry, sorry, sorry, sorry⟩  
 
 def varSat (clVal: Option Bool)(valuatVal : Bool) : Prop := clVal = some valuatVal
 namespace leaner
