@@ -240,6 +240,11 @@ theorem headTail{α : Type}{n: Nat}(seq : FinSeq (n + 1) α):
             | i + 1 => by rfl
         )
 
+theorem nullsEqual{α: Type}(s1 s2 : FinSeq 0 α) : s1 = s2 :=
+  funext (fun j =>
+            funext (fun lt =>
+              nomatch lt))
+
 def delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α := 
   fun j w =>
     seq (skip k j) (skipPlusOne w)
@@ -252,6 +257,9 @@ structure ProvedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
 
 theorem propValue(p: Prop) : (a b: p) → a = b :=
                 fun a b => by rfl
+
+#print congr
+#print Eq.ndrec
 
 theorem witnessIndependent{α : Type}{n : Nat}(seq: FinSeq n α) :
     (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
@@ -386,6 +394,146 @@ def insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n
                 done
         )
     )
+
+structure ElemInSeq{α: Type}{n : Nat} (seq : FinSeq n α) (elem : α) where
+  index: Nat
+  bound : index < n
+  equation : seq index bound = elem
+
+-- just for lookup
+def transport(α β : Type)(eql: α = β): α → β :=
+  fun x =>
+     Eq.mp eql x
+
+structure ProvedUpdate{α β: Type}(fn : α → β)( a : α )( val : β )( x : α) where
+  result : β
+  checkFocus : (x = a) → result = val
+  checkNotFocus : Not (x = a) → result = fn x
+
+def provedUpdate{α β: Type}[DecidableEq α](fn : α → β)( a : α )( val : β )( x : α) : 
+  ProvedUpdate fn a val x :=
+    if c : x = a then 
+      let result := val
+      let checkFocus : (x = a) → result = val := fun _ => rfl
+      let checkNotFocus : Not (x = a) → result = fn x := fun d => absurd c d
+      ⟨result, checkFocus, checkNotFocus⟩
+    else 
+      let result := fn x
+      let checkFocus : (x = a) → result = val := fun d => absurd d c
+      let checkNotFocus : Not (x = a) → result = fn x := fun _ => rfl 
+      ⟨result, checkFocus, checkNotFocus⟩
+
+def update{α β : Type}[DecidableEq α](fn : α → β)( a : α )( val : β )( x : α) : β :=
+  (provedUpdate fn a val x).result
+
+def updateAtFocus{α β: Type}[DecidableEq α](fn : α → β)( a : α )( val : β ) :
+  (update fn a val a = val) := (provedUpdate fn a val a).checkFocus rfl
+
+def updateNotAtFocus{α β: Type}[DecidableEq α](fn : α → β)( a : α )( val : β )( x : α) :
+  Not (x = a) →  (update fn a val x = fn x) :=
+    fun hyp =>
+      (provedUpdate fn a val x).checkNotFocus hyp
+
+structure ProvedUpdateType{α : Type}(fn : α → Type)( a : α )( val : Type )( x : α) where
+  result : Type
+  checkFocus : (x = a) → result = val
+  checkNotFocus : Not (x = a) → result = fn x
+
+def provedUpdateType{α : Type}[DecidableEq α](fn : α → Type)( a : α )( val : Type )( x : α) : 
+  ProvedUpdateType fn a val x :=
+    if c : x = a then 
+      let result := val
+      let checkFocus : (x = a) → result = val := fun _ => rfl
+      let checkNotFocus : Not (x = a) → result = fn x := fun d => absurd c d
+      ⟨result, checkFocus, checkNotFocus⟩
+    else 
+      let result := fn x
+      let checkFocus : (x = a) → result = val := fun d => absurd d c
+      let checkNotFocus : Not (x = a) → result = fn x := fun _ => rfl 
+      ⟨result, checkFocus, checkNotFocus⟩
+
+def updateType{α: Type}[DecidableEq α](fn : α → Type)( a : α )( val : Type )( x : α) : Type :=
+  (provedUpdateType fn a val x).result
+
+def updateAtFocusType{α : Type}[DecidableEq α](fn : α → Type)( a : α )( val : Type ) :
+  (updateType fn a val a = val) := (provedUpdateType fn a val a).checkFocus rfl
+
+def updateNotAtFocusType{α : Type}[DecidableEq α](fn : α → Type)( a : α )( val : Type )( x : α) :
+  Not (x = a) →  (updateType fn a val x = fn x) :=
+    fun hyp =>
+      (provedUpdateType fn a val x).checkNotFocus hyp
+
+
+structure ProvedDepUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :α) → β x)
+          ( a : α )(ValType : Type)( val : ValType )
+            ( x : α) where
+  result : updateType β a ValType x
+  checkFocus : (eqn : x = a) → result = 
+          Eq.mpr (by 
+            rw eqn
+            apply updateAtFocusType
+            done 
+            ) val
+  checkNotFocus : (neq:  Not (x = a)) → result = 
+          Eq.mpr (by
+            apply updateNotAtFocusType 
+            exact neq
+            done)  (fn x)
+
+def provedDepUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :α) → β x)
+          ( a : α )(ValType : Type)( val : ValType )
+            ( x : α) : ProvedDepUpdate fn a ValType val x := 
+          if c : x = a then
+            let result : updateType β a ValType x := Eq.mpr (by 
+              rw c
+              apply updateAtFocusType
+              done 
+            ) val
+            let checkFocus : (eqn : x = a) → result = 
+              Eq.mpr (by 
+                rw eqn
+                apply updateAtFocusType
+                done 
+                ) val := fun _ => rfl
+            let checkNotFocus : (neq:  Not (x = a)) → result = 
+              Eq.mpr (by
+                apply updateNotAtFocusType 
+                exact neq
+                done)  (fn x) := fun d => absurd c d
+            ⟨result, checkFocus, checkNotFocus⟩
+          else 
+            let result : updateType β a ValType x := Eq.mpr (by
+                apply updateNotAtFocusType 
+                exact c
+                done)  (fn x)
+            let checkFocus : (eqn : x = a) → result = 
+              Eq.mpr (by 
+                rw eqn
+                apply updateAtFocusType
+                done 
+              ) val := fun d => absurd d c
+            let checkNotFocus : (neq:  Not (x = a)) → result = 
+              Eq.mpr (by
+                apply updateNotAtFocusType 
+                exact neq
+                done)  (fn x) := fun _ => rfl
+            ⟨result, checkFocus, checkNotFocus⟩
+
+
+def depUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :α) → β x)
+          ( a : α )(ValType : Type)( val : ValType )
+            ( x : α) : updateType β a ValType x := 
+          (provedDepUpdate fn a ValType val x).result
+
+
+structure GroupedSequence (n: Nat) (α β : Type) where
+  seq : FinSeq n α
+  length : β → Nat
+  seqs : (b : β) → FinSeq (length b) α
+  proj: (j : Nat) → (jw : j < n) → Σ b : β, ElemInSeq (seqs b) (seq j jw)
+  incl : (b : β) → (j : Nat) → (jw : j < length b) → ElemInSeq seq (seqs b j jw)  
+
+
 
 def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
 namespace leaner

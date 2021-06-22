@@ -168,7 +168,24 @@ def containsTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
         fun hyp =>
           fun k w b =>
             fun dHyp =>
-              hyp (k + 1) (succ_lt_succ w) b dHyp           
+              hyp (k + 1) (succ_lt_succ w) b dHyp
+
+def containsRefl{n: Nat} (cl : Clause (n + 1)) :   
+  cl ⊇ cl :=
+    fun k w b => 
+      fun hyp =>
+        hyp
+
+def containsTrans{n: Nat} (cl1 cl2 cl3 : Clause (n + 1)) :
+        cl1 ⊇  cl2 → cl2 ⊇ cl3 →  cl1 ⊇ cl3 :=
+        fun hyp1 hyp2 => 
+          fun k w b =>
+            fun dHyp =>
+              by
+                apply hyp1
+                apply hyp2
+                apply dHyp
+                done
 
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
     (clauses: FinSeq dom (Clause (n + 1)))(rc: RestrictionClauses branch focus focusLt clauses) 
