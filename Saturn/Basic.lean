@@ -4,7 +4,7 @@ namespace clunky
 
 def Clause(n : Nat) : Type := (Fin n) → Option Bool
 
-def Sect(n: Nat) : Type := Fin n → Bool
+def Valuat(n: Nat) : Type := Fin n → Bool
 
 end clunky
 

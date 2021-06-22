@@ -80,30 +80,30 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
               nwl lem
 
 
-theorem varResolution {left right top : Option Bool}(join: Join left right top)(sectVal : Bool) :
-  Or (varSat left sectVal) (varSat right sectVal) → (varSat top sectVal)  :=
+theorem varResolution {left right top : Option Bool}(join: Join left right top)(valuatVal : Bool) :
+  Or (varSat left valuatVal) (varSat right valuatVal) → (varSat top valuatVal)  :=
   fun hyp  =>
     match join with
     | Join.noneNone pl pr pt => 
       match hyp with
       | Or.inl heq => 
-        let contra: none = some (sectVal) := Eq.trans (Eq.symm pl) heq
+        let contra: none = some (valuatVal) := Eq.trans (Eq.symm pl) heq
         Option.noConfusion contra
       | Or.inr heq => 
-        let contra: none = some (sectVal) := Eq.trans (Eq.symm pr) heq
+        let contra: none = some (valuatVal) := Eq.trans (Eq.symm pr) heq
         Option.noConfusion contra 
     | Join.someNone b pl pr pt =>
       match hyp with
-      | Or.inl (heq : left = some sectVal) => 
+      | Or.inl (heq : left = some valuatVal) => 
         let lem : top = left := Eq.trans pt (Eq.symm pl)
         Eq.trans lem heq
       | Or.inr heq => 
-        let contra: none = some (sectVal) := Eq.trans (Eq.symm pr) heq
+        let contra: none = some (valuatVal) := Eq.trans (Eq.symm pr) heq
         Option.noConfusion contra  
     | Join.noneSome b pl pr pt =>
       match hyp with
       | Or.inl heq => 
-        let contra: none = some (sectVal) := Eq.trans (Eq.symm pl) heq
+        let contra: none = some (valuatVal) := Eq.trans (Eq.symm pl) heq
         Option.noConfusion contra
       | Or.inr heq => 
         let lem : top = right := Eq.trans pt (Eq.symm pr)
@@ -132,12 +132,12 @@ structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
 
 def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
-        (sect: Sect (n + 1))  → (clauseSat left sect) → 
-        (clauseSat right sect) → (clauseSat top sect) := 
-          fun sect =>
+        (valuat: Valuat (n + 1))  → (clauseSat left valuat) → 
+        (clauseSat right valuat) → (clauseSat top valuat) := 
+          fun valuat =>
             fun ⟨kl, ⟨llt, wl⟩⟩ =>
               fun ⟨kr, ⟨rlt, wr⟩⟩ =>
-                 if c : sect (triple.pivot) (triple.pivotLt)  then 
+                 if c : valuat (triple.pivot) (triple.pivotLt)  then 
                     -- the left branch survives
                     match skipImageCase triple.pivot kl  with
                     | SkipImageCase.diag eql => 
@@ -146,8 +146,8 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                             apply witnessIndependent
                             apply eql
                             done 
-                      let lem2 : sect kl llt = 
-                            sect triple.pivot triple.pivotLt := by
+                      let lem2 : valuat kl llt = 
+                            valuat triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply eql
                             done 
@@ -191,7 +191,7 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                         rw topLem
                         exact triple.joinRest i iw
                         done 
-                      ⟨kl, ⟨llt, varResolution join (sect kl llt) (Or.inl (wl))⟩⟩
+                      ⟨kl, ⟨llt, varResolution join (valuat kl llt) (Or.inl (wl))⟩⟩
                   else
                     let cc := eqFalseOfNeTrue c  
                     match skipImageCase triple.pivot kr  with
@@ -201,8 +201,8 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                             apply witnessIndependent
                             apply eql
                             done 
-                      let lem2 : sect kr rlt = 
-                            sect triple.pivot triple.pivotLt := by
+                      let lem2 : valuat kr rlt = 
+                            valuat triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply eql
                             done 
@@ -246,16 +246,16 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                         rw topLem
                         exact triple.joinRest i iw
                         done 
-                      ⟨kr, ⟨rlt, varResolution join (sect kr rlt) (Or.inr (wr))⟩⟩
+                      ⟨kr, ⟨rlt, varResolution join (valuat kr rlt) (Or.inr (wr))⟩⟩
 
 def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
-        (sect: Sect (n + 1))  → (ClauseSat left sect) → 
-        (ClauseSat right sect) → (ClauseSat top sect) := 
-          fun sect =>
+        (valuat: Valuat (n + 1))  → (ClauseSat left valuat) → 
+        (ClauseSat right valuat) → (ClauseSat top valuat) := 
+          fun valuat =>
             fun ⟨kl, llt, wl⟩ =>
               fun ⟨kr, rlt, wr⟩ =>
-                 if c : sect (triple.pivot) (triple.pivotLt)  then 
+                 if c : valuat (triple.pivot) (triple.pivotLt)  then 
                     -- the left branch survives
                     match skipImageCase triple.pivot kl  with
                     | SkipImageCase.diag eql => 
@@ -264,8 +264,8 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                             apply witnessIndependent
                             apply eql
                             done 
-                      let lem2 : sect kl llt = 
-                            sect triple.pivot triple.pivotLt := by
+                      let lem2 : valuat kl llt = 
+                            valuat triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply eql
                             done 
@@ -309,7 +309,7 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                         rw topLem
                         exact triple.joinRest i iw
                         done 
-                      ⟨kl, llt, varResolution join (sect kl llt) (Or.inl (wl))⟩
+                      ⟨kl, llt, varResolution join (valuat kl llt) (Or.inl (wl))⟩
                   else
                     let cc := eqFalseOfNeTrue c  
                     match skipImageCase triple.pivot kr  with
@@ -319,8 +319,8 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                             apply witnessIndependent
                             apply eql
                             done 
-                      let lem2 : sect kr rlt = 
-                            sect triple.pivot triple.pivotLt := by
+                      let lem2 : valuat kr rlt = 
+                            valuat triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply eql
                             done 
@@ -364,7 +364,7 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                         rw topLem
                         exact triple.joinRest i iw
                         done 
-                      ⟨kr, rlt, varResolution join (sect kr rlt) (Or.inr (wr))⟩
+                      ⟨kr, rlt, varResolution join (valuat kr rlt) (Or.inr (wr))⟩
 
 structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
   (left right top : Clause (n + 1))(k: Nat)(lt : k < succ (n + 1)) where
@@ -546,19 +546,19 @@ structure ResolutionProof{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))
   checkTop : treeTop tree = top
 
 def resolutionToProof{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))(top : Clause (n + 1)):
-  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (sect :Sect (n + 1))→ 
-    ((j : Nat) → (jw : j < dom) → clauseSat (clauses j jw) sect) → clauseSat top sect := 
+  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (valuat :Valuat (n + 1))→ 
+    ((j : Nat) → (jw : j < dom) → clauseSat (clauses j jw) valuat) → clauseSat top valuat := 
       fun tree  => 
         match tree with
         | ResolutionTree.assumption j jw => 
-          fun tpf _ sect base  => 
+          fun tpf _ valuat base  => 
             let lem0 : clauses j jw = top := tpf
-            let lem1 : clauseSat (clauses j jw) sect := base j jw
+            let lem1 : clauseSat (clauses j jw) valuat := base j jw
           by
             rw (Eq.symm lem0)
             exact lem1
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
-          fun tpf (tt : topt = top) sect base => 
+          fun tpf (tt : topt = top) valuat base => 
             let lem0 :  
               And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
                (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
@@ -567,30 +567,30 @@ def resolutionToProof{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))(top : C
               let lemRc := lem0.left.right
               let lemLt := lem0.right.left
               let lemRt := lem0.right.right
-              let leftBase : clauseSat left sect := 
-                resolutionToProof clauses left leftTree lemLc lemLt sect base 
-              let rightBase : clauseSat right sect := 
-                resolutionToProof clauses right rightTree lemRc lemRt sect base 
-              let lemStep := tripleStepProof left right topt triple sect leftBase rightBase
+              let leftBase : clauseSat left valuat := 
+                resolutionToProof clauses left leftTree lemLc lemLt valuat base 
+              let rightBase : clauseSat right valuat := 
+                resolutionToProof clauses right rightTree lemRc lemRt valuat base 
+              let lemStep := tripleStepProof left right topt triple valuat leftBase rightBase
             by
               rw (Eq.symm tt)
               exact lemStep
               done
 
 def resolutionToSat{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))(top : Clause (n + 1)):
-  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (sect :Sect (n + 1))→ 
-    ((j : Nat) → (jw : j < dom) → ClauseSat (clauses j jw) sect) → ClauseSat top sect := 
+  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (valuat :Valuat (n + 1))→ 
+    ((j : Nat) → (jw : j < dom) → ClauseSat (clauses j jw) valuat) → ClauseSat top valuat := 
       fun tree  => 
         match tree with
         | ResolutionTree.assumption j jw => 
-          fun tpf _ sect base  => 
+          fun tpf _ valuat base  => 
             let lem0 : clauses j jw = top := tpf
-            let lem1 : ClauseSat (clauses j jw) sect := base j jw
+            let lem1 : ClauseSat (clauses j jw) valuat := base j jw
           by
             rw (Eq.symm lem0)
             exact lem1
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
-          fun tpf (tt : topt = top) sect base => 
+          fun tpf (tt : topt = top) valuat base => 
             let lem0 :  
               And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
                (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
@@ -599,11 +599,11 @@ def resolutionToSat{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))(top : Cla
               let lemRc := lem0.left.right
               let lemLt := lem0.right.left
               let lemRt := lem0.right.right
-              let leftBase : ClauseSat left sect := 
-                resolutionToSat clauses left leftTree lemLc lemLt sect base 
-              let rightBase : ClauseSat right sect := 
-                resolutionToSat clauses right rightTree lemRc lemRt sect base 
-              let lemStep := tripleStepSat left right topt triple sect leftBase rightBase
+              let leftBase : ClauseSat left valuat := 
+                resolutionToSat clauses left leftTree lemLc lemLt valuat base 
+              let rightBase : ClauseSat right valuat := 
+                resolutionToSat clauses right rightTree lemRc lemRt valuat base 
+              let lemStep := tripleStepSat left right topt triple valuat leftBase rightBase
             by
               rw (Eq.symm tt)
               exact lemStep
@@ -613,35 +613,35 @@ inductive SatSolution{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1))) where
   | unsat : (tree : ResolutionTree clauses) → 
         treeCheck tree (contradiction (n + 1))  →  treeTop tree = contradiction (n + 1) 
           →  SatSolution clauses
-  | sat : (sect : Sect (n + 1)) → ((k : Nat) → (kw : k < dom) 
-        → ClauseSat (clauses k kw) sect) → SatSolution clauses 
+  | sat : (valuat : Valuat (n + 1)) → ((k : Nat) → (kw : k < dom) 
+        → ClauseSat (clauses k kw) valuat) → SatSolution clauses 
 
 def solutionProp{dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
                   (sol : SatSolution clauses) : Prop :=
   match sol with
   | SatSolution.unsat _ _ _   => 
-          ∀ sect : Sect (n + 1),  
+          ∀ valuat : Valuat (n + 1),  
            Not (∀ (p : Nat),
             ∀ pw : p < dom,   
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (sect k kw))
+              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw))
   | SatSolution.sat _ _ =>
-          ∃ sect : Sect (n + 1),  
+          ∃ valuat : Valuat (n + 1),  
            ∀ (p : Nat),
             ∀ pw : p < dom, 
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (sect k kw) 
+              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw) 
 
 def solutionProof{dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
                   (sol : SatSolution clauses) :
                     solutionProp sol :=
   match sol with
   | SatSolution.unsat tree check checkTop   => 
-          fun sect =>
-            fun hyp : ∀ p : Nat, ∀ pw : p < dom, clauseSat (clauses p pw) sect =>
+          fun valuat =>
+            fun hyp : ∀ p : Nat, ∀ pw : p < dom, clauseSat (clauses p pw) valuat =>
               let lem := resolutionToProof clauses (contradiction (n + 1))
-                            tree check checkTop sect hyp
-              contradictionFalse _ sect lem
-  | SatSolution.sat sect evidence =>
-          ⟨sect, fun k kw => getProof (evidence k kw)⟩
+                            tree check checkTop valuat hyp
+              contradictionFalse _ valuat lem
+  | SatSolution.sat valuat evidence =>
+          ⟨valuat, fun k kw => getProof (evidence k kw)⟩
 
 instance {dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
                   (sol : SatSolution clauses) : Prover (SatSolution clauses) where
@@ -745,16 +745,16 @@ structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
 
 def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
-        (sect: Sect (n + 1))  → (clauseSat left sect) → 
-        (clauseSat right sect) → (clauseSat top sect) := 
-          fun sect =>
+        (valuat: Valuat (n + 1))  → (clauseSat left valuat) → 
+        (clauseSat right valuat) → (clauseSat top valuat) := 
+          fun valuat =>
             fun ⟨kl, wl⟩ =>
               fun ⟨kr, wr⟩ =>
-                 if c : sect (triple.pivot)  then 
+                 if c : valuat (triple.pivot)  then 
                     -- the left branch survives
                     match shiftIsSectionProp _ triple.pivot kl  with
                     | Or.inl eql => 
-                      let lem1 := congrArg sect (Eq.symm eql)
+                      let lem1 := congrArg valuat (Eq.symm eql)
                       let lem2 :=  congrArg some (Eq.trans lem1 c)
                       let lem3 := Eq.trans wl lem2
                       let lem4 : left kl = some false := by
@@ -771,24 +771,24 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                     | Or.inr ⟨i, eql⟩ => 
                       let j := shiftAt n triple.pivot.val triple.pivot.isLt i
                       let lem1 : left j = left kl := congrArg left eql
-                      let lem2 : left j = some (sect j) := by
+                      let lem2 : left j = some (valuat j) := by
                         rw lem1
                         rw wl
                         apply congrArg some
-                        apply congrArg sect
+                        apply congrArg valuat
                         apply Eq.symm
                         exact eql
                         done
                       let lem3 := 
                         varResolution  (triple.joinRest i) 
-                          (sect j) (Or.inl lem2)
+                          (valuat j) (Or.inl lem2)
                       ⟨j , lem3⟩
                   else
                     let cc := eqFalseOfNeTrue c  
                     -- the right branch survives
                     match shiftIsSectionProp _ triple.pivot kr  with
                     | Or.inl eqr => 
-                      let lem1 := congrArg sect (Eq.symm eqr)
+                      let lem1 := congrArg valuat (Eq.symm eqr)
                       let lem2 :=  congrArg some (Eq.trans lem1 cc)
                       let lem3 := Eq.trans wr lem2
                       let lem4 : right kr = some true := by
@@ -805,31 +805,31 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                     | Or.inr ⟨i, eqr⟩ => 
                       let j := shiftAt n triple.pivot.val triple.pivot.isLt i
                       let lem1 : right j = right kr := congrArg right eqr
-                      let lem2 : right j = some (sect j) := by
+                      let lem2 : right j = some (valuat j) := by
                         rw lem1
                         rw wr
                         apply congrArg some
-                        apply congrArg sect
+                        apply congrArg valuat
                         apply Eq.symm
                         exact eqr
                         done
                       let lem3 := 
                         varResolution  (triple.joinRest i) 
-                          (sect j) (Or.inr lem2)
+                          (valuat j) (Or.inr lem2)
                       ⟨j , lem3⟩
 
 def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
-        (sect: Sect (n + 1))  → (ClauseSat left sect) → 
-        (ClauseSat right sect) → (ClauseSat top sect) := 
-          fun sect =>
+        (valuat: Valuat (n + 1))  → (ClauseSat left valuat) → 
+        (ClauseSat right valuat) → (ClauseSat top valuat) := 
+          fun valuat =>
             fun ⟨kl, wl⟩ =>
               fun ⟨kr, wr⟩ =>
-                 if c : sect (triple.pivot)  then 
+                 if c : valuat (triple.pivot)  then 
                     -- the left branch survives
                     match shiftIsSection _ triple.pivot kl  with
                     | SectionCase.diagonal eql => 
-                      let lem1 := congrArg sect (Eq.symm eql)
+                      let lem1 := congrArg valuat (Eq.symm eql)
                       let lem2 :=  congrArg some (Eq.trans lem1 c)
                       let lem3 := Eq.trans wl lem2
                       let lem4 : left kl = some false := by
@@ -846,24 +846,24 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                     | SectionCase.image i eql => 
                       let j := shiftAt n triple.pivot.val triple.pivot.isLt i
                       let lem1 : left j = left kl := congrArg left eql
-                      let lem2 : left j = some (sect j) := by
+                      let lem2 : left j = some (valuat j) := by
                         rw lem1
                         rw wl
                         apply congrArg some
-                        apply congrArg sect
+                        apply congrArg valuat
                         apply Eq.symm
                         exact eql
                         done
                       let lem3 := 
                         varResolution  (triple.joinRest i) 
-                          (sect j) (Or.inl lem2)
+                          (valuat j) (Or.inl lem2)
                       ⟨j , lem3⟩
                   else
                     let cc := eqFalseOfNeTrue c  
                     -- the right branch survives
                     match shiftIsSection _ triple.pivot kr  with
                     | SectionCase.diagonal eqr => 
-                      let lem1 := congrArg sect (Eq.symm eqr)
+                      let lem1 := congrArg valuat (Eq.symm eqr)
                       let lem2 :=  congrArg some (Eq.trans lem1 cc)
                       let lem3 := Eq.trans wr lem2
                       let lem4 : right kr = some true := by
@@ -880,17 +880,17 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                     | SectionCase.image i eqr => 
                       let j := shiftAt n triple.pivot.val triple.pivot.isLt i
                       let lem1 : right j = right kr := congrArg right eqr
-                      let lem2 : right j = some (sect j) := by
+                      let lem2 : right j = some (valuat j) := by
                         rw lem1
                         rw wr
                         apply congrArg some
-                        apply congrArg sect
+                        apply congrArg valuat
                         apply Eq.symm
                         exact eqr
                         done
                       let lem3 := 
                         varResolution  (triple.joinRest i) 
-                          (sect j) (Or.inr lem2)
+                          (valuat j) (Or.inr lem2)
                       ⟨j , lem3⟩
 
 
@@ -1038,19 +1038,19 @@ structure ResolutionProof{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top
   -- need separate checks for the cases of the tree
 
 def resolutionToProof{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : Clause (n + 1)):
-  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (sect :Sect (n + 1))→ 
-    ((j : Fin dom) → clauseSat (clauses j) sect) → clauseSat top sect := 
+  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (valuat :Valuat (n + 1))→ 
+    ((j : Fin dom) → clauseSat (clauses j) valuat) → clauseSat top valuat := 
       fun tree  => 
         match tree with
         | ResolutionTree.assumption j => 
-          fun tpf _ sect base  => 
+          fun tpf _ valuat base  => 
             let lem0 : clauses j = top := tpf
-            let lem1 : clauseSat (clauses j) sect := base j
+            let lem1 : clauseSat (clauses j) valuat := base j
           by
             rw (Eq.symm lem0)
             exact lem1
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
-          fun tpf (tt : topt = top) sect base => 
+          fun tpf (tt : topt = top) valuat base => 
             let lem0 :  
               And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
                (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
@@ -1059,30 +1059,30 @@ def resolutionToProof{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : C
               let lemRc := lem0.left.right
               let lemLt := lem0.right.left
               let lemRt := lem0.right.right
-              let leftBase : clauseSat left sect := 
-                resolutionToProof clauses left leftTree lemLc lemLt sect base 
-              let rightBase : clauseSat right sect := 
-                resolutionToProof clauses right rightTree lemRc lemRt sect base 
-              let lemStep := tripleStepProof left right topt triple sect leftBase rightBase
+              let leftBase : clauseSat left valuat := 
+                resolutionToProof clauses left leftTree lemLc lemLt valuat base 
+              let rightBase : clauseSat right valuat := 
+                resolutionToProof clauses right rightTree lemRc lemRt valuat base 
+              let lemStep := tripleStepProof left right topt triple valuat leftBase rightBase
             by
               rw (Eq.symm tt)
               exact lemStep
               done
 
 def resolutionToSat{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : Clause (n + 1)):
-  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (sect :Sect (n + 1))→ 
-    ((j : Fin dom) → ClauseSat (clauses j) sect) → ClauseSat top sect := 
+  (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top  → (valuat :Valuat (n + 1))→ 
+    ((j : Fin dom) → ClauseSat (clauses j) valuat) → ClauseSat top valuat := 
       fun tree  => 
         match tree with
         | ResolutionTree.assumption j => 
-          fun tpf _ sect base  => 
+          fun tpf _ valuat base  => 
             let lem0 : clauses j = top := tpf
-            let lem1 : ClauseSat (clauses j) sect := base j
+            let lem1 : ClauseSat (clauses j) valuat := base j
           by
             rw (Eq.symm lem0)
             exact lem1
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
-          fun tpf (tt : topt = top) sect base => 
+          fun tpf (tt : topt = top) valuat base => 
             let lem0 :  
               And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
                (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
@@ -1091,11 +1091,11 @@ def resolutionToSat{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : Cla
               let lemRc := lem0.left.right
               let lemLt := lem0.right.left
               let lemRt := lem0.right.right
-              let leftBase : ClauseSat left sect := 
-                resolutionToSat clauses left leftTree lemLc lemLt sect base 
-              let rightBase : ClauseSat right sect := 
-                resolutionToSat clauses right rightTree lemRc lemRt sect base 
-              let lemStep := tripleStepSat left right topt triple sect leftBase rightBase
+              let leftBase : ClauseSat left valuat := 
+                resolutionToSat clauses left leftTree lemLc lemLt valuat base 
+              let rightBase : ClauseSat right valuat := 
+                resolutionToSat clauses right rightTree lemRc lemRt valuat base 
+              let lemStep := tripleStepSat left right topt triple valuat leftBase rightBase
             by
               rw (Eq.symm tt)
               exact lemStep
@@ -1105,30 +1105,30 @@ inductive SatSolution{dom n: Nat}(clauses : Fin dom →  Clause (n + 1)) where
   | unsat : (tree : ResolutionTree clauses) → 
         treeCheck tree (contradiction (n + 1))  →  treeTop tree = contradiction (n + 1) 
           →  SatSolution clauses
-  | sat : (sect : Sect (n + 1)) → ((k : Fin dom) → ClauseSat (clauses k) sect) → SatSolution clauses 
+  | sat : (valuat : Valuat (n + 1)) → ((k : Fin dom) → ClauseSat (clauses k) valuat) → SatSolution clauses 
 
 def solutionProp{dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
                   (sol : SatSolution clauses) : Prop :=
   match sol with
   | SatSolution.unsat _ _ _   => 
-          ∀ sect : Sect (n + 1),  
-           Not (∀ (p : Fin dom),  ∃ (k : Fin (n + 1)), (clauses p k) = some (sect k))
+          ∀ valuat : Valuat (n + 1),  
+           Not (∀ (p : Fin dom),  ∃ (k : Fin (n + 1)), (clauses p k) = some (valuat k))
   | SatSolution.sat _ _ =>
-          ∃ sect : Sect (n + 1),  
-            ∀ (p : Fin dom),  ∃ (k : Fin (n + 1)), (clauses p k) = some (sect k) 
+          ∃ valuat : Valuat (n + 1),  
+            ∀ (p : Fin dom),  ∃ (k : Fin (n + 1)), (clauses p k) = some (valuat k) 
 
 def solutionProof{dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
                   (sol : SatSolution clauses) :
                     solutionProp sol :=
   match sol with
   | SatSolution.unsat tree check checkTop   => 
-          fun sect =>
-            fun hyp : ∀ p : Fin dom, clauseSat (clauses p) sect =>
+          fun valuat =>
+            fun hyp : ∀ p : Fin dom, clauseSat (clauses p) valuat =>
               let lem := resolutionToProof clauses (contradiction (n + 1))
-                            tree check checkTop sect hyp
-              contradictionFalse _ sect lem
-  | SatSolution.sat sect evidence =>
-          ⟨sect, fun k => getProof (evidence k)⟩
+                            tree check checkTop valuat hyp
+              contradictionFalse _ valuat lem
+  | SatSolution.sat valuat evidence =>
+          ⟨valuat, fun k => getProof (evidence k)⟩
 
 instance {dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
                   (sol : SatSolution clauses) : Prover (SatSolution clauses) where

@@ -526,16 +526,16 @@ def depUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :α) → β x)
           (provedDepUpdate fn a ValType val x).result
 
 
-structure GroupedSequence (n: Nat) (α β : Type) where
+structure GroupedSequence (n: Nat) (α β : Type)(part : α → β) where
   seq : FinSeq n α
   length : β → Nat
   seqs : (b : β) → FinSeq (length b) α
-  proj: (j : Nat) → (jw : j < n) → Σ b : β, ElemInSeq (seqs b) (seq j jw)
+  proj: (j : Nat) → (jw : j < n) → ElemInSeq (seqs (part (seq j jw))) (seq j jw)
   incl : (b : β) → (j : Nat) → (jw : j < length b) → ElemInSeq seq (seqs b j jw)  
 
 
 
-def varSat (clVal: Option Bool)(sectVal : Bool) : Prop := clVal = some sectVal
+def varSat (clVal: Option Bool)(valuatVal : Bool) : Prop := clVal = some valuatVal
 namespace leaner
 
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
@@ -549,33 +549,33 @@ def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → O
 
 def Clause(n : Nat) : Type := FinSeq n (Option Bool)
 
-def Sect(n: Nat) : Type := FinSeq n  Bool
+def Valuat(n: Nat) : Type := FinSeq n  Bool
 
 
 
-structure ClauseSat{n: Nat}(clause : Clause n)(sect: Sect n) where
+structure ClauseSat{n: Nat}(clause : Clause n)(valuat: Valuat n) where
   coord : Nat
   bound : coord < n  
-  witness: varSat (clause coord bound) (sect coord bound)
+  witness: varSat (clause coord bound) (valuat coord bound)
 
-def clauseSat {n: Nat}(clause : Clause n)(sect: Sect n) := 
-  ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (sect k b)
+def clauseSat {n: Nat}(clause : Clause n)(valuat: Valuat n) := 
+  ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (valuat k b)
 
-instance {n: Nat}(clause : Clause n)(sect: Sect n): Prover (ClauseSat clause sect) where 
-  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (sect k b)
+instance {n: Nat}(clause : Clause n)(valuat: Valuat n): Prover (ClauseSat clause valuat) where 
+  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (valuat k b)
   proof := fun cs => ⟨cs.coord, ⟨cs.bound, cs.witness⟩⟩
 
 def contradiction(n: Nat) : Clause n :=
   fun _ _ => none
 
-theorem contradictionFalse (n: Nat) : ∀ sect : Sect n, Not (clauseSat (contradiction n) sect) :=
-  fun sect => fun ⟨k, ⟨b, p⟩⟩ => 
+theorem contradictionFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (contradiction n) valuat) :=
+  fun valuat => fun ⟨k, ⟨b, p⟩⟩ => 
     let lem1 : (contradiction n) k b = none := by rfl
     let lem2 := congrArg varSat lem1
-    let lem3 : varSat (contradiction n k b) (sect k b) = 
-                varSat none (sect k b) := congr lem2 rfl
-    let lem4 : (varSat none (sect k b)) = (none = some (sect k b)) := rfl
-    let lem5 : (none = some (sect k b)) := by
+    let lem3 : varSat (contradiction n k b) (valuat k b) = 
+                varSat none (valuat k b) := congr lem2 rfl
+    let lem4 : (varSat none (valuat k b)) = (none = some (valuat k b)) := rfl
+    let lem5 : (none = some (valuat k b)) := by
       rw (Eq.symm lem4)
       rw lem4
       assumption
@@ -1352,26 +1352,26 @@ def shiftIsSectionProp (n: Nat): (k j: Fin (n + 1)) →
 -- theorems with old style finite sequences
 
 
-structure ClauseSat{n: Nat}(clause : Clause n)(sect: Sect n) where
+structure ClauseSat{n: Nat}(clause : Clause n)(valuat: Valuat n) where
   coord : Fin n
-  witness: varSat (clause coord) (sect coord)
+  witness: varSat (clause coord) (valuat coord)
 
-def clauseSat {n: Nat}(clause : Clause n)(sect: Sect n) := 
-  ∃ (k : Fin n), varSat (clause k) (sect k)
+def clauseSat {n: Nat}(clause : Clause n)(valuat: Valuat n) := 
+  ∃ (k : Fin n), varSat (clause k) (valuat k)
 
-instance {n: Nat}(clause : Clause n)(sect: Sect n): Prover (ClauseSat clause sect) where 
-  statement := fun cs => ∃ (k : Fin n), varSat (clause k) (sect k)
+instance {n: Nat}(clause : Clause n)(valuat: Valuat n): Prover (ClauseSat clause valuat) where 
+  statement := fun cs => ∃ (k : Fin n), varSat (clause k) (valuat k)
   proof := fun cs => ⟨cs.coord, cs.witness⟩
 
 
-theorem contradictionFalse (n: Nat) : ∀ sect : Sect n, Not (clauseSat (contradiction n) sect) :=
-  fun sect => fun ⟨k, p⟩ => 
+theorem contradictionFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (contradiction n) valuat) :=
+  fun valuat => fun ⟨k, p⟩ => 
     let lem1 : (contradiction n) (k) = none := by rfl
     let lem2 := congrArg varSat lem1
-    let lem3 : varSat (contradiction n k) (sect k) = 
-                varSat none (sect k) := congr lem2 rfl
-    let lem4 : (varSat none (sect k)) = (none = some (sect k)) := rfl
-    let lem5 : (none = some (sect k)) := by
+    let lem3 : varSat (contradiction n k) (valuat k) = 
+                varSat none (valuat k) := congr lem2 rfl
+    let lem4 : (varSat none (valuat k)) = (none = some (valuat k)) := rfl
+    let lem5 : (none = some (valuat k)) := by
       rw (Eq.symm lem4)
       rw lem4
       assumption

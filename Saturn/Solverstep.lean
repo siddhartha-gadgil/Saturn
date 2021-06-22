@@ -142,11 +142,11 @@ def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
 infix:65 " ⊇  " => contains
 
 theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
-  cl1 ⊇  cl2 → (sect : Sect n) → ClauseSat cl2 sect → ClauseSat cl1 sect :=
-    fun dom sect  =>
+  cl1 ⊇  cl2 → (valuat : Valuat n) → ClauseSat cl2 valuat → ClauseSat cl1 valuat :=
+    fun dom valuat  =>
       fun ⟨j, jw, vs⟩ =>
-        let lem0 :  cl2 j jw = some (sect j jw) := vs 
-        let lem1 := dom j jw (sect j jw) lem0
+        let lem0 :  cl2 j jw = some (valuat j jw) := vs 
+        let lem1 := dom j jw (valuat j jw) lem0
         ⟨j, jw, lem1⟩
 
 def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
@@ -190,21 +190,21 @@ def containsTrans{n: Nat} (cl1 cl2 cl3 : Clause (n + 1)) :
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
     (clauses: FinSeq dom (Clause (n + 1)))(rc: RestrictionClauses branch focus focusLt clauses) 
     (dp : DroppedProof rc) (fr: ForwardRelation rc): 
-      (sect : Sect n) → 
-        ((j : Nat) → (jw : j < rc.codom) → ClauseSat (rc.restClauses j jw) sect) → 
+      (valuat : Valuat n) → 
+        ((j : Nat) → (jw : j < rc.codom) → ClauseSat (rc.restClauses j jw) valuat) → 
         (j : Nat) → (jw : j < dom) →  
-          ClauseSat (clauses j jw) (insert branch n focus focusLt sect) := 
-        fun sect pf =>
+          ClauseSat (clauses j jw) (insert branch n focus focusLt valuat) := 
+        fun valuat pf =>
           fun k w => 
             let splitter := optCase (rc.forward k w)
             match splitter with
             | OptCase.noneCase eqn => 
               let lem1 : clauses k w focus focusLt = some branch := dp.dropped k w eqn
-              let lem2 : insert branch n focus focusLt sect focus focusLt = branch := by 
+              let lem2 : insert branch n focus focusLt valuat focus focusLt = branch := by 
                 apply insertAtFocus
                 done
               let lem3 : clauses k w focus focusLt = 
-                some (insert branch n focus focusLt sect focus focusLt) := 
+                some (insert branch n focus focusLt valuat focus focusLt) := 
                 by
                   rw lem1
                   apply (congrArg some)
@@ -221,9 +221,9 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
               let jWit : j < rc.codom := jWitAux
               let lem1 := fr.forwardRelation k w j eqn jWit
               let ⟨i, iw, vs⟩ := pf j jWit
-              let lem2 : rc.restClauses j jWit i iw = some (sect i iw) := vs
+              let lem2 : rc.restClauses j jWit i iw = some (valuat i iw) := vs
               let lem3 : delete focus focusLt (clauses k w) i iw =
-                  some (sect i iw) := 
+                  some (valuat i iw) := 
                     by
                     rw (Eq.symm lem2)
                     rw lem1
@@ -232,13 +232,13 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
                 clauses k w (skip focus i) (skipPlusOne iw) := by
                   rfl
                   done
-              let lem5 : insert branch n focus focusLt sect 
+              let lem5 : insert branch n focus focusLt valuat 
                               (skip focus i) (skipPlusOne iw) =
-                                  sect i iw := by
+                                  valuat i iw := by
                                     apply insertAtImage
                                     done
               let lem6 : clauses k w (skip focus i) (skipPlusOne iw) =
-                          some (insert branch n focus focusLt sect 
+                          some (insert branch n focus focusLt valuat 
                               (skip focus i) (skipPlusOne iw)) := by
                               rw (Eq.symm lem4)
                               rw lem3
@@ -252,33 +252,33 @@ end leaner
 namespace clunky
 
 
-theorem liftSatHead {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
-  ClauseSat (dropHead n clause) (dropHead n sect) → ClauseSat clause sect := 
+theorem liftSatHead {n: Nat}(clause : Clause (n + 1))(valuat: Valuat (n + 1)) :
+  ClauseSat (dropHead n clause) (dropHead n valuat) → ClauseSat clause valuat := 
     fun ⟨⟨k, w⟩, tpf⟩ => 
       let l1 : dropHead n clause ⟨k, w⟩ = clause (⟨k+1, _⟩) := by rfl
-      let l2 : dropHead n sect ⟨k, w⟩ = sect ⟨k+1, _⟩ := by rfl
+      let l2 : dropHead n valuat ⟨k, w⟩ = valuat ⟨k+1, _⟩ := by rfl
       let l3 := congrArg varSat l1
       let l4 := congr l3 l2
-      let pf : varSat (clause ⟨k+1, _⟩) (sect ⟨k+1, _⟩) := by
+      let pf : varSat (clause ⟨k+1, _⟩) (valuat ⟨k+1, _⟩) := by
         rw (Eq.symm l4)
         exact tpf
         done
       ⟨⟨k+1, _⟩, pf⟩
 
 
-theorem liftSatAt {n: Nat}(clause : Clause (n + 1))(sect: Sect (n + 1)) :
+theorem liftSatAt {n: Nat}(clause : Clause (n + 1))(valuat: Valuat (n + 1)) :
   (j : Nat) → (lt : j < n + 1) → 
-  ClauseSat (dropAt n j lt clause) (dropAt n j lt sect) → ClauseSat clause sect := 
+  ClauseSat (dropAt n j lt clause) (dropAt n j lt valuat) → ClauseSat clause valuat := 
     fun j =>
     fun lt =>
      fun ⟨⟨k, w⟩, tpf⟩ => 
       let l1 : dropAt n j lt clause ⟨k, w⟩ = clause (shiftAt n j lt ⟨k, w⟩) := 
         dropAtShift n j lt clause ⟨k, w⟩
-      let l2 : dropAt n j lt sect ⟨k, w⟩ = sect (shiftAt n j lt ⟨k, w⟩) := 
-        dropAtShift n j lt sect ⟨k, w⟩
+      let l2 : dropAt n j lt valuat ⟨k, w⟩ = valuat (shiftAt n j lt ⟨k, w⟩) := 
+        dropAtShift n j lt valuat ⟨k, w⟩
       let l3 := congrArg varSat l1
       let l4 := congr l3 l2
-      let pf : varSat (clause (shiftAt n j lt ⟨k, w⟩)) (sect (shiftAt n j lt ⟨k, w⟩)) := by
+      let pf : varSat (clause (shiftAt n j lt ⟨k, w⟩)) (valuat (shiftAt n j lt ⟨k, w⟩)) := by
         rw (Eq.symm l4)
         exact tpf
         done
@@ -324,11 +324,11 @@ structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Fin (n + 1)}
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
     (clauses: Fin dom →  Clause (n + 1))(rc: RestrictionClauses branch focus clauses) 
     (dp : DroppedProof rc) (fr: ForwardRelation rc): 
-      (sect : Sect n) → 
-        ((j : Fin rc.codom) → ClauseSat (rc.restClauses j) sect) → 
+      (valuat : Valuat n) → 
+        ((j : Fin rc.codom) → ClauseSat (rc.restClauses j) valuat) → 
         (j : Fin dom) →  
-          ClauseSat (clauses j) (liftAt branch n focus.val focus.isLt sect) := 
-        fun sect pf =>
+          ClauseSat (clauses j) (liftAt branch n focus.val focus.isLt valuat) := 
+        fun valuat pf =>
           fun ⟨k, w⟩ => 
             let splitter := optCase (rc.forward k w)
             match splitter with
@@ -339,12 +339,12 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                 rfl
                 done
               let lem1 := dp.dropped k w eqn
-              let lem2 := liftAtFocus branch n focus.val focus.isLt sect
-              let lem3 : liftAt branch n focus.val focus.isLt sect focus = branch := 
-                Eq.trans (congrArg (liftAt branch n focus.val focus.isLt sect) 
+              let lem2 := liftAtFocus branch n focus.val focus.isLt valuat
+              let lem3 : liftAt branch n focus.val focus.isLt valuat focus = branch := 
+                Eq.trans (congrArg (liftAt branch n focus.val focus.isLt valuat) 
                   (Eq.symm lem0)) lem2
               let lem4 : clauses ⟨k, w⟩ focus = 
-                some (liftAt branch n focus.val focus.isLt sect focus) := 
+                some (liftAt branch n focus.val focus.isLt valuat focus) := 
                 Eq.trans lem1 (congrArg some (Eq.symm lem3))
               ⟨focus, lem4⟩
             | OptCase.someCase j eqn => 
@@ -356,9 +356,9 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
               let jWit : j < rc.codom := jWitAux
               let lem1 := fr.forwardRelation k w j eqn jWit
               let ⟨i, vs⟩ := pf ⟨j, jWit⟩
-              let lem2 : rc.restClauses ⟨j, jWit⟩ i = some (sect i) := vs
+              let lem2 : rc.restClauses ⟨j, jWit⟩ i = some (valuat i) := vs
               let lem3 : dropAt _ focus.val focus.isLt (clauses ⟨k, w⟩) i =
-                  some (sect i) := 
+                  some (valuat i) := 
                     by
                     rw (Eq.symm lem2)
                     rw lem1
@@ -368,14 +368,14 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus: Fin (n + 1))
                   apply dropAtShift
                   done
               let lem5 : clauses ⟨k, w⟩ (shiftAt n focus.val focus.isLt i) =
-                          some (sect i) := Eq.trans (Eq.symm lem4) lem3
-              let lem6 : liftAt branch n focus.val focus.isLt sect 
+                          some (valuat i) := Eq.trans (Eq.symm lem4) lem3
+              let lem6 : liftAt branch n focus.val focus.isLt valuat 
                               (shiftAt n focus.val focus.isLt i) =
-                                  sect i := by
+                                  valuat i := by
                                     apply liftAtImage
                                     done
               let lem7 : clauses ⟨k, w⟩ (shiftAt n focus.val focus.isLt i) =
-                          some (liftAt branch n focus.val focus.isLt sect 
+                          some (liftAt branch n focus.val focus.isLt valuat 
                               (shiftAt n focus.val focus.isLt i)) := by
                               rw lem5
                               rw lem6
@@ -388,11 +388,11 @@ def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
 infix:65 " ⊃ " => contains
 
 theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
-  cl1 ⊃  cl2 → (sect : Sect n) → ClauseSat cl2 sect → ClauseSat cl1 sect :=
-    fun dom sect  =>
+  cl1 ⊃  cl2 → (valuat : Valuat n) → ClauseSat cl2 valuat → ClauseSat cl1 valuat :=
+    fun dom valuat  =>
       fun ⟨j, vs⟩ =>
-        let lem0 :  cl2 j = some (sect j) := vs 
-        let lem1 := dom j (sect j) lem0
+        let lem0 :  cl2 j = some (valuat j) := vs 
+        let lem1 := dom j (valuat j) lem0
         ⟨j, lem1⟩
 
 
