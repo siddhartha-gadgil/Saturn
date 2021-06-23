@@ -222,6 +222,9 @@ def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n +
     fun w =>
       tail j (leOfSuccLeSucc w)
 
+def FinSeq.empty {α: Type} : FinSeq 0 α := 
+  fun j jw => nomatch jw
+
 infixr:66 ":::" => FinSeq.cons
 
 def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
@@ -548,6 +551,7 @@ structure GroupedSequenceBranch{n: Nat} {α β : Type}(part : α → β)
   seqs : FinSeq (length) α
   proj: (j : Nat) → (jw : j < n) → part (seq j jw) = b  → ElemInSeq seqs (seq j jw)
   sects : (j : Nat) → (jw : j < length) → ElemInSeq seq (seqs j jw)
+  groupPart : (j : Nat) → (jw : j < length) → part (seqs j jw) = b
   
 def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq : FinSeq n α} 
       (gps : (b: β) →   GroupedSequenceBranch part seq b) :
@@ -598,7 +602,19 @@ def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq 
                               rw lem1
                               exact ieq
                             )⟩
-                    ⟨lengthN, seqsN, projN, sectsN⟩
+                      let groupPartN : (j : Nat) → (jw : j < lengthN) → 
+                        part (seqsN j jw) = b := 
+                          fun j =>
+                          match j with
+                          | 0 =>
+                            fun jw  =>
+                            c
+                          | l + 1 => 
+                            fun jw  =>
+                            let lw : l < br.length := leOfSuccLeSucc jw
+                            let ⟨i, iw, ieq⟩ := br.sects l lw
+                            br.groupPart l lw
+                    ⟨lengthN, seqsN, projN, sectsN, groupPartN⟩
                   else
                     let lengthN := br.length
                     let seqsN := br.seqs 
@@ -626,7 +642,27 @@ def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq 
                               rw lem1
                               exact ieq
                             )⟩
-                    ⟨lengthN, seqsN, projN, sectsN⟩ 
+                    let groupPartN : (j : Nat) → (jw : j < lengthN) → 
+                        part (seqsN j jw) = b := 
+                          fun j jw => br.groupPart j jw
+                    ⟨lengthN, seqsN, projN, sectsN, groupPartN⟩ 
+
+def groupedSequence{n: Nat} {α β : Type}[DecidableEq β](part : α → β) :
+      (seq: FinSeq n α) → 
+      ((b: β) →   GroupedSequenceBranch part seq b) :=  
+          match n with 
+          | 0 => fun seq b => 
+            ⟨0, FinSeq.empty, fun j jw => nomatch jw , fun j jw => nomatch jw, 
+                fun j jw => nomatch jw⟩
+          | m + 1 => 
+            fun seq  =>
+              let step :=
+                groupedPrepend (fun b => groupedSequence part (tail seq) b) (head seq)
+              let lem1 := headTail seq
+              by
+                rw Eq.symm lem1
+                exact step
+                done
 
 -- def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq : FinSeq n α} 
 --       (gp: GroupedSequence part seq) :
