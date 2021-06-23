@@ -718,12 +718,196 @@ def elemOrd{α: Type}[ft : FinType α]: (x : α) →
 structure FlattenSeq{α : Type}{n: Nat}(lengths : (j : Nat) → j < n → Nat)
                                     (seqs : (j : Nat) → (jw : j < n) → FinSeq (lengths j jw) α) where
           length : Nat
-          seq : FinSeq n α
-          forward: (j : Nat) → (jw : j < n) → Σ (i : Nat), (iw : i < n) → 
+          seq : FinSeq length α
+          forward: (j : Nat) → (jw : j < length) → Σ (i : Nat), (iw : i < n) → 
                       ElemInSeq (seqs i iw) (seq j jw)
           reverse: (i : Nat) → (iw : i < n) → (j : Nat) → (jw : j < lengths i iw) → 
                       ElemInSeq seq (seqs i iw j jw)
 
+#check Nat.zeroLe
+
+structure PartialFlattenSeq{α : Type}{n: Nat}(lengths : (j : Nat) → j < n → Nat)
+                            (seqs : (j : Nat) → (jw : j < n) → FinSeq (lengths j jw) α) 
+                            (gp : Nat)(gpBound : gp < n)(max: Nat)(maxBound : max ≤  lengths gp gpBound)
+                                        where
+          length : Nat
+          seq : FinSeq length α
+          forward: (j : Nat) → (jw : j < length) → Σ (i : Nat), (iw : i < n) → 
+                      ElemInSeq (seqs i iw) (seq j jw)
+          reverse: (i : Nat) → (iw : i < n) → (j : Nat) → (jw : j < lengths i iw) → 
+                    i < gp ∨ (i = gp ∧ j < max)  → 
+                      ElemInSeq seq (seqs i iw j jw)
+
+def partToFullFlatten{α : Type}{n: Nat}(lengths : (j : Nat) → j < n + 1 → Nat)
+                                    (seqs : (j : Nat) → (jw : j < n + 1) → FinSeq (lengths j jw) α) :
+                PartialFlattenSeq lengths seqs n (Nat.leRefl _) 
+                    (lengths n (Nat.leRefl _)) (Nat.leRefl _) → 
+                    FlattenSeq lengths seqs  := 
+                    fun pfs => 
+                      let reverseN : (i : Nat) → (iw : i < (n +1)) → 
+                        (j : Nat) → (jw : j < lengths i iw) → 
+                        ElemInSeq pfs.seq (seqs i iw j jw) := 
+                          fun i iw j jw =>
+                            let lem : i < n ∨ i = n ∧ 
+                              j < lengths n (Nat.leRefl (succ n)) :=
+                                let switch := Nat.eqOrLtOfLe iw
+                                match switch with 
+                                | Or.inl p => 
+                                  let p1 : i = n := by
+                                    injection p
+                                    assumption
+                                  let lem : lengths n (Nat.leRefl (succ n)) =
+                                            lengths i iw := by
+                                          apply witnessIndependent
+                                          exact Eq.symm p1
+                                          done
+                                  Or.inr (And.intro p1 (by 
+                                                          rw lem
+                                                          exact jw))
+                                | Or.inr p => 
+                                    Or.inl (leOfSuccLeSucc p)
+                            pfs.reverse i iw j jw lem
+                      ⟨pfs.length, pfs.seq, pfs.forward, reverseN⟩
+
+#check Eq.ndrec
+#check 1 ≅ [3]
+#check HEq.ndrec
+
+
+def partFlatInGp{α : Type}{n: Nat}(lengths : (j : Nat) → j < n → Nat)
+                          (seqs : (j : Nat) → (jw : j < n) → FinSeq (lengths j jw) α) 
+                          (gp : Nat)(gpBound : gp < n)
+                            (base: PartialFlattenSeq lengths seqs gp gpBound 0 (Nat.zeroLe _)):
+                          (max: Nat) → (maxBound : max ≤  lengths gp gpBound) → 
+                            PartialFlattenSeq lengths seqs gp gpBound max maxBound := 
+                  fun max => 
+                  match max with
+                  | 0 => fun _ =>
+                      base
+                  | k + 1 =>
+                    fun maxBound => 
+                      let prev := partFlatInGp lengths seqs gp gpBound base k (leStep maxBound)
+                      let head := seqs gp gpBound k maxBound
+                      let lengthN := prev.length +1
+                      let seqN := head +: prev.seq 
+                      let forwardN : (j : Nat) → (jw : j < lengthN) → Σ (i : Nat), (iw : i < n) → 
+                            ElemInSeq (seqs i iw) (seqN j jw) := 
+                              fun j =>
+                              match j with
+                              | 0 => 
+                                fun jw =>
+                                  ⟨gp, fun w => ⟨k, maxBound, rfl⟩⟩
+                              | l + 1 => 
+                                fun jw =>
+                                  let lw := leOfSuccLeSucc jw
+                                  by
+                                    apply (prev.forward l lw)
+                                    done
+                      let reverseN : (i : Nat) → (iw : i < n) → (j : Nat) → (jw : j < lengths i iw) → 
+                          i < gp ∨ (i = gp ∧ j < k + 1)  → 
+                          ElemInSeq seqN (seqs i iw j jw) := 
+                          fun i iw j jw p =>
+                            if c : i < gp then 
+                              let ⟨ind, bd, eqn⟩ := prev.reverse i iw j jw (Or.inl c)
+                              let lem : seqN (ind + 1) (succ_lt_succ bd) =
+                                      prev.seq ind bd := by rfl
+                              ⟨ind + 1, succ_lt_succ bd, (by 
+                                      rw lem
+                                      exact eqn
+                                      )⟩
+                            else
+                              let q : i = gp ∧ j < k + 1 := 
+                                match p with
+                                | Or.inl eqn => absurd eqn c
+                                | Or.inr eqn => eqn
+                              let q1 := q.left
+                              let q2 := q.right
+                              if mc : j = k then
+                                let lem : 
+                                  seqN 0 (zeroLtSucc prev.length) = seqs gp gpBound k maxBound := by rfl
+                                let lem1 : lengths i iw = lengths gp gpBound := by
+                                  apply witnessIndependent
+                                  rw q1
+                                  done
+                                let lem2 := congrArg FinSeq lem1
+                                let trnsport : FinSeq (lengths i iw) α  → FinSeq (lengths gp gpBound) α  :=
+                                  fun fs =>
+                                    by 
+                                      rw (Eq.symm lem2)
+                                      exact fs
+                                      done                                    
+                                let lem3 : seqs i  ≅ seqs gp  := by
+                                    rw q1
+                                    apply HEq.rfl
+                                    done
+                                  
+                                let goal : seqs gp gpBound k maxBound = seqs i iw j jw := sorry
+
+                                ⟨0, zeroLtSucc _, (by 
+                                  rw lem
+                                  exact goal
+                                  done
+                                )⟩
+                              else 
+                                let jww : j < k := 
+                                  match Nat.eqOrLtOfLe q2 with
+                                  | Or.inl ee => 
+                                      let ll : j = k := by
+                                      injection ee
+                                      assumption 
+                                    absurd ll mc
+                                  | Or.inr ee => leOfSuccLeSucc ee
+                                let ⟨ind, bd, eqn⟩ := prev.reverse i iw j jw (Or.inr (And.intro q1 jww))
+                                let lem : seqN (ind + 1) (succ_lt_succ bd) =
+                                      prev.seq ind bd := by rfl
+                               ⟨ind + 1, succ_lt_succ bd, (by 
+                                      rw lem
+                                      exact eqn
+                                      )⟩
+                      ⟨lengthN , seqN, forwardN, reverseN⟩ 
+
+-- def partFlatSeq{α : Type}(gp: Nat):
+--         (max: Nat) → (n: Nat) → 
+--           (lengths : (j : Nat) → j < n + 1  → Nat) → 
+--           (seqs : (j : Nat) → (jw : j < n + 1) → FinSeq (lengths j jw) α) → (gpBound : gp < n + 1)  → (maxBound : max ≤  lengths gp gpBound) → 
+--         PartialFlattenSeq lengths seqs gp gpBound max maxBound := 
+--         -- fun gp =>
+--         match gp with
+--         | 0 => 
+--           fun max =>
+--             match max with
+--             | 0 => fun _ _ _ _ _ =>
+--               ⟨0, FinSeq.empty, 
+--                 fun j jw => nomatch jw, 
+--                 fun i iw j jw p => 
+--                   let q : ¬(i < 0 ∨ i = 0 ∧ j < 0) := 
+--                     match p with
+--                     | Or.inl p1 => nomatch p1
+--                     | Or.inr p2 => nomatch p2
+--                   absurd p q ⟩
+--             | k + 1 => 
+--               fun n lengths seqs =>
+--               fun gpBound =>
+--               fun maxBound => 
+--                 let prev := partFlatSeq 0 k n lengths seqs gpBound  (leStep maxBound)
+--                 let head := seqs 0 gpBound k maxBound
+--                 let lengthN := prev.length +1
+--                 let seqN := head +: prev.seq 
+--                 let forwardN : (j : Nat) → (jw : j < lengthN) → Σ (i : Nat), (iw : i < n + 1) → 
+--                       ElemInSeq (seqs i iw) (seqN j jw) := 
+--                         fun j =>
+--                         match j with
+--                         | 0 => 
+--                           fun jw =>
+--                             ⟨0, fun w => ⟨k, maxBound, rfl⟩⟩
+--                         | l + 1 => 
+--                           fun jw =>
+--                             let lw := leOfSuccLeSucc jw
+--                             by
+--                               apply (prev.forward l lw)
+--                               done
+--                 ⟨lengthN , seqN, forwardN, sorry⟩
+--         | l + 1 => sorry      
 
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
     match n with
