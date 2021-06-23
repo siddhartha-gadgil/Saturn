@@ -225,7 +225,7 @@ def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n +
 def FinSeq.empty {α: Type} : FinSeq 0 α := 
   fun j jw => nomatch jw
 
-infixr:66 ":::" => FinSeq.cons
+infixr:66 "+:" => FinSeq.cons
 
 def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
   fun k w =>
@@ -235,7 +235,7 @@ def head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq 0 (zeroLtSucc _)
 
 theorem headTail{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): 
-      (head seq) ::: (tail seq) = seq := 
+      (head seq) +: (tail seq) = seq := 
         funext (
           fun k => 
             match k with
@@ -403,6 +403,23 @@ structure ElemInSeq{α: Type}{n : Nat} (seq : FinSeq n α) (elem : α) where
   bound : index < n
   equation : seq index bound = elem
 
+structure ElemSeqPred{α: Type}{n : Nat} (seq : FinSeq n α) (pred : α → Prop) where
+  index: Nat
+  bound : index < n
+  equation : pred (seq index bound)
+
+def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
+  (seq : FinSeq n α) → Option (ElemSeqPred seq pred) :=
+  match n with
+  | 0 => fun seq => none
+  | m + 1 =>
+      fun seq =>
+        if c : pred (head seq) then
+          some ⟨0, zeroLtSucc _, c⟩
+        else 
+          (find? pred (tail seq)).map (fun ⟨i, iw, eqn⟩ => 
+            ⟨i +1, succ_lt_succ iw, eqn⟩)
+
 -- just for lookup
 def transport(α β : Type)(eql: α = β): α → β :=
   fun x =>
@@ -556,13 +573,13 @@ structure GroupedSequenceBranch{n: Nat} {α β : Type}(part : α → β)
 def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq : FinSeq n α} 
       (gps : (b: β) →   GroupedSequenceBranch part seq b) :
               (head: α) → 
-                ((b: β) →  GroupedSequenceBranch part (head ::: seq) b) := 
+                ((b: β) →  GroupedSequenceBranch part (head +: seq) b) := 
                 fun head b =>
-                  let seqN := head ::: seq
+                  let seqN := head +: seq
                   let br := gps b 
                   if c : part head = b then                    
                     let lengthN := br.length + 1
-                    let seqsN := head ::: br.seqs
+                    let seqsN := head +: br.seqs
                     let projN : 
                       (j : Nat) → (jw : j < n + 1) → part (seqN j jw) = 
                           b  → ElemInSeq seqsN (seqN j jw) := 
@@ -666,7 +683,7 @@ def groupedSequence{n: Nat} {α β : Type}[DecidableEq β](part : α → β) :
 
 -- def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq : FinSeq n α} 
 --       (gp: GroupedSequence part seq) :
---               (head: α) → GroupedSequence part (head ::: seq) := 
+--               (head: α) → GroupedSequence part (head +: seq) := 
 --             fun head =>
 --               let group := part head
 --               let lengthN := update gp.length group (gp.length group + 1)
@@ -682,7 +699,7 @@ def groupedSequence{n: Nat} {α β : Type}[DecidableEq β](part : α → β) :
 --                     done 
 --                   by 
 --                     rw lem2
---                     exact head ::: (gp.seqs group)
+--                     exact head +: (gp.seqs group)
 --                 else
 --                   let lem1 : lengthN b = 
 --                     (update gp.length group (gp.length group + 1)) b := by rfl

@@ -151,7 +151,7 @@ theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
 
 def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
           v1 ≥  v2 → cl1 ⊇  cl2 → 
-                (v1 ::: cl1) ⊇ (v2 ::: cl2) := 
+                (v1 +: cl1) ⊇ (v2 +: cl2) := 
            fun hyp1 hyp2 =>
             fun k =>
             match k with
@@ -398,7 +398,7 @@ theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
 
 def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
           v1 ≥  v2 → cl1 ⊃  cl2 → 
-                (v1 :::: cl1) ⊃  (v2 :::: cl2) := 
+                (v1 ::::  cl1) ⊃  (v2 ::::  cl2) := 
            fun hyp1 hyp2 =>
             fun k =>
             match k with
@@ -437,21 +437,21 @@ def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) →
                     (dropHead m cl1) (dropHead m cl2) pfHead) pfTail 
               let lem1a :
                 (j: Fin (m + 1)) → 
-                   ((cl1 ⟨0, zeroLtSucc _⟩) :::: (dropHead m cl1)) j = cl1 j := 
+                   ((cl1 ⟨0, zeroLtSucc _⟩) ::::  (dropHead m cl1)) j = cl1 j := 
                    fun j =>
                    match j with 
                    | ⟨0, w⟩ => by rfl
                    | ⟨i + 1, w⟩ => by rfl
-              let lem1b : (cl1 ⟨0, zeroLtSucc _⟩) :::: (dropHead m cl1)  = cl1  := 
+              let lem1b : (cl1 ⟨0, zeroLtSucc _⟩) ::::  (dropHead m cl1)  = cl1  := 
                 funext lem1a
               let lem2a :
                 (j: Fin (m + 1)) → 
-                   ((cl2 ⟨0, zeroLtSucc _⟩) :::: (dropHead m cl2)) j = cl2 j := 
+                   ((cl2 ⟨0, zeroLtSucc _⟩) ::::  (dropHead m cl2)) j = cl2 j := 
                    fun j =>
                    match j with 
                    | ⟨0, w⟩ => by rfl
                    | ⟨i + 1, w⟩ => by rfl
-              let lem2b : (cl2 ⟨0, zeroLtSucc _⟩) :::: (dropHead m cl2)  = cl2  := 
+              let lem2b : (cl2 ⟨0, zeroLtSucc _⟩) ::::  (dropHead m cl2)  = cl2  := 
                 funext lem2a
               let lem : cl1 ⊃  cl2 := by
                 rw (Eq.symm lem1b)
@@ -471,6 +471,11 @@ def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) →
 
 instance {n: Nat}{cl: Clause n} : DecidablePred (contains cl) :=
   decideContains n cl
+
+def subClause?{n: Nat}(cl : Clause n)(seq : FinSeq n (Clause n)) :
+                    Option (ElemSeqPred seq (contains cl)) := 
+              find? (contains cl) seq
+
 
 def optCasesProp : (x : Option Nat) → Or (x = none) (∃ j, x = some j) :=
   fun x =>

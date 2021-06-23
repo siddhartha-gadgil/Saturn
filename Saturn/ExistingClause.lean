@@ -10,11 +10,11 @@ def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : fo
       (rc: RestrictionClauses branch focus focusLt clauses) → 
         (head : Clause (n + 1)) → (p : Nat) → (pw : p < rc.codom) → 
           (rc.restClauses p pw = delete focus focusLt head) → 
-            RestrictionClauses branch focus focusLt (head ::: clauses) := 
+            RestrictionClauses branch focus focusLt (head +: clauses) := 
           fun rc head p pw peqn =>
             let domN := dom + 1
             let codomN := rc.codom
-            let clausesN := head ::: clauses
+            let clausesN := head +: clauses
             let forwardN: (k : Nat) →  k < domN → Option Nat  := 
               fun k  => 
               match k with 
@@ -57,7 +57,7 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let rcN := addExistingPositiveClause  branch focus focusLt clauses rc head p pw eqf  
           let domN := dom + 1
           let codomN := rc.codom
-          let clausesN := head ::: clauses
+          let clausesN := head +: clauses
           let droppedN : 
               (k : Nat) → (w: k < domN) → rcN.forward k w = none → 
                   clausesN k w focus focusLt = some branch :=
@@ -89,7 +89,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let rcN := addExistingPositiveClause  branch focus focusLt clauses rc head p pw eqf 
           let domN := dom + 1
           let codomN := rc.codom
-          let clausesN := head ::: clauses
+          let clausesN := head +: clauses
           let forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
               (jw : j < codomN) →  delete focus focusLt (clausesN k w ) = 
                 rcN.restClauses j jw := 
@@ -129,7 +129,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let rcN := addExistingPositiveClause  branch focus focusLt clauses rc head p pw eqf  
           let domN := dom + 1
           let codomN := rc.codom
-          let clausesN := head ::: clauses
+          let clausesN := head +: clauses
           let relationN : (k : Nat) → (w: k < codomN) → 
                  rcN.restClauses k w = 
                   delete focus focusLt 
@@ -154,7 +154,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let rcN := addExistingPositiveClause  branch focus focusLt clauses rc head p pw eqf  
           let domN := dom + 1
           let codomN := rc.codom
-          let clausesN := head ::: clauses
+          let clausesN := head +: clauses
           let pureN : (k : Nat) → (w: k < codomN)  → 
                 Not (clausesN (rcN.reverse k w) (rcN.reverseWit k w) (focus) focusLt = some branch) :=
                   fun k w =>
