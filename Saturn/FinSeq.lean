@@ -681,42 +681,49 @@ def groupedSequence{n: Nat} {α β : Type}[DecidableEq β](part : α → β) :
                 exact step
                 done
 
--- def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq : FinSeq n α} 
---       (gp: GroupedSequence part seq) :
---               (head: α) → GroupedSequence part (head +: seq) := 
---             fun head =>
---               let group := part head
---               let lengthN := update gp.length group (gp.length group + 1)
---               let seqsN : (b : β) → FinSeq (lengthN b) α := 
---                 fun b =>
---                 if c : b = group then
---                   let lem1 : lengthN b = 
---                     (update gp.length group (gp.length group + 1)) b := by rfl
---                   let lem2 : lengthN b = gp.length group + 1 := by
---                     rw lem1
---                     rw (congrArg (update gp.length group (gp.length group + 1)) c)
---                     rw updateAtFocus
---                     done 
---                   by 
---                     rw lem2
---                     exact head +: (gp.seqs group)
---                 else
---                   let lem1 : lengthN b = 
---                     (update gp.length group (gp.length group + 1)) b := by rfl
---                   let lem2 : lengthN b = gp.length b := by
---                     rw lem1
---                     rw updateNotAtFocus
---                     exact c
---                     done
---                   by 
---                     rw lem2
---                     exact gp.seqs b 
---                     done
 
---               ⟨lengthN, seqsN, sorry, sorry, sorry, sorry⟩  
+def enumOptBool : (n : Nat) → n < 2 → Option Bool :=
+  fun n =>
+  match n with
+  | 0 => fun _ => some true
+  | 1 => fun _ => some false
+  | 2 => fun _ => none
+  | l + 2 => fun w => nomatch w
 
-def varSat (clVal: Option Bool)(valuatVal : Bool) : Prop := clVal = some valuatVal
-namespace leaner
+class FinType(α : Type) where
+  length : Nat
+  enum : (j: Nat) → j < n → α
+  enumInv : α → Nat
+  enumInvBound : (x : α) → enumInv x < length
+  enumEnumInv : (x : α) → enum (enumInv x) (enumInvBound x) = x
+  enumInvEnum : (j: Nat) → (jw : j < n) → enumInv (enum j jw) = j
+
+def element{α: Type}[ft : FinType α]: (j : Nat) → (j < ft.length) → α :=
+      fun j jw => ft.enum j jw
+
+def ordinal{α: Type}[ft : FinType α]: α → Nat :=
+  fun x => ft.enumInv x
+
+def size(α: Type)[ft : FinType α]: Nat := ft.length
+
+def ordinalBound{α: Type}[ft : FinType α]: (x : α) → ordinal x < size α :=
+  fun x => ft.enumInvBound x
+
+def ordElem{α: Type}[ft : FinType α]: (j : Nat) → (jw : j < ft.length) → 
+              ordinal (element j jw) = j := ft.enumInvEnum 
+
+def elemOrd{α: Type}[ft : FinType α]: (x : α) → 
+              element (ordinal x) (ordinalBound x) = x := ft.enumEnumInv
+
+structure FlattenSeq{α : Type}{n: Nat}(lengths : (j : Nat) → j < n → Nat)
+                                    (seqs : (j : Nat) → (jw : j < n) → FinSeq (lengths j jw) α) where
+          length : Nat
+          seq : FinSeq n α
+          forward: (j : Nat) → (jw : j < n) → Σ (i : Nat), (iw : i < n) → 
+                      ElemInSeq (seqs i iw) (seq j jw)
+          reverse: (i : Nat) → (iw : i < n) → (j : Nat) → (jw : j < lengths i iw) → 
+                      ElemInSeq seq (seqs i iw j jw)
+
 
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
     match n with
@@ -726,6 +733,11 @@ def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → O
         (f (seq 0 (zeroLtSucc m))).orElse (
           findSome? f (fun t : Nat => fun w : t < m => seq (t + 1) w )
         ) 
+
+
+def varSat (clVal: Option Bool)(valuatVal : Bool) : Prop := clVal = some valuatVal
+namespace leaner
+
 
 def Clause(n : Nat) : Type := FinSeq n (Option Bool)
 
@@ -864,11 +876,11 @@ structure HasPureVar{dom n : Nat}(clauses : FinSeq dom  (Clause n)) where
   bound : index < n
   parity : Bool
   evidence : (k : Nat) → (lt : k < dom) → 
-          Or (clauses k lt index bound = none) (clauses k lt index bound = some parity)
+          (clauses k lt index bound = none) ∨  (clauses k lt index bound = some parity)
 
 structure IsPureVar{dom n : Nat}(clauses : FinSeq dom  (Clause n))
                       (index: Nat)(bound : index < n)(parity : Bool) where
-  evidence : (k : Nat) → (lt : k < dom) → Or (clauses k lt index bound = none) 
+  evidence : (k : Nat) → (lt : k < dom) → (clauses k lt index bound = none) ∨ 
                                 (clauses k lt index bound = some parity)
 
 def varIsPure{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) : 
@@ -879,18 +891,18 @@ def varIsPure{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
   | 0 => 
     fun clauses =>
       let evidence : (k : Nat) → (lt : k < 0) →  
-        Or (clauses k lt index bound = none) (clauses k lt index bound = some parity) := 
+        (clauses k lt index bound = none) ∨ (clauses k lt index bound = some parity) := 
           fun k lt => nomatch lt
       some ⟨evidence⟩
   | m + 1 => 
       fun clauses =>
         let head := clauses 0 (zeroLtSucc _) index bound
-        if c : Or (head = none) (head = some parity) then
+        if c : (head = none) ∨  (head = some parity) then
           let tailSeq  := tail clauses
           (varIsPure index bound parity _ tailSeq).map (
             fun ⟨ tpf ⟩ =>
               let pf : (j : Nat) → (w : j < (m +1)) → 
-                Or (clauses j w index bound = none) (clauses j w index bound = some parity) := 
+                (clauses j w index bound = none) ∨ (clauses j w index bound = some parity) := 
                 fun j =>
                   match j with 
                   | 0 => fun w => c
@@ -1194,7 +1206,7 @@ inductive SectionCase (n: Nat) (k j: Fin (n + 1)) where
 
 instance {n: Nat} {k j: Fin (n + 1)}: Prover (SectionCase n k j) where
   statement := fun s => 
-    Or (k = j) (∃ i : Fin n, (shiftAt n k.val k.isLt i) = j)
+     (k = j) ∨  (∃ i : Fin n, (shiftAt n k.val k.isLt i) = j)
   proof := fun s => 
     match s with
     | SectionCase.diagonal w => Or.inl w
@@ -1525,7 +1537,7 @@ theorem involuteTrans{α: Type}(n: Nat): (j: Nat) → (lt :j < n + 1) →
            )
 
 def shiftIsSectionProp (n: Nat): (k j: Fin (n + 1)) →  
-    Or (k = j) (∃ i : Fin n, (shiftAt n k.val k.isLt i) = j) :=
+     (k = j) ∨ (∃ i : Fin n, (shiftAt n k.val k.isLt i) = j) :=
       fun k j =>  getProof (shiftIsSection n k j)
 
 
@@ -1608,11 +1620,11 @@ def someUnitClause {l : Nat} : (n : Nat) →  (clauses : Fin l → (Clause (n + 
 structure HasPureVar{dom n : Nat}(clauses : Fin dom → Clause n) where
   index : Fin n
   parity : Bool
-  evidence : (k : Fin dom) → Or (clauses k index = none) (clauses k index = some parity)
+  evidence : (k : Fin dom) → (clauses k index = none) ∨  (clauses k index = some parity)
 
 structure IsPureVar{dom n : Nat}(clauses : Fin dom → Clause n)
                       (index: Fin n)(parity : Bool) where
-  evidence : (k : Fin dom) → Or (clauses k index = none) (clauses k index = some parity)
+  evidence : (k : Fin dom) → (clauses k index = none) ∨  (clauses k index = some parity)
 
 def varIsPure{n : Nat}(index: Fin n)(parity : Bool) : 
   (dom: Nat) →  (clauses : Fin dom → Clause n) → Option (IsPureVar clauses index parity) :=
@@ -1621,18 +1633,18 @@ def varIsPure{n : Nat}(index: Fin n)(parity : Bool) :
   | 0 => 
     fun clauses =>
       let evidence : (k : Fin 0) → 
-        Or (clauses k index = none) (clauses k index = some parity) := 
+         (clauses k index = none) ∨ (clauses k index = some parity) := 
           fun k => nomatch k
       some ⟨evidence⟩
   | m + 1 => 
       fun clauses =>
         let head := clauses ⟨0, zeroLtSucc _⟩ index
-        if c : Or (head = none) (head = some parity) then
+        if c :  (head = none) ∨ (head = some parity) then
           let tail : Fin m → Clause n := dropHead _ clauses
           (varIsPure index parity _ tail).map (
             fun ⟨ tpf ⟩ =>
               let pf : (j :Fin (m +1)) → 
-                Or (clauses j index = none) (clauses j index = some parity) := 
+                (clauses j index = none) ∨ (clauses j index = some parity) := 
                 fun j =>
                   match j with 
                   | ⟨0, w⟩ => c

@@ -536,8 +536,8 @@ def treeCheck{dom n: Nat}{clauses : FinSeq dom   (Clause (n + 1))}
       match tree with
       | ResolutionTree.assumption j jw => clauses j jw = top
       | ResolutionTree.resolve left right  top leftTree rightTree triple  => 
-          And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
-          (And (treeTop leftTree = left) ((treeTop rightTree = right)))
+          (((treeCheck leftTree left) ∧  (treeCheck rightTree right))) ∧ 
+          ((treeTop leftTree = left) ∧  ((treeTop rightTree = right)))
 
 structure ResolutionProof{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))
         (top : Clause (n + 1)) where
@@ -560,8 +560,8 @@ def resolutionToProof{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))(top : C
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
           fun tpf (tt : topt = top) valuat base => 
             let lem0 :  
-              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
-               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+               ((  (treeCheck leftTree left) ∧  (treeCheck rightTree right))) ∧ 
+               ( (treeTop leftTree = left) ∧  ((treeTop rightTree = right))) 
                 := tpf
               let lemLc : treeCheck leftTree left := lem0.left.left
               let lemRc := lem0.left.right
@@ -592,8 +592,8 @@ def resolutionToSat{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))(top : Cla
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
           fun tpf (tt : topt = top) valuat base => 
             let lem0 :  
-              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
-               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+               ((  (treeCheck leftTree left) ∧  (treeCheck rightTree right))) ∧ 
+               ( (treeTop leftTree = left) ∧  ((treeTop rightTree = right))) 
                 := tpf
               let lemLc : treeCheck leftTree left := lem0.left.left
               let lemRc := lem0.left.right
@@ -697,8 +697,8 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
             fun tpf (tt : topt = top)  => 
             let lem0 :  
-              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
-               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+               ((  (treeCheck leftTree left) ∧  (treeCheck rightTree right))) ∧ 
+               ( (treeTop leftTree = left) ∧ ((treeTop rightTree = right))) 
                 := tpf
               let lemLc : treeCheck leftTree left := lem0.left.left
               let lemRc := lem0.left.right
@@ -1028,8 +1028,8 @@ def treeCheck{dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
       match tree with
       | ResolutionTree.assumption j => clauses j = top
       | ResolutionTree.resolve left right  top leftTree rightTree triple  => 
-          And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
-          (And (treeTop leftTree = left) ((treeTop rightTree = right)))
+           ((  (treeCheck leftTree left) ∧  (treeCheck rightTree right))) ∧ 
+          ( (treeTop leftTree = left) ∧  ((treeTop rightTree = right)))
 
 structure ResolutionProof{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : Clause (n + 1)) where
   tree : ResolutionTree clauses
@@ -1052,8 +1052,8 @@ def resolutionToProof{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : C
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
           fun tpf (tt : topt = top) valuat base => 
             let lem0 :  
-              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
-               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+               ((  (treeCheck leftTree left) ∧  (treeCheck rightTree right))) ∧ 
+               ( (treeTop leftTree = left) ∧  ((treeTop rightTree = right))) 
                 := tpf
               let lemLc : treeCheck leftTree left := lem0.left.left
               let lemRc := lem0.left.right
@@ -1084,8 +1084,8 @@ def resolutionToSat{dom n: Nat}(clauses : Fin dom →  Clause (n + 1))(top : Cla
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
           fun tpf (tt : topt = top) valuat base => 
             let lem0 :  
-              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
-               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+               ((  (treeCheck leftTree left) ∧ (treeCheck rightTree right))) ∧ 
+               ( (treeTop leftTree = left) ∧ ((treeTop rightTree = right))) 
                 := tpf
               let lemLc : treeCheck leftTree left := lem0.left.left
               let lemRc := lem0.left.right
@@ -1196,8 +1196,8 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Fin (n + 2))
         | ResolutionTree.resolve left right  topt leftTree rightTree triple  => 
             fun tpf (tt : topt = top)  => 
             let lem0 :  
-              And ((And  (treeCheck leftTree left) (treeCheck rightTree right)))
-               (And (treeTop leftTree = left) ((treeTop rightTree = right))) 
+               ((  (treeCheck leftTree left) ∧ (treeCheck rightTree right))) ∧ 
+               ( (treeTop leftTree = left) ∧ ((treeTop rightTree = right))) 
                 := tpf
               let lemLc : treeCheck leftTree left := lem0.left.left
               let lemRc := lem0.left.right
