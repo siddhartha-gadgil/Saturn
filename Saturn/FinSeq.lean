@@ -748,8 +748,8 @@ def partToFullFlatten{α : Type}{n: Nat}(lengths : (j : Nat) → j < n + 1 → N
                         (j : Nat) → (jw : j < lengths i iw) → 
                         ElemInSeq pfs.seq (seqs i iw j jw) := 
                           fun i iw j jw =>
-                            let lem : i < n ∨ i = n ∧ 
-                              j < lengths n (Nat.leRefl (succ n)) :=
+                            let lem : i < n ∨ (i = n ∧ 
+                              j < lengths n (Nat.leRefl (succ n))) :=
                                 let switch := Nat.eqOrLtOfLe iw
                                 match switch with 
                                 | Or.inl p => 
@@ -867,48 +867,29 @@ def partFlatInGp{α : Type}{n: Nat}(lengths : (j : Nat) → j < n → Nat)
                                       )⟩
                       ⟨lengthN , seqN, forwardN, reverseN⟩ 
 
--- def partFlatSeq{α : Type}(gp: Nat):
---         (max: Nat) → (n: Nat) → 
---           (lengths : (j : Nat) → j < n + 1  → Nat) → 
---           (seqs : (j : Nat) → (jw : j < n + 1) → FinSeq (lengths j jw) α) → (gpBound : gp < n + 1)  → (maxBound : max ≤  lengths gp gpBound) → 
---         PartialFlattenSeq lengths seqs gp gpBound max maxBound := 
---         -- fun gp =>
---         match gp with
---         | 0 => 
---           fun max =>
---             match max with
---             | 0 => fun _ _ _ _ _ =>
---               ⟨0, FinSeq.empty, 
---                 fun j jw => nomatch jw, 
---                 fun i iw j jw p => 
---                   let q : ¬(i < 0 ∨ i = 0 ∧ j < 0) := 
---                     match p with
---                     | Or.inl p1 => nomatch p1
---                     | Or.inr p2 => nomatch p2
---                   absurd p q ⟩
---             | k + 1 => 
---               fun n lengths seqs =>
---               fun gpBound =>
---               fun maxBound => 
---                 let prev := partFlatSeq 0 k n lengths seqs gpBound  (leStep maxBound)
---                 let head := seqs 0 gpBound k maxBound
---                 let lengthN := prev.length +1
---                 let seqN := head +: prev.seq 
---                 let forwardN : (j : Nat) → (jw : j < lengthN) → Σ (i : Nat), (iw : i < n + 1) → 
---                       ElemInSeq (seqs i iw) (seqN j jw) := 
---                         fun j =>
---                         match j with
---                         | 0 => 
---                           fun jw =>
---                             ⟨0, fun w => ⟨k, maxBound, rfl⟩⟩
---                         | l + 1 => 
---                           fun jw =>
---                             let lw := leOfSuccLeSucc jw
---                             by
---                               apply (prev.forward l lw)
---                               done
---                 ⟨lengthN , seqN, forwardN, sorry⟩
---         | l + 1 => sorry      
+def partFlatOrigin{α : Type}{n: Nat} : (lengths : (j : Nat) → j < n → Nat) → 
+                          (seqs : (j : Nat) → (jw : j < n) → FinSeq (lengths j jw) α) → 
+                          (gpBound : 0 < n) → 
+                            (PartialFlattenSeq lengths seqs 0 gpBound 0 (Nat.zeroLe _)) :=
+              match n with
+              | 0 => fun _ _ w => nomatch w
+              | m + 1 =>
+                fun lengths seqs gpBound =>
+                  let seqN : FinSeq 0 α := FinSeq.empty
+                  let forwardN : (j : Nat) → (jw : j < 0) → Σ (i : Nat), (iw : i < m + 1) → 
+                      ElemInSeq (seqs i iw) (seqN j jw) := fun j jw => nomatch jw 
+                  let reverseN : (i : Nat) → (iw : i < m + 1) → (j : Nat) → (jw : j < lengths i iw) → 
+                    i < 0 ∨ (i = 0 ∧ j < 0)  → 
+                      ElemInSeq seqN (seqs i iw j jw) :=   
+                        fun i iw j jw p => 
+                          let q : ¬(i < 0 ∨ i = 0 ∧ j < 0) := 
+                            match p with
+                            | Or.inl p1 => nomatch p1
+                            | Or.inr p2 => nomatch p2
+                          absurd p q 
+                  ⟨0, seqN, forwardN, reverseN⟩
+
+      
 
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
     match n with
