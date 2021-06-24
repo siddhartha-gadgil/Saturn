@@ -889,7 +889,51 @@ def partFlatOrigin{α : Type}{n: Nat} : (lengths : (j : Nat) → j < n → Nat) 
                           absurd p q 
                   ⟨0, seqN, forwardN, reverseN⟩
 
-      
+def partFlatZeroBound{α : Type}{n: Nat}(lengths : (j : Nat) → j < n + 1 → Nat)
+                                    (seqs : (j : Nat) → (jw : j < n + 1) → FinSeq (lengths j jw) α) :                
+            (gp : Nat) → (gpBound : gp < n + 1) → 
+                            PartialFlattenSeq lengths seqs gp gpBound 0 (Nat.zeroLe _) :=
+              fun gp => 
+                match gp with
+                | 0 => by 
+                          intro gpBound
+                          apply partFlatOrigin
+                          done
+                | l + 1 => 
+                  fun gpBound => 
+                    let base := partFlatZeroBound lengths seqs l (leStep gpBound)
+                    let pfs := partFlatInGp lengths seqs l (leStep gpBound) base
+                                  (lengths l (leStep gpBound)) (Nat.leRefl _)
+                    let reverseN : (i : Nat) → (iw : i < (n +1)) → 
+                        (j : Nat) → (jw : j < lengths i iw) → 
+                        i < l + 1 ∨ (i = l + 1 ∧ j < 0)  →
+                        ElemInSeq pfs.seq (seqs i iw j jw) := 
+                          fun i iw j jw p0 =>
+                            let lem : i < l ∨ (i = l ∧ 
+                              j < lengths l (leStep gpBound)) := 
+                               match p0 with
+                               | Or.inr pw => 
+                                      let w := pw.right
+                                      nomatch w
+                               | Or.inl pw => 
+                                let switch := Nat.eqOrLtOfLe pw
+                                match switch with 
+                                | Or.inl p => 
+                                  let p1 : i = l := by
+                                    injection p
+                                    assumption
+                                  let lem : lengths l (leStep gpBound) =
+                                            lengths i iw := by
+                                          apply witnessIndependent
+                                          exact Eq.symm p1
+                                          done
+                                  Or.inr (And.intro p1 (by 
+                                                          rw lem
+                                                          exact jw))
+                                | Or.inr p => 
+                                    Or.inl (leOfSuccLeSucc p)
+                            pfs.reverse i iw j jw lem
+                    ⟨pfs.length, pfs.seq, pfs.forward, reverseN⟩
 
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
     match n with
