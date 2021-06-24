@@ -263,24 +263,24 @@ theorem propValue(p: Prop) : (a b: p) → a = b :=
 
 #print congr
 #print Eq.ndrec
+#check Eq.rec
+
+-- copied and made verbose using help from print
+theorem Fin.eqVeq {n} : ∀ (i j : Fin n), Eq i.val j.val → Eq i j :=
+    fun  (i j : Fin n) =>
+      fun  (eqn : i.val = j.val) => 
+        match i, j, eqn with 
+        | ⟨v, h⟩, ⟨.(v), .(h)⟩, rfl => rfl
+
+#print Fin.eqOfVeq
 
 theorem witnessIndependent{α : Type}{n : Nat}(seq: FinSeq n α) :
     (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
         (i = j) → seq i iw = seq j jw :=
         fun i j iw jw eqn =>
-          let fn : Fin n → α := fun ⟨i, w⟩ => seq i w
-          let lem : (⟨i, iw⟩ : Fin n) = ⟨j, jw⟩ := by
-                apply Fin.eqOfVeq
-                exact eqn
-                done
-          let eq1 : fn ⟨i, iw⟩ = seq i iw := by rfl
-          let eq2 : fn ⟨j, jw⟩ = seq j jw := by rfl
-          let eqc := congrArg fn lem
-          by 
-            rw (Eq.symm eq1)
-            rw (Eq.symm eq2)
-            exact eqc
-            done
+          match j, eqn, jw with 
+          | .(i), rfl, ijw =>
+               rfl
 
 theorem skipPreImageBound {i j k n : Nat}: (k < n + 1) → (j < n + 1) → 
                                 skip k i = j → i < n :=
@@ -820,7 +820,7 @@ def partFlatInGp{α : Type}{n: Nat}(lengths : (j : Nat) → j < n → Nat)
                                 match p with
                                 | Or.inl eqn => absurd eqn c
                                 | Or.inr eqn => eqn
-                              let q1 := q.left
+                              let q1 : i = gp := q.left
                               let q2 := q.right
                               if mc : j = k then
                                 let lem : 
@@ -841,8 +841,9 @@ def partFlatInGp{α : Type}{n: Nat}(lengths : (j : Nat) → j < n → Nat)
                                     apply HEq.rfl
                                     done
                                   
-                                let goal : seqs gp gpBound k maxBound = seqs i iw j jw := sorry
-
+                                let goal : seqs gp gpBound k maxBound = seqs i iw j jw := 
+                                    match i, q1, j, mc, iw, jw with  
+                                    | .(gp), rfl, .(k), rfl, iww, jww => rfl 
                                 ⟨0, zeroLtSucc _, (by 
                                   rw lem
                                   exact goal
