@@ -935,6 +935,23 @@ def partFlatZeroBound{α : Type}{n: Nat}(lengths : (j : Nat) → j < n + 1 → N
                             pfs.reverse i iw j jw lem
                     ⟨pfs.length, pfs.seq, pfs.forward, reverseN⟩
 
+def flattenSeq{α : Type}{n: Nat} : 
+    (lengths : (j : Nat) → j < n → Nat) → 
+      (seqs : (j : Nat) → (jw : j < n) → FinSeq (lengths j jw) α) → 
+      FlattenSeq lengths seqs := 
+        match n with
+        | 0 => fun _ _ => ⟨0, FinSeq.empty, 
+                            fun j jw => nomatch jw, 
+                            fun i iw => nomatch iw⟩ 
+        | m + 1 => 
+          fun lengths seqs => 
+            let base := partFlatZeroBound lengths seqs m (Nat.leRefl _) 
+            let pfs := partFlatInGp lengths seqs m (Nat.leRefl _) base 
+                          (lengths m (Nat.leRefl _)) (Nat.leRefl _)
+            partToFullFlatten lengths seqs pfs
+
+
+
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
     match n with
     | 0 => fun _ => none

@@ -170,13 +170,13 @@ def containsTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
             fun dHyp =>
               hyp (k + 1) (succ_lt_succ w) b dHyp
 
-def containsRefl{n: Nat} (cl : Clause (n + 1)) :   
+def containsRefl{n: Nat} (cl : Clause n) :   
   cl ⊇ cl :=
     fun k w b => 
       fun hyp =>
         hyp
 
-def containsTrans{n: Nat} (cl1 cl2 cl3 : Clause (n + 1)) :
+def containsTrans{n: Nat} (cl1 cl2 cl3 : Clause n) :
         cl1 ⊇  cl2 → cl2 ⊇ cl3 →  cl1 ⊇ cl3 :=
         fun hyp1 hyp2 => 
           fun k w b =>
@@ -186,6 +186,128 @@ def containsTrans{n: Nat} (cl1 cl2 cl3 : Clause (n + 1)) :
                 apply hyp2
                 apply dHyp
                 done
+
+def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) → 
+                                          Decidable (cl1 ⊇   cl2) :=
+    match n with
+    | 0 => 
+        fun cl1 cl2 => isTrue (fun i iw => nomatch iw)
+    | m + 1 => 
+      fun cl1 cl2 =>
+      match decideContains m (tail cl1) (tail cl2) with
+      | isFalse contra =>
+          isFalse (fun hyp =>
+                      contra (containsTail cl1 cl2 hyp))
+      | isTrue pfTail =>
+          match varDomDecide (cl1 0 (zeroLtSucc _)) (cl2 0 (zeroLtSucc _)) with
+          | isTrue pfHead =>
+              let lem0 := 
+                (containsPrepend (cl1 0 (zeroLtSucc _)) (cl2 0 (zeroLtSucc _)) 
+                    (tail cl1) (tail cl2) pfHead) pfTail 
+              let lem1b : (cl1 0 (zeroLtSucc _)) +:  (tail cl1)  = cl1  := 
+                funext (fun j =>
+                          match j with
+                          | 0 => funext (fun jw => rfl)
+                          | i + 1 => funext (fun jw => rfl)
+                          )
+              let lem2b : (cl2 0 (zeroLtSucc _)) +:  (tail cl2)  = cl2  := 
+                funext (fun j =>
+                          match j with
+                          | 0 => funext (fun jw => rfl)
+                          | i + 1 => funext (fun jw => rfl)
+                          )
+              let lem : cl1 ⊇   cl2 := by
+                rw (Eq.symm lem1b)
+                rw (Eq.symm lem2b)
+                exact lem0
+                done
+              isTrue (
+                lem
+              )
+          | isFalse contra => 
+            isFalse (fun hyp =>
+                        contra ( 
+                          fun b => 
+                             hyp 0 (zeroLtSucc _) b 
+                          )                           
+                          )
+
+
+instance {n: Nat}{cl: Clause n} : DecidablePred (contains cl) :=
+  decideContains n cl
+
+def subClause?{l n: Nat}(cl : Clause n)(seq : FinSeq l (Clause n)) :
+                    Option (ElemSeqPred seq (contains cl)) := 
+              find? (contains cl) seq
+
+structure Containment{dom n : Nat}(base: FinSeq dom (Clause n)) where
+    codom: Nat
+    imageSeq : FinSeq codom (Clause n)
+    forward : (j : Nat) → (jw : j < dom) → ElemSeqPred imageSeq (contains (base j jw))
+    reverse : (j : Nat) → (jw : j < codom) → ElemInSeq base (imageSeq j jw) 
+
+def prependContainment{dom n : Nat}{base: FinSeq dom (Clause n)}
+          (pred: Containment base)(cl : Clause n) : Containment (cl +: base) := 
+            match subClause? cl (pred.imageSeq) with
+            | none =>
+              let codomN := pred.codom + 1
+              let imageSeqN := cl +: (pred.imageSeq)
+              let domN := dom + 1
+              let baseN := cl +: base
+              let forwardN : (j : Nat) → (jw : j < domN) → 
+                  ElemSeqPred imageSeqN (contains (baseN j jw)) := 
+                  fun j => 
+                  match j with 
+                  | 0 => fun jw => 
+                    ⟨0, zeroLtSucc _, containsRefl cl⟩
+                  | i + 1 =>
+                    fun jw => 
+                    let iw := leOfSuccLeSucc jw 
+                    let ⟨ind, bd, ctn⟩ := pred.forward i iw
+                    ⟨ ind + 1, succ_lt_succ bd, by 
+                          exact ctn
+                          done⟩
+              let reverseN : (j : Nat) → (jw : j < codomN) → 
+                  ElemInSeq baseN (imageSeqN j jw) := 
+                  fun j => 
+                  match j with 
+                  | 0 => fun jw => 
+                    ⟨0, zeroLtSucc _, rfl⟩
+                  | i + 1 =>
+                    fun jw => 
+                    let iw := leOfSuccLeSucc jw 
+                    let ⟨ind, bd, ctn⟩ := pred.reverse i iw
+                    ⟨ ind + 1, succ_lt_succ bd, by 
+                          exact ctn
+                          done⟩
+              ⟨codomN, imageSeqN, forwardN, reverseN⟩
+            | some ⟨zi, zb, zc⟩ => 
+              let codomN := pred.codom
+              let imageSeqN := pred.imageSeq
+              let domN := dom + 1
+              let baseN := cl +: base
+              let forwardN : (j : Nat) → (jw : j < domN) → 
+                  ElemSeqPred imageSeqN (contains (baseN j jw)) := 
+                  fun j => 
+                  match j with 
+                  | 0 => fun jw => 
+                    ⟨zi, zb, zc⟩
+                  | i + 1 =>
+                    fun jw => 
+                    let iw := leOfSuccLeSucc jw 
+                    let ⟨ind, bd, ctn⟩ := pred.forward i iw
+                    ⟨ ind, bd, by 
+                          exact ctn
+                          done⟩
+              let reverseN : (j : Nat) → (jw : j < codomN) → 
+                  ElemInSeq baseN (imageSeqN j jw) := 
+                  fun i =>
+                    fun iw => 
+                    let ⟨ind, bd, ctn⟩ := pred.reverse i iw
+                    ⟨ ind + 1, succ_lt_succ bd, by 
+                          exact ctn
+                          done⟩
+              ⟨codomN, imageSeqN, forwardN, reverseN⟩
 
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
     (clauses: FinSeq dom (Clause (n + 1)))(rc: RestrictionClauses branch focus focusLt clauses) 
@@ -468,13 +590,6 @@ def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) →
                              hyp ⟨0, zeroLtSucc _⟩ b 
                           )                           
                           )
-
-instance {n: Nat}{cl: Clause n} : DecidablePred (contains cl) :=
-  decideContains n cl
-
-def subClause?{n: Nat}(cl : Clause n)(seq : FinSeq n (Clause n)) :
-                    Option (ElemSeqPred seq (contains cl)) := 
-              find? (contains cl) seq
 
 
 def optCasesProp : (x : Option Nat) → Or (x = none) (∃ j, x = some j) :=
