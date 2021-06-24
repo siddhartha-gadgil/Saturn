@@ -246,8 +246,8 @@ structure Containment{dom n : Nat}(base: FinSeq dom (Clause n)) where
     forward : (j : Nat) → (jw : j < dom) → ElemSeqPred imageSeq (contains (base j jw))
     reverse : (j : Nat) → (jw : j < codom) → ElemInSeq base (imageSeq j jw) 
 
-def prependContainment{dom n : Nat}{base: FinSeq dom (Clause n)}
-          (pred: Containment base)(cl : Clause n) : Containment (cl +: base) := 
+def prependContainment{dom n : Nat}{base: FinSeq dom (Clause n)}(pred: Containment base)
+        (cl : Clause n) : Containment (cl +: base) := 
             match subClause? cl (pred.imageSeq) with
             | none =>
               let codomN := pred.codom + 1
@@ -308,6 +308,59 @@ def prependContainment{dom n : Nat}{base: FinSeq dom (Clause n)}
                           exact ctn
                           done⟩
               ⟨codomN, imageSeqN, forwardN, reverseN⟩
+
+structure NatSucc (n: Nat) where
+  pred: Nat
+  eqn : n = succ (pred)
+
+def posSucc : (n : Nat) → Not (0 = n) → NatSucc n :=
+  fun n =>
+  match n with
+  | 0 => fun w => absurd rfl w
+  | l + 1 => fun _ => ⟨l, rfl⟩
+
+def simplifyContainment{dom n : Nat}: (base : FinSeq dom (Clause n)) → 
+      Containment (base) → Containment (base) :=
+  match dom with
+  | 0 => fun _  => id
+  | m + 1 => 
+    fun base contn =>
+      let ⟨k, (ineq : k < contn.codom), _⟩ := contn.forward 0 (zeroLtSucc _)      
+      let neZero : Not (0 = contn.codom) := fun hyp => 
+        let l0 : k < 0 := by
+          rw hyp
+          exact ineq
+          done
+        Nat.notLtZero k l0
+      let ⟨l, leqn⟩ := posSucc contn.codom neZero
+      match contn.codom, leqn, contn.imageSeq, contn.forward, contn.reverse with
+      | .(l + 1), rfl, imageSeq, forward, reverse =>
+        match subClause? (head imageSeq) (tail imageSeq) with 
+        | none => 
+          ⟨l + 1, imageSeq, forward, reverse⟩
+        | some ⟨zi, zb, zc⟩ => 
+          let codomN := l
+          let imageSeqN := tail imageSeq
+          let domN := m + 1
+          let forwardN : (j : Nat) → (jw : j < domN) → 
+                  ElemSeqPred imageSeqN (contains (base j jw)) := 
+                  fun j jw => 
+                  match forward j jw with 
+                  | ⟨0, _, (ctn : base j jw ⊇ head imageSeq)⟩ => 
+                    let c := containsTrans _ _ _ ctn zc
+                    ⟨zi, zb, c⟩
+                  | ⟨i + 1, iw, ctn⟩ =>                    
+                    ⟨i, leOfSuccLeSucc iw, ctn⟩
+          let reverseN : (j : Nat) → (jw : j < codomN) → 
+                  ElemInSeq base (imageSeqN j jw) := 
+                  fun i =>
+                    fun iw => 
+                    let ⟨ind, bd, ctn⟩ := reverse (i + 1) iw
+                    ⟨ ind, succ_lt_succ bd, by 
+                          exact ctn
+                          done⟩
+          ⟨codomN, imageSeqN, forwardN, reverseN⟩
+
 
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
     (clauses: FinSeq dom (Clause (n + 1)))(rc: RestrictionClauses branch focus focusLt clauses) 
