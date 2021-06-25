@@ -832,6 +832,51 @@ def transportResPf{l1 l2 n : Nat}(clauses1 : FinSeq l1 (Clause (n + 1)))
                             let check := And.intro (And.intro leftPf2.check  rightPf2.check)
                                             (And.intro leftPf2.checkTop rightPf2.checkTop)
                             ⟨tree, check, rfl⟩
+
+theorem proofsPreverveNonPos{dom n : Nat}{clauses : FinSeq dom (Clause (n + 1))}
+                (bf: Bool)(k : Nat)(kw : k < n + 1)
+                (base : (j : Nat) → (lt : j < dom) → Not (clauses j lt k kw = some bf)) : 
+                (top : Clause (n + 1)) → 
+                (tree : ResolutionTree clauses) → treeCheck tree top → treeTop tree = top → 
+                Not (top k kw = some bf) := 
+                  fun top tree =>
+                  match tree with
+                  | ResolutionTree.assumption ind  bd =>
+                    fun  chk  chkTop hyp => 
+                      let lem0 : clauses ind bd = top := chk
+                      let lem1 : Not (top k kw = some bf) := by
+                              rw (Eq.symm lem0)
+                              exact (base ind bd)
+                      absurd hyp lem1
+                  | ResolutionTree.resolve left right top1 leftTree rightTree triple1 =>
+                    fun  chk chkTop hyp => 
+                      let lem1 : top1 = top := chkTop
+                      let c : (((treeCheck leftTree left) ∧  (treeCheck rightTree right))) ∧ 
+                          ((treeTop leftTree = left) ∧  ((treeTop rightTree = right))) := chk
+                      let leftLem :=
+                        proofsPreverveNonPos bf k kw base left leftTree c.left.left c.right.left
+                      let rightLem :=
+                        proofsPreverveNonPos bf k kw base right rightTree c.left.right c.right.right
+                      let triple : ResolutionTriple left right top := by
+                                    rw (Eq.symm lem1)
+                                    exact triple1
+                                    done
+                      match skipImageCase triple.pivot k with
+                      | SkipImageCase.diag eqn => 
+                          match bf, k, eqn, kw, leftLem, rightLem with
+                          | false, .(triple.pivot), rfl, .(triple.pivotLt), lL, rL => 
+                                lL (triple.leftPivot)
+                          | true, .(triple.pivot), rfl, .(triple.pivotLt), lL, rL => 
+                                rL (triple.rightPivot)
+                      | SkipImageCase.image j eqn => 
+                            let jw := skipPreImageBound triple.pivotLt kw eqn
+                            let joinIm := triple.joinRest j jw
+                            match (skip triple.pivot j), eqn, (skipPlusOne jw), joinIm with 
+                            | .(k), rfl, .(kw), join => 
+                              let lem := 
+                                topJoinNonPos bf (left k kw) (right k kw) (top k kw) join
+                                  leftLem rightLem
+                              lem hyp               
 end leaner
 
 
