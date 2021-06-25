@@ -1001,6 +1001,38 @@ theorem contradictionFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (con
       done 
     Option.noConfusion lem5
 
+theorem contradInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
+      insert none n focus focusLt (contradiction n) =
+                            contradiction (n + 1) :=
+      let lem0 : (j: Nat) → (jw : j < n + 1) →  
+            insert none n focus focusLt (contradiction n) j jw  =
+                      contradiction (n + 1) j jw := 
+                      fun j jw =>
+                      let lem0 : contradiction (n + 1) j jw = none := by rfl
+                      match skipImageCase focus j with
+                      | SkipImageCase.diag eqn => 
+                        match focus, eqn, focusLt with
+                        | .(j), rfl, .(jw) =>
+                          by
+                            apply insertAtFocus 
+                            done                                
+                      | SkipImageCase.image i eqn => 
+                        let iw := skipPreImageBound focusLt jw eqn
+                        match j, eqn, jw, lem0 with
+                        | .(skip focus i), rfl, .(skipPlusOne iw), lem1 =>  
+                          by
+                            rw lem1
+                            apply insertAtImage
+                            exact iw
+                            done                               
+                 by
+                    apply funext
+                    intro j
+                    apply funext
+                    intro jw
+                    apply lem0
+                    done
+
 def deqSeq {α : Type}[DecidableEq α] (n: Nat) : (c1 : FinSeq n  α) → 
                               (c2: FinSeq n  α) → Decidable (c1 = c2) := 
   match n with

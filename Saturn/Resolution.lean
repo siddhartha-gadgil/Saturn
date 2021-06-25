@@ -648,11 +648,29 @@ instance {dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
       statement := fun sol => solutionProp sol 
       proof := fun sol => solutionProof sol
 
+def treeToUnsat{dom n: Nat}{clauses : FinSeq dom  (Clause (n + 1))} :
+                (rpf : ResolutionProof clauses (contradiction _)) → 
+                        SatSolution clauses := fun rpf =>
+          SatSolution.unsat rpf.tree rpf.check rpf.checkTop
+
+
 structure BranchResolutionProof{dom n: Nat}(bf: Bool)(focus : Nat)(focusLt : focus < n + 1)
   (clauses : FinSeq dom (Clause (n + 1)))(top : Clause (n))  where
     topFocus : Option Bool
     nonPos : Not (topFocus = some bf)
     provedTree : ResolutionProof clauses (insert topFocus n focus focusLt top)
+
+inductive LiftedResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
+    (clauses: FinSeq dom (Clause (n + 2))) where
+    | contra : ResolutionProof clauses (contradiction (n + 2)) → 
+                  LiftedResPf branch focus focusLt clauses
+    | unit : ResolutionProof clauses (unitClause (n + 1) (not branch) focus focusLt) → 
+                  LiftedResPf branch focus focusLt clauses
+
+theorem notNot(b: Bool){x : Bool} : Not (x = b) → x = (not b) :=
+  match b with
+  | true => fun w => eqFalseOfNeTrue w
+  | false => fun w => eqTrueOfNeFalse w
 
 def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
     (clauses: FinSeq dom (Clause (n + 2)))(rc: RestrictionClauses branch focus focusLt clauses) 
@@ -726,6 +744,30 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
               let check := And.intro (And.intro leftCheck rightCheck) 
                                       (And.intro leftCheckTop rightCheckTop)
               ⟨topFoc, topNonPos, ⟨tree, check, rfl⟩⟩
+
+def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
+    (clauses: FinSeq dom (Clause (n + 2)))(rc: RestrictionClauses branch focus focusLt clauses) 
+    (np : NonPosReverse rc) (rr: ReverseRelation rc) : 
+        ResolutionProof rc.restClauses (contradiction (n + 1)) → 
+            LiftedResPf branch focus focusLt clauses := fun rpf =>
+            let pbt := pullBackTree branch focus focusLt clauses rc np rr 
+                                (contradiction (n + 1)) rpf.tree rpf.check rpf.checkTop
+            match pbt.topFocus, pbt.nonPos, pbt.provedTree with 
+            | none, _, tree => 
+                let lem := contradInsNone focus focusLt            
+                let t : ResolutionProof clauses (contradiction (n + 2)) := by
+                            rw (Eq.symm lem)
+                            exact tree
+                LiftedResPf.contra t
+            | some b, ineq, tree =>
+                let lemPar : Not (b = branch) := fun hyp => ineq (congrArg some hyp)
+                let par : b = not branch := notNot branch lemPar
+                let t : ResolutionProof clauses (unitClause (n + 1) (not branch) focus focusLt) := 
+                          by
+                            rw (Eq.symm par)
+                            exact tree
+                            done
+                LiftedResPf.unit t
 
 end leaner
 
@@ -1135,6 +1177,10 @@ instance {dom n: Nat}{clauses : Fin dom →  Clause (n + 1)}
       statement := fun sol => solutionProp sol 
       proof := fun sol => solutionProof sol
 
+def treeToUnsat{dom n: Nat}{clauses : Fin dom →  Clause (n + 1)} :
+                (rpf : ResolutionProof clauses (contradiction _)) → 
+                        SatSolution clauses := fun rpf =>
+          SatSolution.unsat rpf.tree rpf.check rpf.checkTop
 
 structure BranchResolutionProof{dom n: Nat}(bf: Bool)(focus : Fin (n + 1))
   (clauses : Fin dom →  Clause (n + 1))(top : Clause (n))  where
