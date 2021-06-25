@@ -130,6 +130,18 @@ structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
           (right (skip pivot k) (skipPlusOne w)) 
           (top (skip pivot k) (skipPlusOne w))
 
+def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
+        ResolutionTriple (unitClause n false  k lt) (unitClause n true k lt) (contradiction (n + 1)) :=
+          ⟨k, lt, 
+            unitDiag n false k lt , 
+            unitDiag n true k lt, 
+            rfl, 
+            fun j jw => Join.noneNone 
+                      (unitSkip n false k lt j jw) 
+                      (unitSkip n true k lt j jw) 
+                      rfl
+                      ⟩
+
 def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
         (valuat: Valuat (n + 1))  → (clauseSat left valuat) → 
@@ -653,6 +665,20 @@ def treeToUnsat{dom n: Nat}{clauses : FinSeq dom  (Clause (n + 1))} :
                         SatSolution clauses := fun rpf =>
           SatSolution.unsat rpf.tree rpf.check rpf.checkTop
 
+def mergeUnitTrees{dom n: Nat}{clauses : FinSeq dom  (Clause (n + 1))}
+                (focus : Nat)(focusLt : focus < n + 1)
+                (left: ResolutionProof clauses (unitClause n false focus focusLt))
+                (right: ResolutionProof clauses (unitClause n true focus focusLt)) :
+                ResolutionProof clauses (contradiction (n + 1)) := 
+                let tree := ResolutionTree.resolve 
+                      (unitClause n false focus focusLt)
+                      (unitClause n true focus focusLt)
+                      (contradiction (n + 1))
+                     left.tree right.tree (unitTriple n focus focusLt)
+                let check : treeCheck tree (contradiction (n + 1)) := 
+                    And.intro (And.intro left.check  right.check) 
+                              (And.intro left.checkTop  right.checkTop)
+                ⟨tree, check, rfl⟩
 
 structure BranchResolutionProof{dom n: Nat}(bf: Bool)(focus : Nat)(focusLt : focus < n + 1)
   (clauses : FinSeq dom (Clause (n + 1)))(top : Clause (n))  where
@@ -769,6 +795,43 @@ def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n +
                             done
                 LiftedResPf.unit t
 
+def transportResPf{l1 l2 n : Nat}(clauses1 : FinSeq l1 (Clause (n + 1)))
+                  (clauses2: FinSeq l2 (Clause (n + 1)))
+                  (embed: (j : Nat) → (jw : j < l1) → ElemInSeq clauses2 (clauses1 j jw))
+                  (top: Clause (n + 1)): 
+                  (tree : ResolutionTree clauses1) → treeCheck tree top → treeTop tree = top → 
+                              ResolutionProof clauses2 top := 
+                      fun tree => 
+                      match tree with
+                      | ResolutionTree.assumption ind  bd =>
+                        fun  chk  chkTop => 
+                          let ⟨i, iw, eqn⟩ := embed ind bd
+                          let check2 : clauses2 i iw = top := by
+                              rw eqn
+                              exact chk
+                          let tree := ResolutionTree.assumption i iw
+                          let lem1 : treeTop tree = clauses2 i iw := by rfl                          
+                        ⟨tree, check2, by 
+                                    rw lem1
+                                    exact check2⟩
+                      | ResolutionTree.resolve left right top1 leftTree rightTree join =>
+                        fun  chk chkTop => 
+                            let lem1 : top1 = top := chkTop
+                            let c : (((treeCheck leftTree left) ∧  (treeCheck rightTree right))) ∧ 
+                              ((treeTop leftTree = left) ∧  ((treeTop rightTree = right))) := chk
+                            let leftPf2 := transportResPf clauses1 clauses2 embed left
+                                leftTree c.left.left c.right.left 
+                            let rightPf2 := transportResPf clauses1 clauses2 embed right
+                                rightTree c.left.right c.right.right
+                            let join2 : ResolutionTriple left right top := by
+                                    rw (Eq.symm lem1)
+                                    exact join
+                                    done 
+                            let tree := ResolutionTree.resolve left right top
+                                        leftPf2.tree rightPf2.tree join2
+                            let check := And.intro (And.intro leftPf2.check  rightPf2.check)
+                                            (And.intro leftPf2.checkTop rightPf2.checkTop)
+                            ⟨tree, check, rfl⟩
 end leaner
 
 

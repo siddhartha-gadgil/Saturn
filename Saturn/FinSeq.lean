@@ -1092,6 +1092,15 @@ instance {n: Nat}[DecidableEq α] : DecidableEq (FinSeq n  α) := fun c1 c2 => d
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
   insert (some b) n k w (contradiction n) 
 
+theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
+          unitClause n b k w k w = b :=
+          insertAtFocus (some b) n k w (contradiction n)
+
+theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
+          (i: Nat) → (iw : i < n) →  unitClause n b k w (skip k i) 
+                  (skipPlusOne iw) = none := fun i iw => 
+          insertAtImage (some b) n k w (contradiction n) i iw
+
 structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
   index: Nat 
   bound : index < n + 1
