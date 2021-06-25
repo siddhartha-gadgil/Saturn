@@ -136,6 +136,14 @@ structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < 
     nonPosRev : (k : Nat) → (w: k < rc.codom)  → 
       Not ((clauses (rc.reverse k w) (rc.reverseWit k w)) focus focusLt = some branch)
 
+structure RestrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: FinSeq dom (Clause (n + 1))) where
+    restrictionClauses : RestrictionClauses branch focus focusLt clauses
+    droppedProof : DroppedProof restrictionClauses
+    forwardRelation : ForwardRelation restrictionClauses
+    reverseRelation : ReverseRelation restrictionClauses
+    nonPosReverse : NonPosReverse restrictionClauses 
+
 def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2 k kw = some b → cl1 k kw = some b
 
@@ -309,6 +317,15 @@ def prependContainment{dom n : Nat}{base: FinSeq dom (Clause n)}(pred: Containme
                           done⟩
               ⟨codomN, imageSeqN, forwardN, reverseN⟩
 
+def initialContainment{dom n : Nat}: (clauses : FinSeq dom (Clause n)) → 
+                              Containment clauses := 
+                    match dom with
+                    |0 => fun _ => ⟨0, FinSeq.empty, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
+                    | m + 1 => 
+                        fun clauses =>
+                        let ht := prependContainment (initialContainment (tail clauses)) (head clauses)
+                        Eq.mp (congrArg Containment (headTail clauses)) ht
+
 structure NatSucc (n: Nat) where
   pred: Nat
   eqn : n = succ (pred)
@@ -384,6 +401,13 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →  (base : Fin
             let step := ⟨codomN, imageSeqN, forwardN, reverseN⟩
             simplifyNonEmptyContainment k base step
         else ⟨l + 1, imageSeq, forward, reverse⟩
+
+def simplifiedContainment{dom n : Nat}: (clauses : FinSeq dom (Clause n)) → 
+                              Containment clauses := 
+                    match dom with
+                    |0 => fun _ => ⟨0, FinSeq.empty, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
+                    | m + 1 => fun clauses => 
+                        simplifyNonEmptyContainment (m + 1) clauses (initialContainment clauses)
 
 -- this is not recursive
 def simplifyContainmentHead{dom n : Nat}: (base : FinSeq dom (Clause n)) → 
