@@ -50,3 +50,21 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
         by
           rw (Eq.symm lem)
           exact res
+
+def containmentLift{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))(cntn : Containment clauses):
+          SatSolution (cntn.imageSeq) → SatSolution clauses := 
+          fun sol =>
+          match sol with
+          | SatSolution.sat val pf => 
+              SatSolution.sat val (
+                fun k kw => 
+                        let ⟨ind, bd, w⟩ := cntn.forward k kw
+                        let ev := pf ind bd
+                        let lem := containsSat (clauses k kw) (cntn.imageSeq ind bd) w val
+                        lem ev)
+              
+          | SatSolution.unsat tree chk chkTop => 
+                let rpf := 
+                  transportResPf cntn.imageSeq clauses cntn.reverse (contradiction (n + 1))
+                    tree chk chkTop
+                SatSolution.unsat rpf.tree rpf.check rpf.checkTop

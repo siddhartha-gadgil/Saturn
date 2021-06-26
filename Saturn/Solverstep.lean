@@ -149,7 +149,7 @@ def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
 
 infix:65 " ⊇  " => contains
 
-theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
+def containsSat{n: Nat} (cl1 cl2 : Clause n) :
   cl1 ⊇  cl2 → (valuat : Valuat n) → ClauseSat cl2 valuat → ClauseSat cl1 valuat :=
     fun dom valuat  =>
       fun ⟨j, jw, vs⟩ =>
