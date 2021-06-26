@@ -144,6 +144,20 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           ⟨pureN⟩
 
 
+def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: FinSeq dom (Clause (n + 1))): 
+        (head : Clause (n + 1)) → (pos : head focus focusLt = some branch) →
+        (rd : RestrictionData branch focus focusLt clauses) → 
+        RestrictionData branch focus focusLt (head +: clauses) := 
+          fun head pos rd =>
+          let rc := addPositiveClause branch focus focusLt clauses rd.restrictionClauses head pos
+          ⟨rc, 
+          droppedProof branch focus focusLt clauses rd.restrictionClauses head pos rd.droppedProof,
+          forwardRelation branch focus focusLt clauses rd.restrictionClauses head pos rd.forwardRelation,
+          reverseRelation branch focus focusLt clauses rd.restrictionClauses head pos rd.reverseRelation,
+          pureReverse branch focus focusLt clauses rd.restrictionClauses head pos rd.nonPosReverse⟩
+          
+
 end PosResClause
 end leaner
 

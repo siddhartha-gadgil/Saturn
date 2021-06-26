@@ -420,6 +420,25 @@ def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
           (find? pred (tail seq)).map (fun ⟨i, iw, eqn⟩ => 
             ⟨i +1, succ_lt_succ iw, eqn⟩)
 
+def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}: 
+  (seq: FinSeq n  α) → (elem: α) →  Option (ElemInSeq seq elem) :=
+    match n with
+    | 0 => fun _  => fun _ => none
+    | m + 1 => 
+      fun fn =>
+        fun x =>
+          if pf : fn 0 (zeroLtSucc m) =  x then
+            some ⟨0, (zeroLtSucc m), pf⟩
+          else
+            let pred := findElem? (tail fn) x
+            pred.map (fun ⟨j, jw, eql⟩ => 
+              let l1 : fn (j + 1) (succ_lt_succ jw) = (tail fn) j jw := by rfl 
+              let l2 : fn (j + 1) (succ_lt_succ jw) = x := by 
+                    rw l1
+                    exact eql
+              ⟨j + 1 , succ_lt_succ jw, l2⟩ 
+            )
+
 -- just for lookup
 def transport(α β : Type)(eql: α = β): α → β :=
   fun x =>
