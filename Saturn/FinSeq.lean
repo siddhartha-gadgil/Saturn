@@ -1175,20 +1175,28 @@ def clauseUnit{n: Nat}(clause: Clause (n + 1)) : Option (IsUnitClause clause) :=
   let seq : FinSeq (n + 1) (Fin (n + 1)) := fun k w => ⟨k, w⟩
   findSome? f seq
 
-def someUnitClause {l : Nat} : (n : Nat) →  (clauses : Fin l → (Clause (n + 1))) →  
-  Option (Σ k : Fin l, IsUnitClause (clauses k))  := 
+structure SomeUnitClause{l n : Nat}(clauses : FinSeq l  (Clause (n + 1))) where
+  pos: Nat
+  posBound : pos < l
+  index: Nat 
+  bound : index < n + 1
+  parity: Bool
+  equality : clauses pos posBound = unitClause n parity index bound
+
+def someUnitClause {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))) →  
+  Option (SomeUnitClause clauses)  := 
     match l with 
-    | 0 => fun _ _ =>  none
+    | 0 => fun  _ =>  none
     | m + 1 => 
-      fun n cls =>
-        match clauseUnit (cls ⟨0, (zeroLtSucc m)⟩) with
-        | some u => some ⟨⟨0, (zeroLtSucc m)⟩, u⟩ 
+      fun  cls =>
+        match clauseUnit (cls 0 (zeroLtSucc m)) with
+        | some u => some ⟨0, zeroLtSucc _, u.index, u.bound, u.parity, u.equality⟩ 
         | none => 
-          let tcls := dropHead _ cls
-          let tail := someUnitClause n tcls
+          let tcls := tail cls
+          let tail := someUnitClause  tcls
           match tail with
-          | some ⟨⟨i, w⟩, u⟩ => 
-            some ⟨⟨i + 1, leOfSuccLeSucc w⟩, u⟩
+          | some ⟨i, w, index, bd, par, eql⟩ => 
+            some ⟨i + 1, leOfSuccLeSucc w, index, bd, par, eql⟩
           | none => none
 
 structure HasPureVar{dom n : Nat}(clauses : FinSeq dom  (Clause n)) where
@@ -1263,8 +1271,8 @@ def findPureAux{n : Nat} : (dom: Nat) →  (clauses : FinSeq dom (Clause (n +1))
               )
               )
             
-def hasPure{n : Nat}(dom: Nat)(clauses : FinSeq dom  (Clause (n +1))) 
-            (ub: Nat)(lt : ub < n + 1) : Option (HasPureVar clauses) :=
+def hasPure{n : Nat}{dom: Nat}(clauses : FinSeq dom  (Clause (n +1))) 
+             : Option (HasPureVar clauses) :=
           findPureAux dom clauses n (Nat.leRefl _)
 
 

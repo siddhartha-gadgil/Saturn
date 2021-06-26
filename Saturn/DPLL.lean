@@ -168,3 +168,96 @@ def lengthOneSolution{dom : Nat}: (clauses : FinSeq dom (Clause 1)) →  SatSolu
                 | some false, l1, l2, l3 => False.elim (l3 rfl)
                 | none, l1, l2, l3 => False.elim (l1 rfl)
 
+def pureNot(b: Bool): (x : Option Bool) → x = none ∨  x = some b  → Not (x = some (not b)) :=
+  fun x eqn  =>
+     match b, eqn  with
+     | true, Or.inr pf => 
+            fun hyp =>
+              let lem1 : some true = some false := by
+                rw (Eq.symm pf)
+                rw hyp
+                rfl
+                done
+              let lem2 : true = false := by 
+                  injection lem1
+                  assumption
+              Bool.noConfusion lem2
+     | false, Or.inr pf => 
+              fun hyp =>
+              let lem1 : some true = some false := by
+                rw (Eq.symm pf)
+                rw hyp
+                rfl
+                done
+              let lem2 : true = false := by 
+                  injection lem1
+                  assumption
+              Bool.noConfusion lem2
+     | _ , Or.inl pf => fun hyp =>
+        let w := Eq.trans (Eq.symm pf) hyp
+        Option.noConfusion w
+
+def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution clauses :=
+      match n with
+      | 0 => fun clauses => lengthOneSolution clauses
+      | m + 1 =>
+        fun clauses =>
+          let cntn := simplifiedContainment clauses
+          let cls := cntn.imageSeq
+          let solution : SatSolution cls :=
+              match someUnitClause cls with
+              | some ⟨i, iw, index, bd, par, eql⟩ => 
+                  let rd := restrictionData par index bd cls
+                  let subCls := rd.restrictionClauses.restClauses
+                  let subSol := solve subCls
+                  match subSol with
+                  | SatSolution.sat valuat pf => 
+                    let pb :=  pullBackSolution par index bd cls 
+                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuat pf
+                    let valuatN := insert par _ index bd valuat
+                    SatSolution.sat valuatN pb
+                  | SatSolution.unsat tree treeCheck treeTop => 
+                      let liftedProof :=
+                        pullBackResPf  par index bd cls 
+                            rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
+                            ⟨tree, treeCheck, treeTop⟩
+                      match liftedProof with
+                      | LiftedResPf.contra pf => 
+                          treeToUnsat pf
+                      | LiftedResPf.unit rpf => 
+                          let tree1 := unitProof eql
+                          let merged := mergeAlignUnitTrees tree1 rpf
+                          treeToUnsat merged 
+              | none => 
+                match hasPure cls with 
+                | some ⟨index, bd, par, evid⟩=> 
+                  let rd := restrictionData par index bd cls
+                  let subCls := rd.restrictionClauses.restClauses
+                  let subSol := solve subCls
+                  match subSol with
+                  | SatSolution.sat valuat pf => 
+                    let pb :=  pullBackSolution par index bd cls 
+                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuat pf
+                    let valuatN := insert par _ index bd valuat
+                    SatSolution.sat valuatN pb
+                  | SatSolution.unsat tree treeCheck treeTop => 
+                      let liftedProof :=
+                        pullBackResPf  par index bd cls 
+                            rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
+                            ⟨tree, treeCheck, treeTop⟩
+                      match liftedProof with
+                      | LiftedResPf.contra pf => 
+                          treeToUnsat pf
+                      | LiftedResPf.unit rpf => 
+                          let base : (j : Nat) → (lt : j < cntn.codom) → 
+                              Not (cls j lt index bd = some (not par)) := 
+                                fun j jw => pureNot par (cls j jw index bd) (evid j jw)
+                          let pure :=
+                            proofsPreverveNonPos (not par) index bd base
+                                   (unitClause (m + 1) (!par) index bd)
+                                   rpf.tree rpf.check rpf.checkTop
+                          let impure := unitDiag (m + 1) (not par) index bd 
+                          absurd impure pure
+                | none =>  
+                  sorry
+        containmentLift clauses cntn solution
