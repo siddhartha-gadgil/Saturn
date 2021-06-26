@@ -132,7 +132,7 @@ def unitClauseRecDefn(n : Nat)(b : Bool): (k : Fin (n + 1)) →    Clause (n + 1
     | m + 1 => 
       fun k =>
         match k with
-          | ⟨0, _⟩ => prepend _ (some b) (contradiction (m + 1))
+          | ⟨0, _⟩ => prepend _ (some b) (contrad (m + 1))
           | ⟨l + 1, w⟩ => prepend _ none (unitClauseRecDefn m b ⟨l , leOfSuccLeSucc w⟩)
 
 theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) → 
@@ -143,7 +143,7 @@ theorem unitClauseDiag(n : Nat)(b : Bool): (k : Fin (n + 1)) →
        fun k =>
         match k with
           | ⟨0, w⟩ => 
-            let lhs := prepend _ (some b) (contradiction (m + 1)) 0
+            let lhs := prepend _ (some b) (contrad (m + 1)) 0
             let defLHS : unitClauseRecDefn (m + 1) b ⟨0, w⟩ ⟨0, w⟩ = 
               lhs := by rfl
             let lem : lhs = some b := by rfl

@@ -107,7 +107,7 @@ def branchAtMap  {n: Nat} (branch: Bool)(k : Fin (n + 1))(clauses : List (Clause
   : List (Clause n) :=
     (List.filterMap (branchAtClause branch k) clauses).eraseDups 
 
-def contradiction(n: Nat) : Clause n :=
+def contrad(n: Nat) : Clause n :=
   fun j => none
 
 def Solution(n: Nat) : Type := (Fin n) → Bool
@@ -116,7 +116,7 @@ def dpSAT (n: Nat): (List (Clause n)) →  Option (Solution n) :=
   match n with 
     | 0 => 
       fun clauses => 
-        if clauses == [contradiction 0] then 
+        if clauses == [contrad 0] then 
           none 
         else some (fun n => nomatch n) 
     | k + 1 => 
@@ -194,7 +194,7 @@ def dlppSAT (n: Nat): (List (Clause n)) →  Option (Solution n) :=
           | [] => some (fun n => nomatch n) 
     | k + 1 => 
       fun clauses =>
-        if clauses.contains (contradiction (k + 1)) then 
+        if clauses.contains (contrad (k + 1)) then 
         none
         else 
           match preAssign clauses with

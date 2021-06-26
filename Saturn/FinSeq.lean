@@ -403,6 +403,14 @@ structure ElemInSeq{α: Type}{n : Nat} (seq : FinSeq n α) (elem : α) where
   bound : index < n
   equation : seq index bound = elem
 
+inductive ExistsElem{α: Type}{n : Nat} (seq : FinSeq n α) (elem : α) where
+  | exsts : (index: Nat) →  (bound : index < n) → 
+            (equation : seq index bound = elem) → ExistsElem seq elem
+  | notExst : ((index: Nat) →  (bound : index < n) → 
+                 Not (seq index bound = elem)) → ExistsElem seq elem 
+
+
+
 structure ElemSeqPred{α: Type}{n : Nat} (seq : FinSeq n α) (pred : α → Prop) where
   index: Nat
   bound : index < n
@@ -438,6 +446,31 @@ def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}:
                     exact eql
               ⟨j + 1 , succ_lt_succ jw, l2⟩ 
             )
+
+def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
+  (seq: FinSeq n  α) → (elem: α) →  ExistsElem seq elem :=
+    match n with
+    | 0 => fun seq  => fun elem => ExistsElem.notExst (fun j jw => nomatch jw)
+    | m + 1 => 
+      fun fn =>
+        fun x =>
+          if pf0 : fn 0 (zeroLtSucc m) =  x then
+            ExistsElem.exsts 0 (zeroLtSucc m) pf0
+          else
+            match searchElem (tail fn) x with
+            | ExistsElem.exsts j jw eql => 
+              let l1 : fn (j + 1) (succ_lt_succ jw) = (tail fn) j jw := by rfl 
+              let l2 : fn (j + 1) (succ_lt_succ jw) = x := by 
+                    rw l1
+                    exact eql
+              ExistsElem.exsts (j + 1) (succ_lt_succ jw) l2              
+            | ExistsElem.notExst tailPf => 
+                  ExistsElem.notExst (
+                    fun j =>
+                    match j with
+                    | 0 => fun jw => pf0 
+                    | i + 1 => fun iw => tailPf i (leOfSuccLeSucc iw)
+                  )
 
 -- just for lookup
 def transport(α β : Type)(eql: α = β): α → β :=
@@ -1003,14 +1036,14 @@ instance {n: Nat}(clause : Clause n)(valuat: Valuat n): Prover (ClauseSat clause
   statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (valuat k b)
   proof := fun cs => ⟨cs.coord, ⟨cs.bound, cs.witness⟩⟩
 
-def contradiction(n: Nat) : Clause n :=
+def contrad(n: Nat) : Clause n :=
   fun _ _ => none
 
-theorem contradictionFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (contradiction n) valuat) :=
+theorem contradFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (contrad n) valuat) :=
   fun valuat => fun ⟨k, ⟨b, p⟩⟩ => 
-    let lem1 : (contradiction n) k b = none := by rfl
+    let lem1 : (contrad n) k b = none := by rfl
     let lem2 := congrArg varSat lem1
-    let lem3 : varSat (contradiction n k b) (valuat k b) = 
+    let lem3 : varSat (contrad n k b) (valuat k b) = 
                 varSat none (valuat k b) := congr lem2 rfl
     let lem4 : (varSat none (valuat k b)) = (none = some (valuat k b)) := rfl
     let lem5 : (none = some (valuat k b)) := by
@@ -1021,13 +1054,13 @@ theorem contradictionFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (con
     Option.noConfusion lem5
 
 theorem contradInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
-      insert none n focus focusLt (contradiction n) =
-                            contradiction (n + 1) :=
+      insert none n focus focusLt (contrad n) =
+                            contrad (n + 1) :=
       let lem0 : (j: Nat) → (jw : j < n + 1) →  
-            insert none n focus focusLt (contradiction n) j jw  =
-                      contradiction (n + 1) j jw := 
+            insert none n focus focusLt (contrad n) j jw  =
+                      contrad (n + 1) j jw := 
                       fun j jw =>
-                      let lem0 : contradiction (n + 1) j jw = none := by rfl
+                      let lem0 : contrad (n + 1) j jw = none := by rfl
                       match skipImageCase focus j with
                       | SkipImageCase.diag eqn => 
                         match focus, eqn, focusLt with
@@ -1109,16 +1142,16 @@ instance {n: Nat}[DecidableEq α] : DecidableEq (FinSeq n  α) := fun c1 c2 => d
 
 
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
-  insert (some b) n k w (contradiction n) 
+  insert (some b) n k w (contrad n) 
 
 theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
           unitClause n b k w k w = b :=
-          insertAtFocus (some b) n k w (contradiction n)
+          insertAtFocus (some b) n k w (contrad n)
 
 theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
           (i: Nat) → (iw : i < n) →  unitClause n b k w (skip k i) 
                   (skipPlusOne iw) = none := fun i iw => 
-          insertAtImage (some b) n k w (contradiction n) i iw
+          insertAtImage (some b) n k w (contrad n) i iw
 
 structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
   index: Nat 
@@ -1843,11 +1876,11 @@ instance {n: Nat}(clause : Clause n)(valuat: Valuat n): Prover (ClauseSat clause
   proof := fun cs => ⟨cs.coord, cs.witness⟩
 
 
-theorem contradictionFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (contradiction n) valuat) :=
+theorem contradFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (contrad n) valuat) :=
   fun valuat => fun ⟨k, p⟩ => 
-    let lem1 : (contradiction n) (k) = none := by rfl
+    let lem1 : (contrad n) (k) = none := by rfl
     let lem2 := congrArg varSat lem1
-    let lem3 : varSat (contradiction n k) (valuat k) = 
+    let lem3 : varSat (contrad n k) (valuat k) = 
                 varSat none (valuat k) := congr lem2 rfl
     let lem4 : (varSat none (valuat k)) = (none = some (valuat k)) := rfl
     let lem5 : (none = some (valuat k)) := by
@@ -1860,12 +1893,12 @@ theorem contradictionFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (con
 
 def isUnit{n: Nat}(k: Fin (n + 1))(b: Bool)(cl: Clause (n + 1)) :=
   (cl k = some b) &&
-  ((dropAt n k.val k.isLt cl) =  contradiction n)
+  ((dropAt n k.val k.isLt cl) =  contrad n)
 
 
 
 def unitClause(n : Nat)(b : Bool)(k : Fin (n + 1)):   Clause (n + 1):=
-  liftAt (some b) n k.val k.isLt (contradiction n) 
+  liftAt (some b) n k.val k.isLt (contrad n) 
 
 structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
   index: Fin (n + 1)
