@@ -8,7 +8,6 @@ import Saturn.ExistingClause
 -- set_option pp.all true
 
 open Nat
-open leaner
 
 instance {n: Nat} : DecidableEq (Clause n) := fun c1 c2 => deqSeq n c1 c2
 
@@ -93,10 +92,10 @@ def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl 0 (zeroLtSucc 0) = some b):
                                 lengthOneEqual lem2
 
 def lengthOneContra{cl: Clause 1}(eql : cl 0 (zeroLtSucc 0) = none):
-                              cl = leaner.contrad 1 := lengthOneEqual eql
+                              cl = contrad 1 := lengthOneEqual eql
 
 def contraSol{n dom: Nat}{clauses : FinSeq dom (Clause (n + 1))}{j : Nat}{jw : j < dom}
-                (eqn : clauses j jw = leaner.contrad (n + 1)): SatSolution clauses :=
+                (eqn : clauses j jw = contrad (n + 1)): SatSolution clauses :=
                   SatSolution.unsat (ResolutionTree.assumption j jw) eqn eqn 
                 
 def emptySol{n: Nat}(clauses : FinSeq 0 (Clause (n + 1))) : SatSolution clauses :=
