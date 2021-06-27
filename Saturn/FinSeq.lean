@@ -227,6 +227,7 @@ def FinSeq.empty {α: Type} : FinSeq 0 α :=
 def seq{α : Type}(l : List α) : FinSeq (l.length) α := 
   fun j jw => l.get j jw
 
+
 infixr:66 "+:" => FinSeq.cons
 
 def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
@@ -244,6 +245,12 @@ theorem headTail{α : Type}{n: Nat}(seq : FinSeq (n + 1) α):
             | 0 => by rfl 
             | i + 1 => by rfl
         )
+
+def list{α : Type}{n : Nat}: FinSeq n α → List α :=
+  match n with
+  | 0 => fun _ => []
+  | l + 1 => fun s => (head s) :: (list (tail s))
+
 
 theorem nullsEqual{α: Type}(s1 s2 : FinSeq 0 α) : s1 = s2 :=
   funext (fun j =>
