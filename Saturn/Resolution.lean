@@ -652,7 +652,7 @@ def SatSolution.toString{dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}:
       fun sol =>
       match sol with
       | unsat tree _ _ => "unsat: " ++ tree.toString 
-      | sat _ _ => "sat"
+      | sat valuat _ => "sat: " ++ (list valuat).toString
 
 def solutionProp{dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
                   (sol : SatSolution clauses) : Prop :=

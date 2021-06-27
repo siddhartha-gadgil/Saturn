@@ -326,26 +326,3 @@ def unsat{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
             ∀ pw : p < dom,   
               ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw))
 
-def cl1 : Clause 2 :=   -- P ∨ Q
-  (some true) +: (some true) +: FinSeq.empty
-
-def cl2 : Clause 2 := -- ¬P
-  (some false) +: (none) +: FinSeq.empty
-
-
-def cl3 : Clause 2 := -- ¬Q
-  (none) +: (some false) +: FinSeq.empty
-
-
-def eg1P : FinSeq 3 (Clause 2) := cl1 +: cl2 +: cl3 +: FinSeq.empty
-
-
-set_option maxHeartbeats 500000
-
-def eg1 : unsat eg1P := proveOrDisprove eg1P -- should be unsat
-def eg2 : sat (tail eg1P) := proveOrDisprove (tail eg1P) -- should be sat
-def eg1Tree := solve (eg1P)
-
-#check eg1 
-#check eg2
-#eval (eg1Tree.toString)
