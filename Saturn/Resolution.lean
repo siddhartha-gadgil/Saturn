@@ -552,7 +552,8 @@ def ResolutionTree.toString{dom n: Nat}{clauses : FinSeq dom   (Clause (n + 1))}
       | ResolutionTree.assumption i iw => (list (clauses i iw)).toString
       | ResolutionTree.resolve left right top leftTree rightTree triple => 
                 top.toString ++ " from " ++ left.toString ++ " & " ++ right.toString  ++ 
-                "using: {" ++ leftTree.toString ++ "} and {" ++ rightTree.toString ++ "}"
+                "; using: {" ++ 
+                leftTree.toString ++ "} and {" ++ rightTree.toString ++ "}"
 
 
 def treeTop{dom n: Nat}{clauses : FinSeq dom   (Clause (n + 1))}
@@ -650,7 +651,7 @@ def SatSolution.toString{dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}:
         (sol: SatSolution clauses) →  String := 
       fun sol =>
       match sol with
-      | unsat tree _ _ => "unsat: " ++ tree.toString ++ "length : " 
+      | unsat tree _ _ => "unsat: " ++ tree.toString 
       | sat _ _ => "sat"
 
 def solutionProp{dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
@@ -667,17 +668,7 @@ def solutionProp{dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
             ∀ pw : p < dom, 
               ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw) 
 
-def satStatement{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
-          ∃ valuat : Valuat (n + 1),  
-           ∀ (p : Nat),
-            ∀ pw : p < dom, 
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw)
 
-def unsatStatement{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
-          ∀ valuat : Valuat (n + 1),  
-           Not (∀ (p : Nat),
-            ∀ pw : p < dom,   
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw))
 
 def solutionProof{dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
                   (sol : SatSolution clauses) :

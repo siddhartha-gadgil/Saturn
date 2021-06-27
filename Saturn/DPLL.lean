@@ -314,40 +314,38 @@ def proveOrDisprove{n dom : Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
 #check proveOrDisprove
 
 
+def sat{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
+          ∃ valuat : Valuat (n + 1),  
+           ∀ (p : Nat),
+            ∀ pw : p < dom, 
+              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw)
+
+def unsat{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
+          ∀ valuat : Valuat (n + 1),  
+           Not (∀ (p : Nat),
+            ∀ pw : p < dom,   
+              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw))
+
 def cl1 : Clause 2 :=   -- P ∨ Q
-  fun j =>
-  match j with 
-  | 0  => fun _ => some true
-  | 1 => fun _ => some true
-  | l + 2 => fun jw => nomatch jw
+  (some true) +: (some true) +: FinSeq.empty
 
 def cl2 : Clause 2 := -- ¬P
-  fun j =>
-  match j with 
-  | 0  => fun _ => some false
-  | 1 => fun _ => none
-  | l + 2 => fun jw => nomatch jw
+  (some false) +: (none) +: FinSeq.empty
+
 
 def cl3 : Clause 2 := -- ¬Q
-  fun j =>
-  match j with 
-  | 0  => fun _ => none
-  | 1 => fun _ => some false
-  | l + 2 => fun jw => nomatch jw
+  (none) +: (some false) +: FinSeq.empty
 
-def eg1P : FinSeq 3 (Clause 2) :=
-  fun j =>
-  match j with 
-  | 0  => fun _ => cl1
-  | 1 => fun _ => cl2
-  | 2 => fun _ => cl3
-  | l + 3 => fun jw => nomatch jw
+
+def eg1P : FinSeq 3 (Clause 2) := cl1 +: cl2 +: cl3 +: FinSeq.empty
+
 
 set_option maxHeartbeats 500000
 
-def eg1 : unsatStatement eg1P := proveOrDisprove eg1P -- should be unsat
-def eg2 : satStatement (tail eg1P) := proveOrDisprove (tail eg1P) -- should be sat
-def eg2Tree := solve (tail eg1P)
+def eg1 : unsat eg1P := proveOrDisprove eg1P -- should be unsat
+def eg2 : sat (tail eg1P) := proveOrDisprove (tail eg1P) -- should be sat
+def eg1Tree := solve (eg1P)
 
 #check eg1 
 #check eg2
+#eval (eg1Tree.toString)
