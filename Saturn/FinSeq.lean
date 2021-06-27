@@ -224,6 +224,9 @@ def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n +
 def FinSeq.empty {α: Type} : FinSeq 0 α := 
   fun j jw => nomatch jw
 
+def seq{α : Type}(l : List α) : FinSeq (l.length) α := 
+  fun j jw => l.get j jw
+
 infixr:66 "+:" => FinSeq.cons
 
 def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 

@@ -312,3 +312,39 @@ def proveOrDisprove{n dom : Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
             getProof (solve clauses)
 
 #check proveOrDisprove
+
+
+def cl1 : Clause 1 :=   -- P ∨ Q
+  fun j =>
+  match j with 
+  | 0  => fun _ => some true
+  | 1 => fun _ => some true
+  | l + 2 => fun jw => nomatch jw
+
+def cl2 : Clause 1 := -- ¬P
+  fun j =>
+  match j with 
+  | 0  => fun _ => some false
+  | 1 => fun _ => none
+  | l + 2 => fun jw => nomatch jw
+
+def cl3 : Clause 1 := -- ¬Q
+  fun j =>
+  match j with 
+  | 0  => fun _ => none
+  | 1 => fun _ => some false
+  | l + 2 => fun jw => nomatch jw
+
+def eg1P : FinSeq 3 (Clause 1) :=
+  fun j =>
+  match j with 
+  | 0  => fun _ => cl3
+  | 1 => fun _ => cl2
+  | 2 => fun _ => cl1
+  | l + 3 => fun jw => nomatch jw
+
+def eg1 := proveOrDisprove eg1P -- should be unsat
+def eg2 := proveOrDisprove (tail eg1P) -- should be sat
+
+#check eg1 
+#check eg2
