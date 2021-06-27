@@ -655,7 +655,7 @@ def solutionProof{dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
           ⟨valuat, fun k kw => getProof (evidence k kw)⟩
 
 instance {dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
-                  (sol : SatSolution clauses) : Prover (SatSolution clauses) where
+                   : Prover (SatSolution clauses) where
       statement := fun sol => solutionProp sol 
       proof := fun sol => solutionProof sol
 

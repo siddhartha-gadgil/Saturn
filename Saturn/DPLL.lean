@@ -201,6 +201,9 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
       | 0 => fun clauses => lengthOneSolution clauses
       | m + 1 =>
         fun clauses =>
+        match findElem? clauses (contrad (m + 2)) with
+        | some z => contraSol z.equation 
+        | none =>     
           let cntn := simplifiedContainment clauses
           let cls := cntn.imageSeq
           let solution : SatSolution cls :=
@@ -299,3 +302,13 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
                                   let merged := mergeUnitTrees index bd rpf1 rpf2
                                   treeToUnsat merged
         containmentLift clauses cntn solution
+
+instance {dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
+                 : Prover (SatSolution clauses) where
+      statement := fun sol => solutionProp sol 
+      proof := fun sol => solutionProof sol
+
+def proveOrDisprove{n dom : Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
+            getProof (solve clauses)
+
+#check proveOrDisprove
