@@ -16,7 +16,7 @@ def cl3 : Clause 2 := -- ¬Q
   (none) +: (some false) +: FinSeq.empty
 
 
-def eg1Statement : FinSeq 3 (Clause 2) := cl1 +: cl2 +: cl3 +: FinSeq.empty
+def eg1Statement : FinSeq 3 (Clause 2) := cl2 +: cl1 +: cl3 +: FinSeq.empty
 def eg2Statement := tail eg1Statement
 
 set_option maxHeartbeats 500000

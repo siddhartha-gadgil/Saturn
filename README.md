@@ -8,3 +8,5 @@ __SATurn__ is a SAT solver-prover in lean 4 based on the DPLL algorithm. Given a
 Proofs can be obtained by using the methods `solve` and `proveOrDisprove` in the file `DPLL.lean`. The former gives an object in a type representing either verified solutions or resolution trees. The latter gives a proof of existence or non-existence verified by the _lean prover_. 
 
 Many improvements are necessary, and some are forthcoming (including convenience is usability.)
+
+__Running:__ This code is developed using `lean 4.0.0-M2` and assumes that this is installed.
