@@ -11,10 +11,8 @@ def cl1 : Clause 2 :=   -- P ∨ Q
 def cl2 : Clause 2 := -- ¬P
   (some false) +: (none) +: FinSeq.empty
 
-
 def cl3 : Clause 2 := -- ¬Q
   (none) +: (some false) +: FinSeq.empty
-
 
 def eg1Statement : FinSeq 3 (Clause 2) := cl2 +: cl1 +: cl3 +: FinSeq.empty
 def eg2Statement := tail eg1Statement
