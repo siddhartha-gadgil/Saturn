@@ -1,8 +1,5 @@
 open Nat
 
-macro_rules
-  | `(scowl) => `(sorry)
-
 class Prover(α: Type) where
   statement : (x : α) → Prop
   proof : (x : α) → statement x
@@ -10,8 +7,6 @@ class Prover(α: Type) where
 def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x 
 
 def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
-
-
 
 def skip : Nat → Nat → Nat :=
     fun k =>
@@ -44,7 +39,6 @@ def skipEquations: (n : Nat) →  (m : Nat) →  SkipEquations n m :=
           fun j =>
             match j with
             | 0 => 
-              let lem : skip (l + 1) 0 = 0 := by rfl
               SkipEquations.lt (zeroLtSucc _) rfl
             | i + 1 =>
               let unfold : skip (l + 1) (i + 1) = skip l i + 1 := by rfl 
@@ -57,7 +51,6 @@ def skipEquations: (n : Nat) →  (m : Nat) →  SkipEquations n m :=
                         rw eqn
                         done)
                 | SkipEquations.ge ineq eqn =>
-                    let fst := succLeSucc ineq 
                     SkipEquations.ge (succLeSucc ineq) (
                       by  
                         rw unfold
@@ -187,15 +180,13 @@ def skipPlusOne {n k j : Nat} : j < n → skip k j < n + 1 :=
   fun h =>
     Nat.leTrans (skipBound k j) h
 
-#check Nat.leTrans
-
 theorem skipNotDiag (k: Nat) : (j: Nat) → Not (skip k j = k) :=
   fun j =>
     match skipEquations k j with
     | SkipEquations.lt ineqn eqn => 
       fun hyp =>
         let lem1 : k ≤  j := by
-          rw (Eq.symm hyp) 
+          rw ←hyp 
           rw eqn
           apply Nat.leRefl
           done
@@ -204,7 +195,7 @@ theorem skipNotDiag (k: Nat) : (j: Nat) → Not (skip k j = k) :=
     | SkipEquations.ge ineqn eqn => 
       fun hyp =>  
         let lem1 : j + 1 ≤ k := by
-          rw (Eq.symm hyp) 
+          rw ←hyp 
           rw eqn
           apply Nat.leRefl
           done
@@ -267,22 +258,6 @@ structure ProvedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
   checkImage : (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw
   checkFocus : j = k → result = value
 
-theorem propValue(p: Prop) : (a b: p) → a = b :=
-                fun a b => by rfl
-
-#print congr
-#print Eq.ndrec
-#check Eq.rec
-
--- copied and made verbose using help from print
-theorem Fin.eqVeq {n} : ∀ (i j : Fin n), Eq i.val j.val → Eq i j :=
-    fun  (i j : Fin n) =>
-      fun  (eqn : i.val = j.val) => 
-        match i, j, eqn with 
-        | ⟨v, h⟩, ⟨.(v), .(h)⟩, rfl => rfl
-
-#print Fin.eqOfVeq
-
 theorem witnessIndependent{α : Type}{n : Nat}(seq: FinSeq n α) :
     (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
         (i = j) → seq i iw = seq j jw :=
@@ -296,12 +271,18 @@ theorem skipPreImageBound {i j k n : Nat}: (k < n + 1) → (j < n + 1) →
           fun kw jw eqn =>
             match skipSharpLowerBound k i with
               | Or.inl ineq =>
-                let lem1 : i <  j := by 
-                  rw (Eq.symm eqn)
-                  exact ineq
-                  done 
-                let lem2 := Nat.ltOfLtOfLe lem1 jw
                 by 
+                  have lem1 : i <  j
+                  by
+                    rw ← eqn
+                    exact ineq
+                    done                 
+                  have lem2 : i < n
+                  by
+                    apply Nat.ltOfLtOfLe
+                    apply lem1
+                    apply jw
+                    done 
                   exact lem2
                   done
               | Or.inr ineqn => 
@@ -376,24 +357,25 @@ def insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n
           fun jw => 
             match skipImageCase k j with
             | SkipImageCase.diag eqn => 
-              let lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw =
-                insert (seq k kw) n k kw (delete k kw seq) k kw := by
+              by
+              have lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw =
+                insert (seq k kw) n k kw (delete k kw seq) k kw 
+                by
                   apply witnessIndependent
                   apply eqn
-                  done
-              by 
-                rw lem1
-                rw (insertAtFocus (seq k kw) n k kw (delete k kw seq))
-                apply witnessIndependent
-                apply (Eq.symm eqn)
-                done  
+                  done 
+              rw lem1
+              rw (insertAtFocus (seq k kw) n k kw (delete k kw seq))
+              apply witnessIndependent
+              rw ← eqn
+              done  
             | SkipImageCase.image i eqn => 
               let iw : i < n := skipPreImageBound kw jw eqn
               let lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw
                 = insert (seq k kw) n k kw (delete k kw seq) (skip k i) (skipPlusOne iw) := 
                   by 
                     apply witnessIndependent
-                    apply (Eq.symm eqn)
+                    rw ← eqn
                     done
               let lem2 := insertAtImage (seq k kw) n k kw (delete k kw seq) i iw
               let lem3 : delete k kw seq i iw = seq (skip k i) (skipPlusOne iw) := by rfl
@@ -481,11 +463,6 @@ def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}:
                     | i + 1 => fun iw => tailPf i (leOfSuccLeSucc iw)
                   )
 
--- just for lookup
-def transport(α β : Type)(eql: α = β): α → β :=
-  fun x =>
-     Eq.mp eql x
-
 structure ProvedUpdate{α β: Type}(fn : α → β)( a : α )( val : β )( x : α) where
   result : β
   checkFocus : (x = a) → result = val
@@ -560,57 +537,6 @@ structure ProvedDepUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :�
             apply updateNotAtFocusType 
             exact neq
             done)  (fn x)
-
-def provedDepUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :α) → β x)
-          ( a : α )(ValType : Type)( val : ValType )
-            ( x : α) : ProvedDepUpdate fn a ValType val x := 
-          if c : x = a then
-            let result : updateType β a ValType x := Eq.mpr (by 
-              rw c
-              apply updateAtFocusType
-              done 
-            ) val
-            let checkFocus : (eqn : x = a) → result = 
-              Eq.mpr (by 
-                rw eqn
-                apply updateAtFocusType
-                done 
-                ) val := fun _ => rfl
-            let checkNotFocus : (neq:  Not (x = a)) → result = 
-              Eq.mpr (by
-                apply updateNotAtFocusType 
-                exact neq
-                done)  (fn x) := fun d => absurd c d
-            ⟨result, checkFocus, checkNotFocus⟩
-          else 
-            let result : updateType β a ValType x := Eq.mpr (by
-                apply updateNotAtFocusType 
-                exact c
-                done)  (fn x)
-            let checkFocus : (eqn : x = a) → result = 
-              Eq.mpr (by 
-                rw eqn
-                apply updateAtFocusType
-                done 
-              ) val := fun d => absurd d c
-            let checkNotFocus : (neq:  Not (x = a)) → result = 
-              Eq.mpr (by
-                apply updateNotAtFocusType 
-                exact neq
-                done)  (fn x) := fun _ => rfl
-            ⟨result, checkFocus, checkNotFocus⟩
-
-
-def depUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :α) → β x)
-          ( a : α )(ValType : Type)( val : ValType )
-            ( x : α) : updateType β a ValType x := 
-          (provedDepUpdate fn a ValType val x).result
-
-structure Sect{α β : Type}{n m : Nat}(total : FinSeq n α) (base : FinSeq m β)
-        (proj: (i: Nat) → i < n → Nat)(bound : (i : Nat) → (w : i < n) → proj i w < m) where
-    sect: (j : Nat) → j < m → Nat
-    sectBound : (j : Nat) → (bd : j < m) → sect j bd < n
-    equation: (j : Nat) → (bd : j < m) → proj (sect j bd) (sectBound j bd) = j
 
 
 structure GroupedSequence {n: Nat} {α β : Type}(part : α → β)(seq : FinSeq n α) where
