@@ -1,4 +1,5 @@
-import Saturn.FinSeq 
+import Saturn.FinSeq
+import Saturn.Clause 
 open Nat
 
 -- Unused code due to change of approach.

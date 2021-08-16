@@ -1,4 +1,5 @@
-import Saturn.FinSeq 
+import Saturn.FinSeq
+import Saturn.Clause 
 import Saturn.Solverstep
 open Nat
 

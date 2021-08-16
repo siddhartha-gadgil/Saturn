@@ -1,4 +1,5 @@
-import Saturn.FinSeq 
+import Saturn.FinSeq
+import Saturn.Clause 
 open Nat
 
 def boundOpt(n: Nat) : Option (Nat) → Prop
@@ -11,11 +12,9 @@ def boundOptSucc(n: Nat)(p: Option Nat) : boundOpt n p → boundOpt (n + 1) (p.m
   | some a => fun h : a < n => succ_lt_succ h
 
 theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none :=
-  fun x =>
-  match x with
-  | none => fun _ => by rfl
-  | some a => 
-    fun eq : some (fn a) = none => Option.noConfusion eq
+  fun x eqn =>
+  match x, eqn with
+  | none, rfl => by rfl
 
 inductive OptCase{α: Type} (opt: Option α) where
   | noneCase : opt = none → OptCase opt
@@ -59,7 +58,7 @@ theorem mapPlusOneShift{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1) 
 def varContains (v1 v2 : Option Bool) : Prop :=
   ∀ b : Bool, v2 = some b → v1  = some b
 
-infix:65 " ≥ " => varContains
+infix:65 "≥" => varContains
 
 def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 ≥  v2) :=
   fun v1 v2 =>
@@ -95,8 +94,6 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
                       done
                   c (lem2) 
             )
-
-
 
 
 
@@ -319,10 +316,12 @@ def prependContainment{dom n : Nat}{base: FinSeq dom (Clause n)}(pred: Containme
 def initialContainment{dom n : Nat}: (clauses : FinSeq dom (Clause n)) → 
                               Containment clauses := 
                     match dom with
-                    |0 => fun _ => ⟨0, FinSeq.empty, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
+                    |0 => fun _ => 
+                      ⟨0, FinSeq.empty, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
                     | m + 1 => 
                         fun clauses =>
-                        let ht := prependContainment (initialContainment (tail clauses)) (head clauses)
+                        let ht := 
+                          prependContainment (initialContainment (tail clauses)) (head clauses)
                         Eq.mp (congrArg Containment (headTail clauses)) ht
 
 structure NatSucc (n: Nat) where
@@ -335,7 +334,8 @@ def posSucc : (n : Nat) → Not (0 = n) → NatSucc n :=
   | 0 => fun w => absurd rfl w
   | l + 1 => fun _ => ⟨l, rfl⟩
 
-def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →  (base : FinSeq (d + 1) (Clause n)) → 
+def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →  
+      (base : FinSeq (d + 1) (Clause n)) → 
       Containment (base) → Containment (base) := 
       fun cursorBound =>
       match cursorBound with
