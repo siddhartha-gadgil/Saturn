@@ -264,43 +264,43 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
                 | none =>  
                   let index := 0
                   let bd := zeroLtSucc (m + 1)
-                  let rd := restrictionData true index bd cls
+                  let rd := restrictionData false index bd cls
                   let subCls := rd.restrictionClauses.restClauses
                   let subSol := solve subCls
                   match subSol with
                   | SatSolution.sat valuat pf => 
-                    let pb :=  pullBackSolution true index bd cls 
+                    let pb :=  pullBackSolution false index bd cls 
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuat pf
-                    let valuatN := insert true _ index bd valuat
+                    let valuatN := insert false _ index bd valuat
                     SatSolution.sat valuatN pb
                   | SatSolution.unsat tree treeCheck treeTop => 
                       let liftedProof :=
-                        pullBackResPf  true index bd cls 
+                        pullBackResPf  false index bd cls 
                             rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
                             ⟨tree, treeCheck, treeTop⟩
                       match liftedProof with
                       | LiftedResPf.contra pf => 
                           treeToUnsat pf
                       | LiftedResPf.unit rpf1 => 
-                          let rd := restrictionData false index bd cls
+                          let rd := restrictionData true index bd cls
                           let subCls := rd.restrictionClauses.restClauses
                           let subSol := solve subCls
                           match subSol with
                           | SatSolution.sat valuat pf => 
-                            let pb :=  pullBackSolution false index bd cls 
+                            let pb :=  pullBackSolution true index bd cls 
                                 rd.restrictionClauses rd.droppedProof rd.forwardRelation valuat pf
-                            let valuatN := insert false _ index bd valuat
+                            let valuatN := insert true _ index bd valuat
                             SatSolution.sat valuatN pb
                           | SatSolution.unsat tree treeCheck treeTop => 
                               let liftedProof :=
-                                pullBackResPf  false index bd cls 
+                                pullBackResPf  true index bd cls 
                                     rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
                                     ⟨tree, treeCheck, treeTop⟩
                               match liftedProof with
                               | LiftedResPf.contra pf => 
                                   treeToUnsat pf
                               | LiftedResPf.unit rpf2 => 
-                                  let merged := mergeUnitTrees index bd rpf1 rpf2
+                                  let merged := mergeUnitTrees index bd rpf2 rpf1
                                   treeToUnsat merged
         containmentLift clauses cntn solution
 
