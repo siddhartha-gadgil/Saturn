@@ -1,7 +1,6 @@
 import Saturn.FinSeq
 import Saturn.Clause 
 import Saturn.Solverstep
-import Saturn.Resolution
 import Saturn.DPLL
 
 open Nat
