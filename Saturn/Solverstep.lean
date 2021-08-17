@@ -357,7 +357,8 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
           let rest := delete k lt imageSeq
           match subClause? focus rest with 
           | none => 
-            ⟨l + 1, imageSeq, forward, reverse⟩
+            simplifyNonEmptyContainment k base 
+               ⟨l + 1, imageSeq, forward, reverse⟩
           | some ⟨zi, zb, zc⟩ => 
             let codomN := l
             let imageSeqN := rest
