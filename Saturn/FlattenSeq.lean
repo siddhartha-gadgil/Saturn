@@ -4,6 +4,138 @@ open Nat
 
 -- Unused code due to change of approach.
 
+
+structure GroupedSequence {n: Nat} {α β : Type}(part : α → β)(seq : FinSeq n α) where
+  length : β → Nat
+  seqs : (b : β) → FinSeq (length b) α
+  proj: (j : Nat) → (jw : j < n) → ElemInSeq (seqs (part (seq j jw))) (seq j jw)
+  sects : (b : β) → (j : Nat) → (jw : j < length b) → Nat
+  sectsBound : (b : β) → (j : Nat) → (jw : j < length b) → sects b j jw < n
+  equations: (b : β) → (j : Nat) → (jw : j < length b) → 
+          (proj (sects b j jw) (sectsBound b j jw)).index = j
+
+
+structure GroupedSequenceBranch{n: Nat} {α β : Type}(part : α → β)
+      (seq : FinSeq n α)(b : β) where
+  length : Nat
+  seqs : FinSeq (length) α
+  proj: (j : Nat) → (jw : j < n) → part (seq j jw) = b  → ElemInSeq seqs (seq j jw)
+  sects : (j : Nat) → (jw : j < length) → ElemInSeq seq (seqs j jw)
+  groupPart : (j : Nat) → (jw : j < length) → part (seqs j jw) = b
+  
+def groupedPrepend{n: Nat} {α β : Type}[DecidableEq β]{part : α → β}{seq : FinSeq n α} 
+      (gps : (b: β) →   GroupedSequenceBranch part seq b) :
+              (head: α) → 
+                ((b: β) →  GroupedSequenceBranch part (head +: seq) b) := 
+                fun head b =>
+                  let seqN := head +: seq
+                  let br := gps b 
+                  if c : part head = b then                    
+                    let lengthN := br.length + 1
+                    let seqsN := head +: br.seqs
+                    let projN : 
+                      (j : Nat) → (jw : j < n + 1) → part (seqN j jw) = 
+                          b  → ElemInSeq seqsN (seqN j jw) := 
+                          fun j =>
+                          match j with
+                          | 0 =>
+                            fun jw eqn =>
+                            ⟨0, zeroLtSucc _, rfl⟩
+                          | l + 1 => 
+                            fun jw eqn =>
+                            let lw : l < n := leOfSuccLeSucc jw
+                            let ⟨i, iw, ieq⟩ := br.proj l lw eqn
+                            let lem1 : seqN (l + 1) jw = seq l lw := rfl
+                            let lem2 : seqsN (i + 1) (succ_lt_succ iw) =
+                                    br.seqs i iw := by rfl
+                            ⟨i + 1, succ_lt_succ iw, by (
+                              rw lem2
+                              rw lem1
+                              exact ieq
+                            )⟩
+                    let sectsN : (j : Nat) → (jw : j < lengthN) → 
+                          ElemInSeq seqN (seqsN j jw) :=
+                        fun j =>
+                          match j with
+                          | 0 =>
+                            fun jw  =>
+                            ⟨0, zeroLtSucc _, rfl⟩
+                          | l + 1 => 
+                            fun jw  =>
+                            let lw : l < br.length := leOfSuccLeSucc jw
+                            let ⟨i, iw, ieq⟩ := br.sects l lw
+                            let lem1 : seqsN (l + 1) jw = br.seqs l lw := rfl
+                            let lem2 : seqN (i + 1) (succ_lt_succ iw) =
+                                    seq i iw := by rfl
+                            ⟨i + 1, succ_lt_succ iw, by (
+                              rw lem2
+                              rw lem1
+                              exact ieq
+                            )⟩
+                      let groupPartN : (j : Nat) → (jw : j < lengthN) → 
+                        part (seqsN j jw) = b := 
+                          fun j =>
+                          match j with
+                          | 0 =>
+                            fun jw  =>
+                            c
+                          | l + 1 => 
+                            fun jw  =>
+                            let lw : l < br.length := leOfSuccLeSucc jw
+                            let ⟨i, iw, ieq⟩ := br.sects l lw
+                            br.groupPart l lw
+                    ⟨lengthN, seqsN, projN, sectsN, groupPartN⟩
+                  else
+                    let lengthN := br.length
+                    let seqsN := br.seqs 
+                    let projN : 
+                      (j : Nat) → (jw : j < n + 1) → part (seqN j jw) = 
+                          b  → ElemInSeq seqsN (seqN j jw) := 
+                          fun j =>
+                          match j with
+                          | 0 =>
+                            fun jw eqn =>
+                              absurd eqn c
+                          | l + 1 => 
+                            fun jw eqn =>
+                            let lw : l < n := leOfSuccLeSucc jw
+                            br.proj l lw eqn
+                    let sectsN : (j : Nat) → (jw : j < lengthN) → 
+                          ElemInSeq seqN (seqsN j jw) := 
+                          fun j jw =>
+                            let ⟨i, iw, ieq⟩ := br.sects j jw
+                            let lem1 : seqsN j jw = br.seqs j jw := rfl
+                            let lem2 : seqN (i + 1) (succ_lt_succ iw) =
+                                    seq i iw := by rfl
+                            ⟨i + 1, succ_lt_succ iw, by (
+                              rw lem2
+                              rw lem1
+                              exact ieq
+                            )⟩
+                    let groupPartN : (j : Nat) → (jw : j < lengthN) → 
+                        part (seqsN j jw) = b := 
+                          fun j jw => br.groupPart j jw
+                    ⟨lengthN, seqsN, projN, sectsN, groupPartN⟩ 
+
+def groupedSequence{n: Nat} {α β : Type}[DecidableEq β](part : α → β) :
+      (seq: FinSeq n α) → 
+      ((b: β) →   GroupedSequenceBranch part seq b) :=  
+          match n with 
+          | 0 => fun seq b => 
+            ⟨0, FinSeq.empty, fun j jw => nomatch jw , fun j jw => nomatch jw, 
+                fun j jw => nomatch jw⟩
+          | m + 1 => 
+            fun seq  =>
+              let step :=
+                groupedPrepend (fun b => groupedSequence part (tail seq) b) (head seq)
+              let lem1 := headTail seq
+              by
+                rw Eq.symm lem1
+                exact step
+                done
+
+
+
 structure FlattenSeq{α : Type}{n: Nat}(lengths : (j : Nat) → j < n → Nat)
                                     (seqs : (j : Nat) → (jw : j < n) → FinSeq (lengths j jw) α) where
           length : Nat
@@ -232,3 +364,27 @@ def flattenSeq{α : Type}{n: Nat} :
                           (lengths m (Nat.leRefl _)) (Nat.leRefl _)
             partToFullFlatten lengths seqs pfs
 
+class FinType(α : Type) where
+  length : Nat
+  enum : (j: Nat) → j < n → α
+  enumInv : α → Nat
+  enumInvBound : (x : α) → enumInv x < length
+  enumEnumInv : (x : α) → enum (enumInv x) (enumInvBound x) = x
+  enumInvEnum : (j: Nat) → (jw : j < n) → enumInv (enum j jw) = j
+
+def element{α: Type}[ft : FinType α]: (j : Nat) → (j < ft.length) → α :=
+      fun j jw => ft.enum j jw
+
+def ordinal{α: Type}[ft : FinType α]: α → Nat :=
+  fun x => ft.enumInv x
+
+def size(α: Type)[ft : FinType α]: Nat := ft.length
+
+def ordinalBound{α: Type}[ft : FinType α]: (x : α) → ordinal x < size α :=
+  fun x => ft.enumInvBound x
+
+def ordElem{α: Type}[ft : FinType α]: (j : Nat) → (jw : j < ft.length) → 
+              ordinal (element j jw) = j := ft.enumInvEnum 
+
+def elemOrd{α: Type}[ft : FinType α]: (x : α) → 
+              element (ordinal x) (ordinalBound x) = x := ft.enumEnumInv
