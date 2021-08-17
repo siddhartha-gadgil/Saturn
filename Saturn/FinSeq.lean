@@ -417,6 +417,7 @@ structure ElemSeqPred{α: Type}{n : Nat} (seq : FinSeq n α) (pred : α → Prop
 
 def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
   (seq : FinSeq n α) → Option (ElemSeqPred seq pred) :=
+  dbgTrace s!"finding in sequence of size {n}" (fun _ =>
   match n with
   | 0 => fun seq => none
   | m + 1 =>
@@ -425,11 +426,12 @@ def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
           some ⟨0, zeroLtSucc _, c⟩
         else 
           (find? pred (tail seq)).map (fun ⟨i, iw, eqn⟩ => 
-            ⟨i +1, succ_lt_succ iw, eqn⟩)
+            ⟨i +1, succ_lt_succ iw, eqn⟩))
 
 def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  Option (ElemInSeq seq elem) :=
-    match n with
+    dbgTrace s!"finding element {n}" (fun _ =>
+      match n with
     | 0 => fun _  => fun _ => none
     | m + 1 => 
       fun fn =>
@@ -444,7 +446,7 @@ def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}:
                     rw l1
                     exact eql
               ⟨j + 1 , succ_lt_succ jw, l2⟩ 
-            )
+            ))
 
 def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  ExistsElem seq elem :=

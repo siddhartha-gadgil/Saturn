@@ -17,7 +17,8 @@ def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1
         (rd : RestrictionData branch focus focusLt clauses) → 
            (head : Clause (n + 1)) → 
         RestrictionData branch focus focusLt (head +: clauses) := 
-        fun rd  head => 
+        dbgTrace s!"prepending restriction data {dom}" (fun _ =>
+          fun rd  head => 
         match findElem? (rd.restrictionClauses.restClauses) (delete focus focusLt head) with
         | some ⟨p, pLt, peqn⟩ =>
             ExistingClauses.prependResData branch focus focusLt clauses rd head p pLt peqn
@@ -25,11 +26,13 @@ def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1
           if c : head focus focusLt = some branch then
             PosResClause.prependResData branch focus focusLt clauses head c rd
           else
-            PrependClause.prependResData branch focus focusLt clauses head c rd
+            PrependClause.prependResData branch focus focusLt clauses head c rd)
          
 def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1):
     (clauses: FinSeq dom (Clause (n + 1))) →   
         RestrictionData branch focus focusLt clauses := 
+      dbgTrace s!"restricting data {dom}" 
+      (fun _ => 
       match dom with 
       | 0 => fun clauses =>  
         let eqn : clauses = FinSeq.empty := funext (fun j => funext (fun w => nomatch w))
@@ -51,7 +54,7 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
         let lem := headTail clauses
         by
           rw (Eq.symm lem)
-          exact res
+          exact res)
 
 def containmentLift{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))(cntn : Containment clauses):
           SatSolution (cntn.imageSeq) → SatSolution clauses := 
@@ -197,7 +200,10 @@ def pureNot(b: Bool): (x : Option Bool) → x = none ∨  x = some b  → Not (x
         let w := Eq.trans (Eq.symm pf) hyp
         Option.noConfusion w
 
+#check dbgTrace
+
 def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution clauses :=
+      dbgTrace "solving" (fun _ => 
       match n with
       | 0 => fun clauses => lengthOneSolution clauses
       | m + 1 =>
@@ -302,7 +308,7 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
                               | LiftedResPf.unit rpf2 => 
                                   let merged := mergeUnitTrees index bd rpf2 rpf1
                                   treeToUnsat merged
-        containmentLift clauses cntn solution
+        containmentLift clauses cntn solution)
 
 instance {dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
                  : Prover (SatSolution clauses) where

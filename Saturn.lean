@@ -8,6 +8,7 @@ def printSolution {n dom : Nat}: (clauses : FinSeq dom (Clause n)) →  IO Unit 
   | l + 1 => 
     fun clauses => 
       do
+        IO.println "Solving clauses"
         IO.println (solve clauses).toString
         return ()
 

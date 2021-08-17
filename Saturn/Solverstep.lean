@@ -252,6 +252,7 @@ structure Containment{dom n : Nat}(base: FinSeq dom (Clause n)) where
 
 def prependContainment{dom n : Nat}{base: FinSeq dom (Clause n)}(pred: Containment base)
         (cl : Clause n) : Containment (cl +: base) := 
+            dbgTrace s!"prepending containment {dom}" (fun _ => 
             match subClause? cl (pred.imageSeq) with
             | none =>
               let codomN := pred.codom + 1
@@ -311,7 +312,7 @@ def prependContainment{dom n : Nat}{base: FinSeq dom (Clause n)}(pred: Containme
                     ⟨ ind + 1, succ_lt_succ bd, by 
                           exact ctn
                           done⟩
-              ⟨codomN, imageSeqN, forwardN, reverseN⟩
+              ⟨codomN, imageSeqN, forwardN, reverseN⟩)
 
 def initialContainment{dom n : Nat}: (clauses : FinSeq dom (Clause n)) → 
                               Containment clauses := 
@@ -319,10 +320,11 @@ def initialContainment{dom n : Nat}: (clauses : FinSeq dom (Clause n)) →
                     |0 => fun _ => 
                       ⟨0, FinSeq.empty, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
                     | m + 1 => 
-                        fun clauses =>
+                        dbgTrace s!"initial containment {dom}" (fun _ =>
+                          fun clauses =>
                         let ht := 
                           prependContainment (initialContainment (tail clauses)) (head clauses)
-                        Eq.mp (congrArg Containment (headTail clauses)) ht
+                        Eq.mp (congrArg Containment (headTail clauses)) ht)
 
 structure NatSucc (n: Nat) where
   pred: Nat
@@ -341,7 +343,8 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
       match cursorBound with
       | 0 => fun _ => id
       | k + 1 =>
-        fun base contn =>
+        dbgTrace "simplifying non-empty containment" (fun _ =>
+          fun base contn =>
           let ⟨j, (ineq : j < contn.codom), _⟩ := contn.forward 0 (zeroLtSucc _)      
           let neZero : Not (0 = contn.codom) := fun hyp => 
           let l0 : j < 0 := by
@@ -399,14 +402,18 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                           done⟩
             let step := ⟨codomN, imageSeqN, forwardN, reverseN⟩
             simplifyNonEmptyContainment k base step
-        else ⟨l + 1, imageSeq, forward, reverse⟩
+        else ⟨l + 1, imageSeq, forward, reverse⟩)
 
 def simplifiedContainment{dom n : Nat}: (clauses : FinSeq dom (Clause n)) → 
                               Containment clauses := 
-                    match dom with
-                    |0 => fun _ => ⟨0, FinSeq.empty, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
+                    dbgTrace "simplifying containment" (fun _ =>
+                      match dom with
+                    |0 => fun _ => 
+                      ⟨0, FinSeq.empty, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
                     | m + 1 => fun clauses => 
-                        simplifyNonEmptyContainment (m + 1) clauses (initialContainment clauses)
+                        let init := initialContainment clauses
+                        let k := dbgTrace "Obtained initial containment" (fun _ => 1)
+                        simplifyNonEmptyContainment (m + k) clauses (init))
 
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
     (clauses: FinSeq dom (Clause (n + 1)))(rc: RestrictionClauses branch focus focusLt clauses) 
