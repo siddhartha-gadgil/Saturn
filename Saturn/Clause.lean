@@ -3,45 +3,45 @@ open Nat
 
 def Clause(n : Nat) : Type := FinSeq n (Option Bool)
 
-def Valuat(n: Nat) : Type := FinSeq n  Bool
+def Valuation(n: Nat) : Type := FinSeq n  Bool
 
-structure ClauseSat{n: Nat}(clause : Clause n)(valuat: Valuat n) where
+structure ClauseSat{n: Nat}(clause : Clause n)(valuation: Valuation n) where
   coord : Nat
   bound : coord < n  
-  witness: varSat (clause coord bound) (valuat coord bound)
+  witness: varSat (clause coord bound) (valuation coord bound)
 
-def clauseSat {n: Nat}(clause : Clause n)(valuat: Valuat n) := 
-  ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (valuat k b)
+def clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) := 
+  ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (valuation k b)
 
-instance {n: Nat}(clause : Clause n)(valuat: Valuat n): Prover (ClauseSat clause valuat) where 
-  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (valuat k b)
+instance {n: Nat}(clause : Clause n)(valuation: Valuation n): Prover (ClauseSat clause valuation) where 
+  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (valuation k b)
   proof := fun cs => ⟨cs.coord, ⟨cs.bound, cs.witness⟩⟩
 
-def contrad(n: Nat) : Clause n :=
+def contradiction(n: Nat) : Clause n :=
   fun _ _ => none
 
-theorem contradFalse (n: Nat) : ∀ valuat : Valuat n, Not (clauseSat (contrad n) valuat) :=
-  fun valuat => fun ⟨k, ⟨b, p⟩⟩ => 
-    let lem1 : (contrad n) k b = none := by rfl
+theorem contradictionFalse (n: Nat) : ∀ valuation : Valuation n, Not (clauseSat (contradiction n) valuation) :=
+  fun valuation => fun ⟨k, ⟨b, p⟩⟩ => 
+    let lem1 : (contradiction n) k b = none := by rfl
     let lem2 := congrArg varSat lem1
-    let lem3 : varSat (contrad n k b) (valuat k b) = 
-                varSat none (valuat k b) := congr lem2 rfl
-    let lem4 : (varSat none (valuat k b)) = (none = some (valuat k b)) := rfl
-    let lem5 : (none = some (valuat k b)) := by
+    let lem3 : varSat (contradiction n k b) (valuation k b) = 
+                varSat none (valuation k b) := congr lem2 rfl
+    let lem4 : (varSat none (valuation k b)) = (none = some (valuation k b)) := rfl
+    let lem5 : (none = some (valuation k b)) := by
       rw (Eq.symm lem4)
       rw lem4
       assumption
       done 
     Option.noConfusion lem5
 
-theorem contradInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
-      insert none n focus focusLt (contrad n) =
-                            contrad (n + 1) :=
+theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
+      insert none n focus focusLt (contradiction n) =
+                            contradiction (n + 1) :=
       let lem0 : (j: Nat) → (jw : j < n + 1) →  
-            insert none n focus focusLt (contrad n) j jw  =
-                      contrad (n + 1) j jw := 
+            insert none n focus focusLt (contradiction n) j jw  =
+                      contradiction (n + 1) j jw := 
                       fun j jw =>
-                      let lem0 : contrad (n + 1) j jw = none := by rfl
+                      let lem0 : contradiction (n + 1) j jw = none := by rfl
                       match skipImageCase focus j with
                       | SkipImageCase.diag eqn => 
                         match focus, eqn, focusLt with
@@ -69,16 +69,16 @@ theorem contradInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
 
 
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
-  insert (some b) n k w (contrad n) 
+  insert (some b) n k w (contradiction n) 
 
 theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
           unitClause n b k w k w = b :=
-          insertAtFocus (some b) n k w (contrad n)
+          insertAtFocus (some b) n k w (contradiction n)
 
 theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
           (i: Nat) → (iw : i < n) →  unitClause n b k w (skip k i) 
                   (skipPlusOne iw) = none := fun i iw => 
-          insertAtImage (some b) n k w (contrad n) i iw
+          insertAtImage (some b) n k w (contradiction n) i iw
 
 structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
   index: Nat 
@@ -250,11 +250,11 @@ def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
 infix:65 " ⊇  " => contains
 
 def containsSat{n: Nat} (cl1 cl2 : Clause n) :
-  cl1 ⊇  cl2 → (valuat : Valuat n) → ClauseSat cl2 valuat → ClauseSat cl1 valuat :=
-    fun dom valuat  =>
+  cl1 ⊇  cl2 → (valuation : Valuation n) → ClauseSat cl2 valuation → ClauseSat cl1 valuation :=
+    fun dom valuation  =>
       fun ⟨j, jw, vs⟩ =>
-        let lem0 :  cl2 j jw = some (valuat j jw) := vs 
-        let lem1 := dom j jw (valuat j jw) lem0
+        let lem0 :  cl2 j jw = some (valuation j jw) := vs 
+        let lem1 := dom j jw (valuation j jw) lem0
         ⟨j, jw, lem1⟩
 
 def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :

@@ -565,7 +565,7 @@ def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → O
         ) 
 
 
-def varSat (clVal: Option Bool)(valuatVal : Bool) : Prop := clVal = some valuatVal
+def varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
 
 def deqSeq {α : Type}[DecidableEq α] (n: Nat) : (c1 : FinSeq n  α) → 
                               (c2: FinSeq n  α) → Decidable (c1 = c2) := 

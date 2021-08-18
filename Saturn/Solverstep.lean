@@ -102,21 +102,21 @@ structure RestrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus 
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
     (clauses: FinSeq dom (Clause (n + 1)))(rc: RestrictionClauses branch focus focusLt clauses) 
     (dp : DroppedProof rc) (fr: ForwardRelation rc): 
-      (valuat : Valuat n) → 
-        ((j : Nat) → (jw : j < rc.codom) → ClauseSat (rc.restClauses j jw) valuat) → 
+      (valuation : Valuation n) → 
+        ((j : Nat) → (jw : j < rc.codom) → ClauseSat (rc.restClauses j jw) valuation) → 
         (j : Nat) → (jw : j < dom) →  
-          ClauseSat (clauses j jw) (insert branch n focus focusLt valuat) := 
-        fun valuat pf =>
+          ClauseSat (clauses j jw) (insert branch n focus focusLt valuation) := 
+        fun valuation pf =>
           fun k w => 
             let splitter := optCase (rc.forward k w)
             match splitter with
             | OptCase.noneCase eqn => 
               let lem1 : clauses k w focus focusLt = some branch := dp.dropped k w eqn
-              let lem2 : insert branch n focus focusLt valuat focus focusLt = branch := by 
+              let lem2 : insert branch n focus focusLt valuation focus focusLt = branch := by 
                 apply insertAtFocus
                 done
               let lem3 : clauses k w focus focusLt = 
-                some (insert branch n focus focusLt valuat focus focusLt) := 
+                some (insert branch n focus focusLt valuation focus focusLt) := 
                 by
                   rw lem1
                   apply (congrArg some)
@@ -132,9 +132,9 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
               let jWit : j < rc.codom := jWitAux
               let lem1 := fr.forwardRelation k w j eqn jWit
               let ⟨i, iw, vs⟩ := pf j jWit
-              let lem2 : rc.restClauses j jWit i iw = some (valuat i iw) := vs
+              let lem2 : rc.restClauses j jWit i iw = some (valuation i iw) := vs
               let lem3 : delete focus focusLt (clauses k w) i iw =
-                  some (valuat i iw) := 
+                  some (valuation i iw) := 
                     by
                     rw (Eq.symm lem2)
                     rw lem1
@@ -143,13 +143,13 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
                 clauses k w (skip focus i) (skipPlusOne iw) := by
                   rfl
                   done
-              let lem5 : insert branch n focus focusLt valuat 
+              let lem5 : insert branch n focus focusLt valuation 
                               (skip focus i) (skipPlusOne iw) =
-                                  valuat i iw := by
+                                  valuation i iw := by
                                     apply insertAtImage
                                     done
               let lem6 : clauses k w (skip focus i) (skipPlusOne iw) =
-                          some (insert branch n focus focusLt valuat 
+                          some (insert branch n focus focusLt valuation 
                               (skip focus i) (skipPlusOne iw)) := by
                               rw (Eq.symm lem4)
                               rw lem3

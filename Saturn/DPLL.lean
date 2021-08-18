@@ -67,7 +67,7 @@ def containmentLift{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1)))(cntn : Co
               
           | SatSolution.unsat tree chk chkTop => 
                 let rpf := 
-                  transportResPf cntn.imageSeq clauses cntn.reverse (contrad (n + 1))
+                  transportResPf cntn.imageSeq clauses cntn.reverse (contradiction (n + 1))
                     tree chk chkTop
                 SatSolution.unsat rpf.tree rpf.check rpf.checkTop
 
@@ -93,10 +93,10 @@ def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl 0 (zeroLtSucc 0) = some b):
                                 lengthOneEqual lem2
 
 def lengthOneContra{cl: Clause 1}(eql : cl 0 (zeroLtSucc 0) = none):
-                              cl = contrad 1 := lengthOneEqual eql
+                              cl = contradiction 1 := lengthOneEqual eql
 
 def contraSol{n dom: Nat}{clauses : FinSeq dom (Clause (n + 1))}{j : Nat}{jw : j < dom}
-                (eqn : clauses j jw = contrad (n + 1)): SatSolution clauses :=
+                (eqn : clauses j jw = contradiction (n + 1)): SatSolution clauses :=
                   SatSolution.unsat (ResolutionTree.assumption j jw) eqn eqn 
                 
 def emptySol{n: Nat}(clauses : FinSeq 0 (Clause (n + 1))) : SatSolution clauses :=
@@ -107,7 +107,7 @@ def lengthOneSolution{dom : Nat}: (clauses : FinSeq dom (Clause 1)) →  SatSolu
     | 0 => fun cls => emptySol cls
     | l + 1 =>
       fun cls =>
-      match searchElem cls (contrad 1) with
+      match searchElem cls (contradiction 1) with
       | ExistsElem.exsts index bound eqn => contraSol eqn
       | ExistsElem.notExst noContra =>
         let head := cls (0) (zeroLtSucc l) 
@@ -202,7 +202,7 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
       | 0 => fun clauses => lengthOneSolution clauses
       | m + 1 =>
         fun clauses =>
-        match findElem? clauses (contrad (m + 2)) with
+        match findElem? clauses (contradiction (m + 2)) with
         | some z => contraSol z.equation 
         | none =>     
           let cntn := simplifiedContainment clauses
@@ -214,11 +214,11 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
                   let subCls := rd.restrictionClauses.restClauses
                   let subSol := solve subCls
                   match subSol with
-                  | SatSolution.sat valuat pf => 
+                  | SatSolution.sat valuation pf => 
                     let pb :=  pullBackSolution par index bd cls 
-                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuat pf
-                    let valuatN := insert par _ index bd valuat
-                    SatSolution.sat valuatN pb
+                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
+                    let valuationN := insert par _ index bd valuation
+                    SatSolution.sat valuationN pb
                   | SatSolution.unsat tree treeCheck treeTop => 
                       let liftedProof :=
                         pullBackResPf  par index bd cls 
@@ -238,11 +238,11 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
                   let subCls := rd.restrictionClauses.restClauses
                   let subSol := solve subCls
                   match subSol with
-                  | SatSolution.sat valuat pf => 
+                  | SatSolution.sat valuation pf => 
                     let pb :=  pullBackSolution par index bd cls 
-                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuat pf
-                    let valuatN := insert par _ index bd valuat
-                    SatSolution.sat valuatN pb
+                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
+                    let valuationN := insert par _ index bd valuation
+                    SatSolution.sat valuationN pb
                   | SatSolution.unsat tree treeCheck treeTop => 
                       let liftedProof :=
                         pullBackResPf  par index bd cls 
@@ -268,11 +268,11 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
                   let subCls := rd.restrictionClauses.restClauses
                   let subSol := solve subCls
                   match subSol with
-                  | SatSolution.sat valuat pf => 
+                  | SatSolution.sat valuation pf => 
                     let pb :=  pullBackSolution false index bd cls 
-                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuat pf
-                    let valuatN := insert false _ index bd valuat
-                    SatSolution.sat valuatN pb
+                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
+                    let valuationN := insert false _ index bd valuation
+                    SatSolution.sat valuationN pb
                   | SatSolution.unsat tree treeCheck treeTop => 
                       let liftedProof :=
                         pullBackResPf  false index bd cls 
@@ -286,11 +286,11 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
                           let subCls := rd.restrictionClauses.restClauses
                           let subSol := solve subCls
                           match subSol with
-                          | SatSolution.sat valuat pf => 
+                          | SatSolution.sat valuation pf => 
                             let pb :=  pullBackSolution true index bd cls 
-                                rd.restrictionClauses rd.droppedProof rd.forwardRelation valuat pf
-                            let valuatN := insert true _ index bd valuat
-                            SatSolution.sat valuatN pb
+                                rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
+                            let valuationN := insert true _ index bd valuation
+                            SatSolution.sat valuationN pb
                           | SatSolution.unsat tree treeCheck treeTop => 
                               let liftedProof :=
                                 pullBackResPf  true index bd cls 
@@ -316,14 +316,14 @@ def proveOrDisprove{n dom : Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
 
 
 def sat{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
-          ∃ valuat : Valuat (n + 1),  
+          ∃ valuation : Valuation (n + 1),  
            ∀ (p : Nat),
             ∀ pw : p < dom, 
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw)
+              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuation k kw)
 
 def unsat{dom n: Nat}(clauses : FinSeq dom (Clause (n + 1))) :=
-          ∀ valuat : Valuat (n + 1),  
+          ∀ valuation : Valuation (n + 1),  
            Not (∀ (p : Nat),
             ∀ pw : p < dom,   
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuat k kw))
+              ∃ (k : Nat), ∃ (kw : k < n + 1), (clauses p pw k kw) = some (valuation k kw))
 
