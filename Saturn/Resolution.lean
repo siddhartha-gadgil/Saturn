@@ -58,7 +58,7 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
             fun nwl _  hyp => 
               let lem : left = some bf := by
                 rw wl
-                rw (Eq.symm wt)
+                rw ← wt
                 assumption
                 done
               nwl lem
@@ -66,7 +66,7 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
             fun _ nwr  hyp => 
               let lem : right = some bf := by
                 rw wr
-                rw (Eq.symm wt)
+                rw ← wt
                 assumption
                 done
               nwr lem
@@ -74,7 +74,7 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
             fun nwl _  hyp => 
               let lem : left = some bf := by
                 rw wl
-                rw (Eq.symm wt)
+                rw ← wt
                 assumption
                 done
               nwl lem
@@ -185,17 +185,17 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                       let leftLem : 
                         left kl llt = left (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let rightLem : 
                         right kl llt = right (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let topLem : 
                         top kl llt = top (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let join : Join (left kl llt) (right kl llt) (top kl llt)  := by
                         rw leftLem
@@ -240,17 +240,17 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                       let leftLem : 
                         left kr rlt = left (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let rightLem : 
                         right kr rlt = right (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let topLem : 
                         top kr rlt = top (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let join : Join (left kr rlt) (right kr rlt) (top kr rlt)  := by
                         rw leftLem
@@ -303,17 +303,17 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                       let leftLem : 
                         left kl llt = left (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let rightLem : 
                         right kl llt = right (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let topLem : 
                         top kl llt = top (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let join : Join (left kl llt) (right kl llt) (top kl llt)  := by
                         rw leftLem
@@ -358,17 +358,17 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                       let leftLem : 
                         left kr rlt = left (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let rightLem : 
                         right kr rlt = right (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let topLem : 
                         top kr rlt = top (skip triple.pivot i) (skipPlusOne iw) := by
                           apply witnessIndependent
-                          apply (Eq.symm eql)
+                          rw ← eql
                           done
                       let join : Join (left kr rlt) (right kr rlt) (top kr rlt)  := by
                         rw leftLem
@@ -519,9 +519,9 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                         rw eqL
                         rw eqR
                         rw eqT
-                        rw (Eq.symm leftLem2)
-                        rw (Eq.symm rightLem2)
-                        rw (Eq.symm topLem2)
+                        rw ← leftLem2
+                        rw ← rightLem2
+                        rw ← topLem2
                         exact prevJoin
                         done
                       goal
@@ -840,7 +840,7 @@ def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n +
                 let par : b = not branch := notNot2 branch lemPar
                 let t : ResolutionProof clauses (unitClause (n + 1) (not branch) focus focusLt) := 
                           by
-                            rw (Eq.symm par)
+                            rw ← par
                             exact tree
                             done
                 LiftedResPf.unit t
