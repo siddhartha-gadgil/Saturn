@@ -18,10 +18,10 @@ def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1
            (head : Clause (n + 1)) → 
         RestrictionData branch focus focusLt (head +: clauses) := 
         fun rd  head => 
-        match findElem? (rd.restrictionClauses.restClauses) (delete focus focusLt head) with
-        | some ⟨p, pLt, peqn⟩ =>
-            ExistingClauses.prependResData branch focus focusLt clauses rd head p pLt peqn
-        | none => 
+        -- match findElem? (rd.restrictionClauses.restClauses) (delete focus focusLt head) with
+        -- | some ⟨p, pLt, peqn⟩ =>
+        --     ExistingClauses.prependResData branch focus focusLt clauses rd head p pLt peqn
+        -- | none => 
           if c : head focus focusLt = some branch then
             PosResClause.prependResData branch focus focusLt clauses head c rd
           else
@@ -205,8 +205,8 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
         match findElem? clauses (contradiction (m + 2)) with
         | some z => contraSol z.equation 
         | none =>     
-          let cntn := simplifiedContainment clauses
-          let cls := cntn.imageSeq
+          -- let cntn := simplifiedContainment clauses
+          let cls := clauses -- cntn.imageSeq
           let solution : SatSolution cls :=
               match someUnitClause cls with
               | some ⟨i, iw, index, bd, par, eql⟩ => 
@@ -252,7 +252,7 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
                       | LiftedResPf.contra pf => 
                           treeToUnsat pf
                       | LiftedResPf.unit rpf => 
-                          let base : (j : Nat) → (lt : j < cntn.codom) → 
+                          let base : (j : Nat) → (lt : j < dom) → 
                               Not (cls j lt index bd = some (not par)) := 
                                 fun j jw => pureNot par (cls j jw index bd) (evid j jw)
                           let pure :=
@@ -302,7 +302,8 @@ def solve{n dom : Nat}: (clauses : FinSeq dom (Clause (n + 1))) →  SatSolution
                               | LiftedResPf.unit rpf2 => 
                                   let merged := mergeUnitTrees index bd rpf2 rpf1
                                   treeToUnsat merged
-        containmentLift clauses cntn solution
+        -- containmentLift clauses cntn solution
+        solution
 
 instance {dom n: Nat}{clauses : FinSeq dom (Clause (n + 1))}
                  : Prover (SatSolution clauses) where
