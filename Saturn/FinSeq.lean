@@ -415,36 +415,56 @@ structure ElemSeqPred{α: Type}{n : Nat} (seq : FinSeq n α) (pred : α → Prop
   bound : index < n
   equation : pred (seq index bound)
 
+def elemPredAt{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]
+  (seq : FinSeq n α)(k: Nat): Option (ElemSeqPred seq pred) := 
+    if lt : k <n then 
+      if eqn : pred (seq k lt) 
+        then some ⟨k, lt, eqn⟩
+        else none 
+    else none
+
 def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
   (seq : FinSeq n α) → Option (ElemSeqPred seq pred) :=
-  match n with
-  | 0 => fun seq => none
-  | m + 1 =>
-      fun seq =>
-        if c : pred (head seq) then
-          some ⟨0, zeroLtSucc _, c⟩
-        else 
-          (find? pred (tail seq)).map (fun ⟨i, iw, eqn⟩ => 
-            ⟨i +1, succ_lt_succ iw, eqn⟩)
+  fun seq  =>
+    (List.range n).findSome? (fun k => elemPredAt pred seq k)
+  -- match n with
+  -- | 0 => fun seq => none
+  -- | m + 1 =>
+  --     fun seq =>
+  --       if c : pred (head seq) then
+  --         some ⟨0, zeroLtSucc _, c⟩
+  --       else 
+  --         (find? pred (tail seq)).map (fun ⟨i, iw, eqn⟩ => 
+  --           ⟨i +1, succ_lt_succ iw, eqn⟩)
+
+def elemAt{α: Type}[deq: DecidableEq α]{n: Nat}(seq: FinSeq n  α)(elem: α)(k: Nat):
+  Option (ElemInSeq seq elem) :=
+    if lt : k <n then 
+      if eqn : seq k lt = elem 
+        then some ⟨k, lt, eqn⟩
+        else none 
+    else none
 
 def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  Option (ElemInSeq seq elem) :=
-    match n with
-    | 0 => fun _  => fun _ => none
-    | m + 1 => 
-      fun fn =>
-        fun x =>
-          if pf : fn 0 (zeroLtSucc m) =  x then
-            some ⟨0, (zeroLtSucc m), pf⟩
-          else
-            let pred := findElem? (tail fn) x
-            pred.map (fun ⟨j, jw, eql⟩ => 
-              let l1 : fn (j + 1) (succ_lt_succ jw) = (tail fn) j jw := by rfl 
-              let l2 : fn (j + 1) (succ_lt_succ jw) = x := by 
-                    rw l1
-                    exact eql
-              ⟨j + 1 , succ_lt_succ jw, l2⟩ 
-            )
+  fun seq elem =>
+    (List.range n).findSome? (fun k => elemAt seq elem k)
+    -- match n with
+    -- | 0 => fun _  => fun _ => none
+    -- | m + 1 => 
+    --   fun fn =>
+    --     fun x =>
+    --       if pf : fn 0 (zeroLtSucc m) =  x then
+    --         some ⟨0, (zeroLtSucc m), pf⟩
+    --       else
+    --         let pred := findElem? (tail fn) x
+    --         pred.map (fun ⟨j, jw, eql⟩ => 
+    --           let l1 : fn (j + 1) (succ_lt_succ jw) = (tail fn) j jw := by rfl 
+    --           let l2 : fn (j + 1) (succ_lt_succ jw) = x := by 
+    --                 rw l1
+    --                 exact eql
+    --           ⟨j + 1 , succ_lt_succ jw, l2⟩ 
+    --         )
 
 def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  ExistsElem seq elem :=
