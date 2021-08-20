@@ -256,48 +256,50 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
 
 def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) → 
                                           Decidable (cl1 ⊇   cl2) :=
-    match n with
-    | 0 => 
-        fun cl1 cl2 => isTrue (fun i iw => nomatch iw)
-    | m + 1 => 
-      fun cl1 cl2 =>
-      match decideContains m (tail cl1) (tail cl2) with
-      | isFalse contra =>
-          isFalse (fun hyp =>
-                      contra (containsTail cl1 cl2 hyp))
-      | isTrue pfTail =>
-          match varDomDecide (cl1 0 (zeroLtSucc _)) (cl2 0 (zeroLtSucc _)) with
-          | isTrue pfHead =>
-              let lem0 := 
-                (containsPrepend (cl1 0 (zeroLtSucc _)) (cl2 0 (zeroLtSucc _)) 
-                    (tail cl1) (tail cl2) pfHead) pfTail 
-              let lem1b : (cl1 0 (zeroLtSucc _)) +:  (tail cl1)  = cl1  := 
-                funext (fun j =>
-                          match j with
-                          | 0 => funext (fun jw => rfl)
-                          | i + 1 => funext (fun jw => rfl)
-                          )
-              let lem2b : (cl2 0 (zeroLtSucc _)) +:  (tail cl2)  = cl2  := 
-                funext (fun j =>
-                          match j with
-                          | 0 => funext (fun jw => rfl)
-                          | i + 1 => funext (fun jw => rfl)
-                          )
-              let lem : cl1 ⊇   cl2 := by
-                rw (Eq.symm lem1b)
-                rw (Eq.symm lem2b)
-                exact lem0
-                done
-              isTrue (
-                lem
-              )
-          | isFalse contra => 
-            isFalse (fun hyp =>
-                        contra ( 
-                          fun b => 
-                             hyp 0 (zeroLtSucc _) b 
-                          )                           
-                          )
+    fun cl1 cl2 => decideContainsRec cl1 cl2 n 
+        (isTrue (containsBeyondVacuous cl1 cl2 n (Nat.leRefl _)))
+    -- match n with
+    -- | 0 => 
+    --     fun cl1 cl2 => isTrue (fun i iw => nomatch iw)
+    -- | m + 1 => 
+    --   fun cl1 cl2 =>
+    --   match decideContains m (tail cl1) (tail cl2) with
+    --   | isFalse contra =>
+    --       isFalse (fun hyp =>
+    --                   contra (containsTail cl1 cl2 hyp))
+    --   | isTrue pfTail =>
+    --       match varDomDecide (cl1 0 (zeroLtSucc _)) (cl2 0 (zeroLtSucc _)) with
+    --       | isTrue pfHead =>
+    --           let lem0 := 
+    --             (containsPrepend (cl1 0 (zeroLtSucc _)) (cl2 0 (zeroLtSucc _)) 
+    --                 (tail cl1) (tail cl2) pfHead) pfTail 
+    --           let lem1b : (cl1 0 (zeroLtSucc _)) +:  (tail cl1)  = cl1  := 
+    --             funext (fun j =>
+    --                       match j with
+    --                       | 0 => funext (fun jw => rfl)
+    --                       | i + 1 => funext (fun jw => rfl)
+    --                       )
+    --           let lem2b : (cl2 0 (zeroLtSucc _)) +:  (tail cl2)  = cl2  := 
+    --             funext (fun j =>
+    --                       match j with
+    --                       | 0 => funext (fun jw => rfl)
+    --                       | i + 1 => funext (fun jw => rfl)
+    --                       )
+    --           let lem : cl1 ⊇   cl2 := by
+    --             rw (Eq.symm lem1b)
+    --             rw (Eq.symm lem2b)
+    --             exact lem0
+    --             done
+    --           isTrue (
+    --             lem
+    --           )
+    --       | isFalse contra => 
+    --         isFalse (fun hyp =>
+    --                     contra ( 
+    --                       fun b => 
+    --                          hyp 0 (zeroLtSucc _) b 
+    --                       )                           
+    --                       )
 
 
 instance {n: Nat}{cl: Clause n} : DecidablePred (contains cl) :=
