@@ -115,6 +115,28 @@ def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
 
 infix:65 " ⊇  " => contains
 
+def containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
+  ∀ k : Nat, ∀ kw : k < n, m ≤ k →  ∀ b : Bool, cl2 k kw = some b → cl1 k kw = some b
+
+theorem containsImpliesContainsBeyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
+  contains cl1 cl2 → containsBeyond cl1 cl2 m := by
+    intro h
+    intro k
+    intro kw
+    intro ineq
+    intro b
+    exact h k kw b
+    done
+  
+theorem containsBeyondZero {n: Nat} (cl1 cl2 : Clause n) :
+  containsBeyond cl1 cl2 0 → contains cl1 cl2 := by
+    intro h
+    intro k
+    intro kw
+    intro b
+    exact h k kw (Nat.zeroLe _) b
+    done
+
 def containsSat{n: Nat} (cl1 cl2 : Clause n) :
   cl1 ⊇  cl2 → (valuation : Valuation n) → ClauseSat cl2 valuation → ClauseSat cl1 valuation :=
     fun dom valuation  =>
@@ -160,6 +182,77 @@ def containsTrans{n: Nat} (cl1 cl2 cl3 : Clause n) :
                 apply hyp2
                 apply dHyp
                 done
+
+#check Nat.eqOrLtOfLe
+#check Nat.ltIrrefl
+
+def containsBeyondVacuous{n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
+    (n ≤ m) → containsBeyond cl1 cl2 m := by
+      intro h
+      intro k
+      intro kw
+      intro ineq
+      let inq := Nat.leTrans h ineq
+      let inq2 := Nat.ltOfLtOfLe kw inq
+      exact (False.elim (Nat.ltIrrefl k inq2))
+      done
+
+def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
+        (m: Nat) → Decidable (containsBeyond cl1 cl2 m) → Decidable (contains cl1 cl2) :=
+        fun m dContainsBeyond => 
+          match m, dContainsBeyond with
+          | m, isFalse contra => isFalse (
+              by
+                intro hyp
+                let h := containsImpliesContainsBeyond cl1 cl2 m hyp
+                exact contra h
+                done)
+          | 0, isTrue pf => isTrue (containsBeyondZero cl1 cl2 pf)
+          | l + 1, isTrue pf => 
+            if lw : l < n then
+              match varDomDecide (cl1 l lw) (cl2 l lw) with
+              | isTrue pfHead => 
+                  let accum: Decidable (containsBeyond cl1 cl2 l) := 
+                    isTrue (
+                      by
+                        intro k 
+                        intro kw
+                        intro ineq
+                        intro b
+                        cases Nat.eqOrLtOfLe ineq with
+                        | inl eql =>
+                          let lem0 := pfHead b
+                          let lem1 : cl1 l lw = cl1 k kw := by
+                            apply witnessIndependent
+                            exact eql
+                            done
+                          let lem2 : cl2 l lw = cl2 k kw := by
+                            apply witnessIndependent
+                            exact eql
+                          rw ← lem1
+                          rw ← lem2
+                          exact lem0
+                          done
+                        | inr l2 => 
+                          exact pf k kw l2 b
+                          done                      
+                    )
+                  decideContainsRec cl1 cl2 l accum
+              | isFalse contra => isFalse (fun hyp =>
+                            contra ( 
+                              fun b => 
+                                hyp l lw b 
+                              )                           
+                              )
+            else
+              let overshoot : n ≤ l := by
+                cases Nat.ltOrGe l n with
+                | inl l1 => exact absurd l1 lw
+                | inr l2 => exact l2
+              let accum: Decidable (containsBeyond cl1 cl2 l) := 
+                isTrue (containsBeyondVacuous cl1 cl2 l overshoot)
+              decideContainsRec cl1 cl2 l accum
+
 
 def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) → 
                                           Decidable (cl1 ⊇   cl2) :=
