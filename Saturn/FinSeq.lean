@@ -8,6 +8,26 @@ def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x
 
 def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
 
+structure ProvedSkip(n m: Nat) where
+  result : Nat
+  lt : m < n → result = m
+  ge : n ≤ m → result = m + 1
+
+def provedSkip (n m : Nat) : ProvedSkip n m := 
+  if c : m < n then
+    ⟨m, fun _ => rfl, fun hyp => False.elim (Nat.ltIrrefl m (Nat.ltOfLtOfLe c hyp))⟩
+  else
+    ⟨m + 1, fun hyp => absurd hyp c, fun _ => rfl⟩
+
+def skp: Nat → Nat → Nat :=
+  fun n m => (provedSkip n m).result
+
+def skipBelow(n m : Nat) : m < n → (skp n m = m) :=
+  fun hyp => (provedSkip n m).lt hyp 
+
+def skipAbove(n m : Nat) : n ≤ m → (skp n m = m + 1) :=
+  fun hyp => (provedSkip n m).ge hyp
+
 def skip : Nat → Nat → Nat :=
     fun k =>
       match k with
