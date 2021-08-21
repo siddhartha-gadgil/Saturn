@@ -113,6 +113,9 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
 def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2 k kw = some b → cl1 k kw = some b
 
+def contains.self{n: Nat} (cl : Clause n) : contains cl cl :=
+  fun k kw b hyp => hyp
+
 infix:65 " ⊇  " => contains
 
 def containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
@@ -315,6 +318,10 @@ structure Containment{dom n : Nat}(base: FinSeq dom (Clause n)) where
     forward : (j : Nat) → (jw : j < dom) → ElemSeqPred imageSeq (contains (base j jw))
     reverse : (j : Nat) → (jw : j < codom) → ElemInSeq base (imageSeq j jw) 
 
+def Containment.identity{dom n : Nat}(base: FinSeq dom (Clause n)) : Containment base :=
+    ⟨dom, base, fun j jw => ⟨j, jw, contains.self (base j jw)⟩, 
+          fun j jw => ⟨j, jw, rfl⟩⟩
+
 def prependContainment{dom n : Nat}{base: FinSeq dom (Clause n)}(pred: Containment base)
         (cl : Clause n) : Containment (cl +: base) := 
             match subClause? cl (pred.imageSeq) with
@@ -462,4 +469,4 @@ def simplifiedContainment{dom n : Nat}: (clauses : FinSeq dom (Clause n)) →
                     match dom with
                     |0 => fun _ => ⟨0, FinSeq.empty, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
                     | m + 1 => fun clauses => 
-                        simplifyNonEmptyContainment (m + 1) clauses (initialContainment clauses)
+                        simplifyNonEmptyContainment (m + 1) clauses (Containment.identity clauses)
