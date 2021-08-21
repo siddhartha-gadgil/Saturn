@@ -5,6 +5,9 @@ def Clause(n : Nat) : Type := FinSeq n (Option Bool)
 
 def Valuation(n: Nat) : Type := FinSeq n  Bool
 
+def varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
+
+
 structure ClauseSat{n: Nat}(clause : Clause n)(valuation: Valuation n) where
   coord : Nat
   bound : coord < n  

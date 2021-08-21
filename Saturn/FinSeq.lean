@@ -585,61 +585,150 @@ def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → O
           findSome? f (fun t : Nat => fun w : t < m => seq (t + 1) w )
         ) 
 
+def equalBeyond{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α)(m: Nat): Prop :=
+  ∀ k: Nat, ∀ kw : k <n, ∀ mw : m ≤ k, seq1 k kw = seq2 k kw
 
-def varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
+theorem equalBeyondZero{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α):
+    equalBeyond seq1 seq2 0 → seq1 = seq2 := by
+      intro hyp
+      apply funext
+      intro k
+      apply funext
+      intro kw
+      exact hyp k kw  (Nat.zeroLe k)
+      done
+
+
+def equalBeyondVacuous{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α)(m: Nat):
+    (n ≤ m) → equalBeyond seq1 seq2 m := by
+      intro hyp
+      intro k
+      intro kw
+      intro ineq
+      let inq := Nat.leTrans hyp ineq
+      let inq2 := Nat.ltOfLtOfLe kw inq
+      exact (False.elim (Nat.ltIrrefl k inq2))
+      done
+
+def deqSeqRec{α: Type}[DecidableEq α]{n : Nat}(seq1 seq2 : FinSeq n α): (m: Nat) → 
+      Decidable (equalBeyond seq1 seq2 m) → 
+      Decidable (seq1 = seq2) :=
+      fun m dec => 
+      match m, dec with
+      | m, isFalse contra => 
+        isFalse (
+          by
+            intro hyp
+            have restr : equalBeyond seq1 seq2 m by
+              intro k
+              intro kw
+              intro _ 
+              rw hyp
+              done
+            exact contra restr
+            done)
+      | 0, isTrue pf => 
+        isTrue (equalBeyondZero seq1 seq2 pf)
+      | l + 1, isTrue pf  => 
+        if lw : l < n then
+          match decEq (seq1 l lw) (seq2 l lw) with
+          | isTrue pfHead => 
+              let accum: Decidable (equalBeyond seq1 seq2 l) := 
+                isTrue (
+                  by
+                    intro k 
+                    intro kw
+                    intro ineq
+                    cases Nat.eqOrLtOfLe ineq with
+                    | inl eql =>
+                      let lem0 := pfHead
+                      let lem1 : seq1 l lw = seq1 k kw := by
+                        apply witnessIndependent
+                        exact eql
+                        done
+                      let lem2 : seq2 l lw = seq2 k kw := by
+                        apply witnessIndependent
+                        exact eql
+                      rw ← lem1
+                      rw ← lem2
+                      exact lem0
+                      done
+                    | inr l2 => 
+                      exact pf k kw l2 
+                      done                      
+                )
+              deqSeqRec seq1 seq2 l accum
+          | isFalse contra => isFalse (fun hyp =>
+                        contra ( 
+                          by
+                            rw hyp
+                            done
+                          )                           
+                          )
+        else
+          let overshoot : n ≤ l := by
+            cases Nat.ltOrGe l n with
+            | inl l1 => exact absurd l1 lw
+            | inr l2 => exact l2
+          let accum: Decidable (equalBeyond seq1 seq2 l) := 
+            isTrue (equalBeyondVacuous seq1 seq2 l overshoot)
+          deqSeqRec seq1 seq2 l accum
+      
 
 def deqSeq {α : Type}[DecidableEq α] (n: Nat) : (c1 : FinSeq n  α) → 
                               (c2: FinSeq n  α) → Decidable (c1 = c2) := 
-  match n with
-  | 0 => 
-    fun c1 c2 => 
-      isTrue (funext 
-        (fun x => 
-          funext (fun w => nomatch w)))
-  | m + 1 => 
-    fun c1 c2 =>
-      match deqSeq _ (tail c1) (tail c2) with
-      | isTrue h => 
-          if c : c1 0 (zeroLtSucc m) = c2 (0) (zeroLtSucc m) then
-            isTrue 
-              (funext fun k =>
-                match k with
-                | 0 => funext (fun w =>  c)
-                | j+ 1 => funext (fun  w => 
-                  let l1 : tail c1 j w = c1 (j + 1) w := by rfl
-                  let l2 : tail c2 j w = c2 (j + 1) w := by rfl
-                  by 
-                    rw (Eq.symm l1)                    
-                    rw (Eq.symm l2)
-                    rw h
-                    done
-                    ))
-          else 
-            isFalse (
-              fun hyp =>
-                let lem : c1 0 (zeroLtSucc m) = c2 0 (zeroLtSucc m) := by
-                  rw hyp
-                c lem
-            )
-      |isFalse h => 
-        isFalse (
-          fun hyp => 
-            let lem : (tail c1) = (tail c2) := 
-              funext (
-                fun j =>
-                funext (
-                fun w =>
-                  let l1 : tail c1 j w = c1 (j + 1) w := by rfl 
-                  let l2 : tail c2 j w = c2 (j + 1) w := by rfl                   
-                  by 
-                    rw l1
-                    rw hyp
-                    apply Eq.symm
-                    exact l2
-                    done
-                    )
-              )
-            h lem)
+              fun seq1 seq2 => 
+                deqSeqRec seq1 seq2 n (isTrue (equalBeyondVacuous seq1 seq2 n (Nat.leRefl n)))
+  -- match n with
+  -- | 0 => 
+  --   fun c1 c2 => 
+  --     isTrue (funext 
+  --       (fun x => 
+  --         funext (fun w => nomatch w)))
+  -- | m + 1 => 
+  --   fun c1 c2 =>
+  --     match deqSeq _ (tail c1) (tail c2) with
+  --     | isTrue h => 
+  --         if c : c1 0 (zeroLtSucc m) = c2 (0) (zeroLtSucc m) then
+  --           isTrue 
+  --             (funext fun k =>
+  --               match k with
+  --               | 0 => funext (fun w =>  c)
+  --               | j+ 1 => funext (fun  w => 
+  --                 let l1 : tail c1 j w = c1 (j + 1) w := by rfl
+  --                 let l2 : tail c2 j w = c2 (j + 1) w := by rfl
+  --                 by 
+  --                   rw (Eq.symm l1)                    
+  --                   rw (Eq.symm l2)
+  --                   rw h
+  --                   done
+  --                   ))
+  --         else 
+  --           isFalse (
+  --             fun hyp =>
+  --               let lem : c1 0 (zeroLtSucc m) = c2 0 (zeroLtSucc m) := by
+  --                 rw hyp
+  --               c lem
+  --           )
+  --     |isFalse h => 
+  --       isFalse (
+  --         fun hyp => 
+  --           let lem : (tail c1) = (tail c2) := 
+  --             funext (
+  --               fun j =>
+  --               funext (
+  --               fun w =>
+  --                 let l1 : tail c1 j w = c1 (j + 1) w := by rfl 
+  --                 let l2 : tail c2 j w = c2 (j + 1) w := by rfl                   
+  --                 by 
+  --                   rw l1
+  --                   rw hyp
+  --                   apply Eq.symm
+  --                   exact l2
+  --                   done
+  --                   )
+  --             )
+  --           h lem)
 
 instance {n: Nat}[DecidableEq α] : DecidableEq (FinSeq n  α) := fun c1 c2 => deqSeq _ c1 c2
 
