@@ -8,6 +8,16 @@ def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x
 
 def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
 
+structure NatSucc (n: Nat) where
+  pred: Nat
+  eqn : n = succ (pred)
+
+def posSucc : (n : Nat) → Not (0 = n) → NatSucc n :=
+  fun n =>
+  match n with
+  | 0 => fun w => absurd rfl w
+  | l + 1 => fun _ => ⟨l, rfl⟩
+
 structure ProvedSkip(n m: Nat) where
   result : Nat
   lt : m < n → result = m
@@ -19,27 +29,14 @@ def provedSkip (n m : Nat) : ProvedSkip n m :=
   else
     ⟨m + 1, fun hyp => absurd hyp c, fun _ => rfl⟩
 
-def skp: Nat → Nat → Nat :=
+def skip: Nat → Nat → Nat :=
   fun n m => (provedSkip n m).result
 
-def skipBelow(n m : Nat) : m < n → (skp n m = m) :=
+def skipBelow(n m : Nat) : m < n → (skip n m = m) :=
   fun hyp => (provedSkip n m).lt hyp 
 
-def skipAbove(n m : Nat) : n ≤ m → (skp n m = m + 1) :=
+def skipAbove(n m : Nat) : n ≤ m → (skip n m = m + 1) :=
   fun hyp => (provedSkip n m).ge hyp
-
-def skip : Nat → Nat → Nat :=
-    fun k =>
-      match k with
-      | 0 => 
-          fun i =>
-            i + 1
-      | l + 1 => 
-          fun j =>
-            match j with
-            | 0 => 0
-            | i + 1 => 
-                (skip l i) + 1
 
 inductive SkipEquations(n m : Nat) where
   | lt : m < n → skip n m = m → SkipEquations n m
@@ -50,110 +47,50 @@ inductive SkipImageCase(n m : Nat) where
   | image : (k : Nat) → skip n k = m →  SkipImageCase n m
 
 def skipEquations: (n : Nat) →  (m : Nat) →  SkipEquations n m := 
-  fun k =>
-      match k with
-      | 0 => 
-          fun i =>
-            SkipEquations.ge (zeroLe _) rfl
-      | l+1 => 
-          fun j =>
-            match j with
-            | 0 => 
-              SkipEquations.lt (zeroLtSucc _) rfl
-            | i + 1 =>
-              let unfold : skip (l + 1) (i + 1) = skip l i + 1 := by rfl 
-                match skipEquations l i with
-                | SkipEquations.lt ineq eqn => 
-                  SkipEquations.lt 
-                    (succ_lt_succ ineq) (
-                      by  
-                        rw unfold
-                        rw eqn
-                        done)
-                | SkipEquations.ge ineq eqn =>
-                    SkipEquations.ge (succLeSucc ineq) (
-                      by  
-                        rw unfold
-                        rw eqn
-                        done)
+  fun n m =>
+  if c : m < n then
+    SkipEquations.lt c (skipBelow n m c)
+  else
+    let lem : n ≤ m :=
+      match Nat.ltOrGe m n with
+      | Or.inl lt => absurd lt c
+      | Or.inr ge => ge
+    SkipEquations.ge lem (skipAbove n m lem)
 
 def skipImageCase : (n : Nat) →  (m : Nat) →  SkipImageCase n m := 
-  fun k =>
-      match k with
-      | 0 => 
-          fun j =>
-            match j with 
-            | 0 => SkipImageCase.diag rfl
-            | i + 1 => SkipImageCase.image i rfl
-      | l + 1 => 
-          fun j =>
-            match j with
-            | 0 => 
-              SkipImageCase.image 0 rfl
-            | i + 1 =>               
-                match skipImageCase l i with
-                | SkipImageCase.diag  eqn => 
-                    SkipImageCase.diag (by rw eqn)
-                | SkipImageCase.image p eqn =>
-                    let unfold : skip (l + 1) (p + 1) = skip l p + 1 := by rfl
-                    SkipImageCase.image (p + 1) (by (rw unfold) (rw eqn))
-
-theorem skipSuccNotZero : (n: Nat) → (j: Nat) → Not (skip n (succ j) = 0) :=
-  fun n =>
-  match n with 
-  | 0 => 
-    fun j =>
-      fun hyp : succ (succ j) = 0 =>
-        Nat.noConfusion hyp
-  | m + 1 => 
-    fun j =>
-            match j with
-            | 0 => 
-              fun hyp : succ (skip m 0)  = 0 =>
-                Nat.noConfusion hyp
-            | i + 1 => 
-              fun hyp =>
-                let lem1 : skip (m + 1) (succ (i + 1)) = skip m (succ i) + 1 := by rfl
-                let lem2 := Eq.trans (Eq.symm hyp) lem1
-                Nat.noConfusion lem2
-
-theorem skipInjective: (n: Nat) → (j1 : Nat) → (j2 : Nat) → 
-                              (skip n j1 = skip n j2) → j1 = j2 :=
-      fun n =>
-      match n with
-      | 0 =>
-        fun j1 j2 =>
-          fun eqn : succ j1 = succ j2 =>  
-              by 
-                injection eqn
-                assumption
-                done
-      | m + 1 => 
-        fun j1 =>
-        match j1 with
-        | 0 =>
-          fun j2 =>
-            match j2 with
-            | 0 => fun _ => rfl
-            | i2 + 1 => 
-              fun hyp : 0 = skip (m + 1) (i2 + 1) =>
-                let lem := skipSuccNotZero (m + 1) i2
-                absurd (Eq.symm hyp) lem
-        | i1 + 1 => 
-          fun j2 =>
-            match j2 with
-            | 0 => fun hyp : skip (m + 1) (i1 + 1) = 0 =>
-                let lem := skipSuccNotZero (m + 1) i1
-                absurd hyp lem
-            | i2 + 1 => 
-              fun hyp : skip m i1 + 1 = skip m i2 + 1 =>
-                let hyp1 : skip m i1 = skip m i2 := by
-                  injection hyp
-                  assumption
-                  done
-                let lem := skipInjective m i1 i2 hyp1
-                congrArg succ lem
-
+  fun n m =>
+  if mLtn : m < n then
+    SkipImageCase.image m (skipBelow n m mLtn)
+  else
+    if mEqn : m = n then
+      SkipImageCase.diag mEqn
+    else
+      let nLtm : n < m := 
+        match Nat.ltOrGe m n with
+        | Or.inl p => absurd p mLtn
+        | Or.inr p => 
+          match Nat.eqOrLtOfLe p with
+          | Or.inl q => absurd (Eq.symm q) mEqn
+          |Or.inr q => q
+      let notZero : Not (0 = m) := 
+        fun hyp =>
+          let nLt0 : n < 0 := by
+            rw hyp
+            exact nLtm
+          let nLtn : n < n :=
+            Nat.ltOfLtOfLe nLt0 (Nat.zeroLe _)
+          Nat.ltIrrefl n nLtn
+      let ⟨p, seq⟩ := posSucc m notZero
+      let nLep : n ≤ p := 
+        Nat.leOfSuccLeSucc (by
+          rw ← seq
+          exact nLtm
+          done)
+      let imeq : skip n p = m := by
+        rw seq
+        exact (skipAbove n p nLep)
+        done
+      SkipImageCase.image p imeq
 
 theorem skipBound: (k j: Nat) →  skip k j < j + 2 :=
     fun k j =>
@@ -195,6 +132,50 @@ theorem skipSharpLowerBound :(k j: Nat) →  Or (j + 1 ≤ skip k j) (j <  k)  :
                     rw eqn
                     apply Nat.leRefl
                     done)
+
+theorem skipInjective: (n: Nat) → (j1 : Nat) → (j2 : Nat) → 
+                              (skip n j1 = skip n j2) → j1 = j2 :=
+      fun n j1 j2 hyp =>
+        match Nat.ltOrGe j1 n with
+        | Or.inl p1 => 
+          let eq1 : skip n j1 = j1 := skipBelow n j1 p1
+          match Nat.ltOrGe j2 n with
+          | Or.inl p2 => 
+            let eq2 : skip n j2 = j2 := skipBelow n j2 p2
+            by
+              rw ←  eq1
+              rw ← eq2
+              exact hyp
+              done
+          | Or.inr p2 => 
+            let ineq1 : j1 < j2 := Nat.ltOfLtOfLe p1 p2
+            let ineq2 : j1 < skip n j2 := Nat.ltOfLtOfLe ineq1 (skipLowerBound n j2)
+            let ineq3 : j1 < skip n j1 := Nat.ltOfLtOfLe ineq2 (Nat.leOfEq (Eq.symm hyp))
+            let ineq4 : j1 < j1 := Nat.ltOfLtOfLe ineq3 (Nat.leOfEq eq1)
+            False.elim (Nat.ltIrrefl j1 ineq4)
+        | Or.inr p1 => 
+          let eq1 : skip n j1 = succ j1 := skipAbove n j1 p1
+          match Nat.ltOrGe j2 n with
+          | Or.inl p2 =>
+            let ineq1 : j2 < j1 := Nat.ltOfLtOfLe p2 p1 
+            let ineq2 : j2 < skip n j1 := Nat.ltOfLtOfLe ineq1 (skipLowerBound n j1)
+            let ineq3 : j2 < skip n j2 := Nat.ltOfLtOfLe ineq2 (Nat.leOfEq (hyp))
+            let eq2 : skip n j2 = j2 := skipBelow n j2 p2
+            let ineq4 : j2 < j2 := Nat.ltOfLtOfLe ineq3 (Nat.leOfEq eq2)
+            False.elim (Nat.ltIrrefl j2 ineq4)
+          | Or.inr p2 => 
+            let eq2 : skip n j2 = succ j2 := skipAbove n j2 p2
+            let eq3 : succ j1 = succ j2 := by
+              rw ← eq1
+              rw ← eq2
+              exact hyp
+              done
+            by
+              injection eq3
+              assumption
+              done
+
+
 
 def skipPlusOne {n k j : Nat} : j < n → skip k j < n + 1 := 
   fun h =>

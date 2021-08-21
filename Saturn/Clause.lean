@@ -389,16 +389,6 @@ def initialContainment{dom n : Nat}: (clauses : FinSeq dom (Clause n)) →
                           prependContainment (initialContainment (tail clauses)) (head clauses)
                         Eq.mp (congrArg Containment (headTail clauses)) ht
 
-structure NatSucc (n: Nat) where
-  pred: Nat
-  eqn : n = succ (pred)
-
-def posSucc : (n : Nat) → Not (0 = n) → NatSucc n :=
-  fun n =>
-  match n with
-  | 0 => fun w => absurd rfl w
-  | l + 1 => fun _ => ⟨l, rfl⟩
-
 def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →  
       (base : FinSeq (d + 1) (Clause n)) → 
       Containment (base) → Containment (base) := 
