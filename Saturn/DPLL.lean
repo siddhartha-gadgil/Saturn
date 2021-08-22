@@ -26,7 +26,52 @@ def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1
             PosResClause.prependResData branch focus focusLt clauses head c rd
           else
             PrependClause.prependResData branch focus focusLt clauses head c rd
-         
+
+def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
+    (focus: Nat)(focusLt : focus < n + 1):
+    (clausesHead: FinSeq domHead (Clause (n + 1))) → 
+    (clausesAccum: FinSeq domAccum (Clause (n + 1))) → 
+    (s : domHead + domAccum = dom) → 
+    (restAcum : RestrictionData branch focus focusLt clausesAccum) → 
+    (clauses: FinSeq dom (Clause (n + 1))) →
+    (clsEq : concatSeqAux s clausesHead clausesAccum = clauses) →    
+        RestrictionData branch focus focusLt clauses := 
+         match domHead with
+    | 0 => fun clausesHead clausesAccum s restAccum clauses clsEq =>
+      by
+        have ss : dom = domAccum by 
+          rw ← s
+          apply Nat.zero_add
+          done
+        have sf : FinSeq dom (Clause (n + 1)) = FinSeq domAccum (Clause (n + 1)) by
+          rw ss
+        have resolve : concatSeqAux s clausesHead clausesAccum = 
+            Eq.mpr sf clausesAccum by rfl
+        rw ← clsEq
+        rw resolve 
+        let clausesTrans : RestrictionData branch focus focusLt (Eq.mpr sf clausesAccum) :=
+          match dom , domAccum, ss, sf, clausesAccum, restAccum with
+          | d, .(d), rfl, rfl, cls, ra => ra
+        exact clausesTrans
+        done
+    | k + 1 => fun clausesHead clausesAccum s restAccum clauses clsEq => 
+      let ss : k + (domAccum + 1)  = dom := 
+        by
+          rw ← s
+          rw (Nat.add_comm domAccum 1)
+          rw (Nat.add_assoc k 1 domAccum)
+          done
+      let resolve : concatSeqAux s clausesHead clausesAccum = 
+        concatSeqAux ss (init clausesHead) ((last clausesHead) +: clausesAccum) := rfl
+      let recRestAccum := 
+        prependResData branch focus focusLt clausesAccum restAccum (last clausesHead)
+      restrictionDataAux branch focus focusLt (init clausesHead) 
+          ((last clausesHead) +: clausesAccum) ss recRestAccum clauses 
+          (by 
+            rw ← resolve
+            rw clsEq
+            done)
+
 def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1):
     (clauses: FinSeq dom (Clause (n + 1))) →   
         RestrictionData branch focus focusLt clauses := 

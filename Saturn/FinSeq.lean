@@ -244,6 +244,8 @@ def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α :=
 def last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq n (Nat.leRefl _)
 
+#check Eq.mp
+
 def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →   
     (seq1 : FinSeq n α) → (seq2 : FinSeq m α) →  
        FinSeq l α := 
@@ -254,8 +256,9 @@ def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →
           rw ← s
           apply Nat.zero_add
           done
-        rw ss
-        exact seq2
+        have sf : FinSeq l α = FinSeq m α by
+          rw ss
+        exact Eq.mpr sf seq2
         done
     | k + 1 => fun s seq1 seq2 => 
       let ss : k + (m + 1)  = l := 
