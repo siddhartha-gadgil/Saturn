@@ -237,12 +237,38 @@ theorem headTail{α : Type}{n: Nat}(seq : FinSeq (n + 1) α):
             | i + 1 => by rfl
         )
 
-def concatSeq {α: Type}{n m: Nat} : (seq1 : FinSeq n α) → (seq2 : FinSeq m α) →  
-  FinSeq (m + n) α := 
+def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
+  fun k w =>
+      seq k (Nat.leStep w)
+
+def last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
+  seq n (Nat.leRefl _)
+
+def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →   
+    (seq1 : FinSeq n α) → (seq2 : FinSeq m α) →  
+       FinSeq l α := 
     match n with
-    | 0 => fun _ => fun seq2 => seq2
-    | l + 1 => fun seq1 => fun seq2 => 
-      (head seq1) +: (concatSeq (tail seq1) seq2)
+    | 0 => fun s => fun _ => fun seq2 =>
+      by
+        have ss : l = m by 
+          rw ← s
+          apply Nat.zero_add
+          done
+        rw ss
+        exact seq2
+        done
+    | k + 1 => fun s seq1 seq2 => 
+      let ss : k + (m + 1)  = l := 
+        by
+          rw ← s
+          rw (Nat.add_comm m 1)
+          rw (Nat.add_assoc k 1 m)
+          done
+      concatSeqAux ss (init seq1) ((last seq1) +: seq2)
+
+def concatSeq {α: Type}{n m: Nat}(seq1 : FinSeq n α)(seq2 : FinSeq m α): 
+  FinSeq (n + m) α := 
+    concatSeqAux rfl seq1 seq2
 
 infix:65 "++:" => concatSeq
 
