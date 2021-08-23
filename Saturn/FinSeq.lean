@@ -392,6 +392,24 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
 
 infix:65 "++:" => concatSeq
 
+theorem concatEmptySeq{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++: (FinSeq.empty) = seq := 
+          by
+            intro seq
+            apply funext
+            intro k
+            apply funext
+            intro kw
+            let resolve : concatSeq seq FinSeq.empty =  
+                  concatSeqAux rfl seq FinSeq.empty := rfl
+            rw resolve
+            have w : k < n + 0 by
+              rw (Nat.add_zero n)
+              assumption
+              done
+            let lem := (concatAuxValues rfl seq FinSeq.empty k).left kw w
+            exact lem
+            done
+
 def list{α : Type}{n : Nat}: FinSeq n α → List α :=
   match n with
   | 0 => fun _ => []
