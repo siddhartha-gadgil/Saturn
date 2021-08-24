@@ -420,51 +420,51 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
          if lt : k < (l + 1) then
           let focus := imageSeq k lt
           let rest := delete k lt imageSeq
-          match subClause? focus rest with 
-          | none => 
-            simplifyNonEmptyContainment k base 
-               ⟨l + 1, imageSeq, forward, reverse⟩
-          | some ⟨zi, zb, zc⟩ => 
-            let codomN := l
-            let imageSeqN := rest
-            let domN := d + 1
-            let forwardN : (j : Nat) → (jw : j < domN) → 
-                  ElemSeqPred imageSeqN (contains (base j jw)) := 
-                  fun j jw => 
-                    let ⟨i, iw , ict⟩ := forward j jw
-                    match skipImageCase k i with
-                    | SkipImageCase.diag eqn => 
-                        let lem1 : imageSeq i iw = imageSeq k lt := by
-                              apply witnessIndependent
-                              apply eqn
-                              done
-                        let lem2 : imageSeq i iw ⊇ imageSeqN zi zb := by
-                              rw lem1 
-                              exact zc
-                              done    
-                        ⟨zi, zb, containsTrans _ _ _ ict lem2⟩
-                    | SkipImageCase.image ii eqn => 
-                      let iiw := skipPreImageBound lt iw eqn
-                      let lem1 : imageSeqN ii iiw = imageSeq (skip k ii) (skipPlusOne iiw)  := by rfl
-                      let lem2 : imageSeq (skip k ii) (skipPlusOne iiw) = imageSeq i iw := by
-                                      apply witnessIndependent
-                                      apply eqn
-                                      done 
-                      ⟨ii, iiw, by 
-                                rw lem1
-                                rw lem2
-                                exact ict
-                                done⟩
-            let reverseN : (j : Nat) → (jw : j < codomN) → 
-                  ElemInSeq base (imageSeqN j jw) := 
-                  fun i =>
-                    fun iw => 
-                      let ⟨ind, bd, eqn⟩ := reverse (skip k i) (skipPlusOne iw)
-                      ⟨ind, bd, by 
-                          exact eqn
-                          done⟩
-            let step := ⟨codomN, imageSeqN, forwardN, reverseN⟩
-            simplifyNonEmptyContainment k base step
+          let step  : Containment base :=
+            match subClause? focus rest with 
+            | none =>  
+                ⟨l + 1, imageSeq, forward, reverse⟩
+            | some ⟨zi, zb, zc⟩ => 
+              let codomN := l
+              let imageSeqN := rest
+              let domN := d + 1
+              let forwardN : (j : Nat) → (jw : j < domN) → 
+                    ElemSeqPred imageSeqN (contains (base j jw)) := 
+                    fun j jw => 
+                      let ⟨i, iw , ict⟩ := forward j jw
+                      match skipImageCase k i with
+                      | SkipImageCase.diag eqn => 
+                          let lem1 : imageSeq i iw = imageSeq k lt := by
+                                apply witnessIndependent
+                                apply eqn
+                                done
+                          let lem2 : imageSeq i iw ⊇ imageSeqN zi zb := by
+                                rw lem1 
+                                exact zc
+                                done    
+                          ⟨zi, zb, containsTrans _ _ _ ict lem2⟩
+                      | SkipImageCase.image ii eqn => 
+                        let iiw := skipPreImageBound lt iw eqn
+                        let lem1 : imageSeqN ii iiw = imageSeq (skip k ii) (skipPlusOne iiw)  := by rfl
+                        let lem2 : imageSeq (skip k ii) (skipPlusOne iiw) = imageSeq i iw := by
+                                        apply witnessIndependent
+                                        apply eqn
+                                        done 
+                        ⟨ii, iiw, by 
+                                  rw lem1
+                                  rw lem2
+                                  exact ict
+                                  done⟩
+              let reverseN : (j : Nat) → (jw : j < codomN) → 
+                    ElemInSeq base (imageSeqN j jw) := 
+                    fun i =>
+                      fun iw => 
+                        let ⟨ind, bd, eqn⟩ := reverse (skip k i) (skipPlusOne iw)
+                        ⟨ind, bd, by 
+                            exact eqn
+                            done⟩
+             ⟨codomN, imageSeqN, forwardN, reverseN⟩
+          simplifyNonEmptyContainment k base step
         else ⟨l + 1, imageSeq, forward, reverse⟩
 
 def simplifiedContainment{dom n : Nat}: (clauses : FinSeq dom (Clause n)) → 
