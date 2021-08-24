@@ -200,21 +200,28 @@ structure SomeUnitClause{l n : Nat}(clauses : FinSeq l  (Clause (n + 1))) where
   parity: Bool
   equality : clauses pos posBound = unitClause n parity index bound
 
+def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))) →  
+  (cb: Nat) → (cbBound : cb ≤  l) → Option (SomeUnitClause clauses) → 
+  Option (SomeUnitClause clauses)  :=
+    fun clauses cb  => 
+    match cb with 
+    | 0 => fun cbBound optCl => optCl
+    | m + 1 =>
+      fun cbBound optCl =>
+      match optCl with
+      | some scl => some scl
+      | none => 
+        match clauseUnit (clauses m cbBound) with
+        | some u => some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩ 
+        | none => 
+          someUnitClauseAux clauses m (Nat.leTrans (Nat.leSucc m) cbBound) none
+          
+
+
 def someUnitClause {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))) →  
   Option (SomeUnitClause clauses)  := 
-    match l with 
-    | 0 => fun  _ =>  none
-    | m + 1 => 
-      fun  cls =>
-        match clauseUnit (cls 0 (zeroLtSucc m)) with
-        | some u => some ⟨0, zeroLtSucc _, u.index, u.bound, u.parity, u.equality⟩ 
-        | none => 
-          let tcls := tail cls
-          let tail := someUnitClause  tcls
-          match tail with
-          | some ⟨i, w, index, bd, par, eql⟩ => 
-            some ⟨i + 1, leOfSuccLeSucc w, index, bd, par, eql⟩
-          | none => none
+    fun clauses =>
+     someUnitClauseAux clauses l (Nat.leRefl l) none
 
 structure HasPureVar{dom n : Nat}(clauses : FinSeq dom  (Clause n)) where
   index : Nat
