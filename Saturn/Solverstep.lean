@@ -235,35 +235,111 @@ structure IsPureVar{dom n : Nat}(clauses : FinSeq dom  (Clause n))
   evidence : (k : Nat) → (lt : k < dom) → (clauses k lt index bound = none) ∨ 
                                 (clauses k lt index bound = some parity)
 
+def pureEvidence {dom n : Nat}(clauses : FinSeq dom  (Clause n)) 
+                  (index: Nat)(bound : index < n)(parity : Bool): Prop := 
+                  (k : Nat) → (lt : k < dom) → 
+          (clauses k lt index bound = none) ∨  (clauses k lt index bound = some parity)
+
+def pureBeyond{dom n : Nat}(clauses : FinSeq dom  (Clause n)) 
+                  (index: Nat)(bound : index < n)(parity : Bool)(m: Nat): Prop := 
+                  (k : Nat) → (lt : k < dom) → (m ≤ k) → 
+          (clauses k lt index bound = none) ∨  (clauses k lt index bound = some parity)
+
+def pureBeyondZero{dom n : Nat}(clauses : FinSeq dom  (Clause n))
+                (index: Nat)(bound : index < n)(parity : Bool) : 
+                  pureBeyond clauses index bound parity 0 → 
+                  pureEvidence clauses index bound parity := by
+                    intro hyp
+                    intro k
+                    intro kw
+                    exact hyp k kw  (Nat.zeroLe k)
+                    done   
+
+def pureBeyondVacuous{dom n : Nat}(clauses : FinSeq dom  (Clause n))
+            (index: Nat)(bound : index < n)(parity : Bool)(m: Nat)(le: dom ≤ m): 
+            pureBeyond clauses index bound parity m := by
+                  intro k
+                  intro kw
+                  intro ineq
+                  let inq := Nat.leTrans le ineq
+                  let inq2 := Nat.ltOfLtOfLe kw inq
+                  exact (False.elim (Nat.ltIrrefl k inq2))
+                  done
+
+structure IsPureVarBeyond{dom n : Nat}(clauses : FinSeq dom  (Clause n))
+                      (index: Nat)(bound : index < n)(parity : Bool)(m: Nat) where
+  evidence : pureBeyond clauses index bound parity m
+
+def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) : 
+  (dom: Nat) →  (clauses : FinSeq dom  (Clause n)) → 
+    (m: Nat) → Option (IsPureVarBeyond clauses index bound parity m) →
+    Option (IsPureVar clauses index bound parity) :=
+    fun dom clauses m =>
+    match m with
+    | 0 => fun opt => 
+        opt.map (fun pb => ⟨pureBeyondZero clauses index bound parity pb.evidence⟩)
+    | p + 1 => 
+      fun opt => 
+        match opt with 
+        | none => none
+        | some pureBeyondEv => 
+          if pw : p < dom then
+            let head := clauses p pw index bound
+              if pf : (head = none) ∨  (head = some parity) then
+                let evidence : pureBeyond clauses index bound parity p := 
+                  by
+                    intro k 
+                    intro kw
+                    intro ineq
+                    cases Nat.eqOrLtOfLe ineq with
+                    | inl eql =>           
+                      let lem1 : clauses p pw = clauses k kw := by
+                        apply witnessIndependent
+                        exact eql
+                        done
+                      rw ← lem1
+                      exact pf
+                      done
+                    | inr l2 => 
+                      exact pureBeyondEv.evidence k kw l2 
+                      done   
+                varIsPureRec index bound parity dom clauses p (some ⟨evidence⟩)
+              else none
+          else 
+            none -- can recurse here but never called so making TCO easy
+
 def varIsPure{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) : 
   (dom: Nat) →  (clauses : FinSeq dom  (Clause n)) → 
     Option (IsPureVar clauses index bound parity) :=
-  fun dom =>
-  match dom with
-  | 0 => 
-    fun clauses =>
-      let evidence : (k : Nat) → (lt : k < 0) →  
-        (clauses k lt index bound = none) ∨ (clauses k lt index bound = some parity) := 
-          fun k lt => nomatch lt
-      some ⟨evidence⟩
-  | m + 1 => 
-      fun clauses =>
-        let head := clauses 0 (zeroLtSucc _) index bound
-        if c : (head = none) ∨  (head = some parity) then
-          let tailSeq  := tail clauses
-          (varIsPure index bound parity _ tailSeq).map (
-            fun ⟨ tpf ⟩ =>
-              let pf : (j : Nat) → (w : j < (m +1)) → 
-                (clauses j w index bound = none) ∨ (clauses j w index bound = some parity) := 
-                fun j =>
-                  match j with 
-                  | 0 => fun w => c
-                  | i + 1 => fun w =>
-                    let tailWit : i < m := leOfSuccLeSucc w 
-                    tpf i tailWit
-              ⟨ pf ⟩
-          )
-        else none
+    fun dom clauses =>
+      varIsPureRec index bound parity dom clauses dom 
+        (some ⟨pureBeyondVacuous clauses index bound parity dom (Nat.leRefl _)⟩)
+  -- fun dom =>
+  -- match dom with
+  -- | 0 => 
+  --   fun clauses =>
+  --     let evidence : (k : Nat) → (lt : k < 0) →  
+  --       (clauses k lt index bound = none) ∨ (clauses k lt index bound = some parity) := 
+  --         fun k lt => nomatch lt
+  --     some ⟨evidence⟩
+  -- | m + 1 => 
+  --     fun clauses =>
+  --       let head := clauses 0 (zeroLtSucc _) index bound
+  --       if c : (head = none) ∨  (head = some parity) then
+  --         let tailSeq  := tail clauses
+  --         (varIsPure index bound parity _ tailSeq).map (
+  --           fun ⟨ tpf ⟩ =>
+  --             let pf : (j : Nat) → (w : j < (m +1)) → 
+  --               (clauses j w index bound = none) ∨ (clauses j w index bound = some parity) := 
+  --               fun j =>
+  --                 match j with 
+  --                 | 0 => fun w => c
+  --                 | i + 1 => fun w =>
+  --                   let tailWit : i < m := leOfSuccLeSucc w 
+  --                   tpf i tailWit
+  --             ⟨ pf ⟩
+  --         )
+  --       else none
 
 def findPureAux{n : Nat} : (dom: Nat) →  (clauses : FinSeq dom (Clause (n +1))) → 
   (ub: Nat) → (lt : ub < n + 1) → 
@@ -283,17 +359,20 @@ def findPureAux{n : Nat} : (dom: Nat) →  (clauses : FinSeq dom (Clause (n +1))
               )
         | l + 1 =>
           fun lt =>
-            ((findPureAux dom clauses l (leStep lt)).orElse (              
-              (varIsPure l (leStep lt) true dom clauses).map (
-            fun ⟨evidence⟩ =>
-              HasPureVar.mk l (leStep lt) true evidence
-              )
-              )).orElse (              
-              (varIsPure l (leStep lt) false dom clauses).map (
-            fun ⟨evidence⟩ =>
-              HasPureVar.mk l (leStep lt) false evidence
-              )
-              )
+            let atCursor := 
+                ((varIsPure l (leStep lt) true dom clauses).map (
+              fun ⟨evidence⟩ =>
+                HasPureVar.mk l (leStep lt) true evidence
+                )
+                ).orElse (              
+                (varIsPure l (leStep lt) false dom clauses).map (
+              fun ⟨evidence⟩ =>
+                HasPureVar.mk l (leStep lt) false evidence
+                ))
+            match atCursor with
+            | some res => some res
+            |none =>
+              findPureAux dom clauses l (leStep lt)
             
 def hasPure{n : Nat}{dom: Nat}(clauses : FinSeq dom  (Clause (n +1))) 
              : Option (HasPureVar clauses) :=
