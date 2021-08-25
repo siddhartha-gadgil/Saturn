@@ -215,49 +215,47 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                 done)
           | 0, isTrue pf => isTrue (containsBeyondZero cl1 cl2 pf)
           | l + 1, isTrue pf => 
-            if lw : l < n then
-              match varDomDecide (cl1 l lw) (cl2 l lw) with
-              | isTrue pfHead => 
-                  let accum: Decidable (containsBeyond cl1 cl2 l) := 
-                    isTrue (
-                      by
-                        intro k 
-                        intro kw
-                        intro ineq
-                        intro b
-                        cases Nat.eqOrLtOfLe ineq with
-                        | inl eql =>
-                          let lem0 := pfHead b
-                          let lem1 : cl1 l lw = cl1 k kw := by
-                            apply witnessIndependent
-                            exact eql
+            let accum: Decidable (containsBeyond cl1 cl2 l) := 
+              if lw : l < n then
+                match varDomDecide (cl1 l lw) (cl2 l lw) with
+                | isTrue pfHead =>                       
+                      isTrue (
+                        by
+                          intro k 
+                          intro kw
+                          intro ineq
+                          intro b
+                          cases Nat.eqOrLtOfLe ineq with
+                          | inl eql =>
+                            let lem0 := pfHead b
+                            let lem1 : cl1 l lw = cl1 k kw := by
+                              apply witnessIndependent
+                              exact eql
+                              done
+                            let lem2 : cl2 l lw = cl2 k kw := by
+                              apply witnessIndependent
+                              exact eql
+                            rw ← lem1
+                            rw ← lem2
+                            exact lem0
                             done
-                          let lem2 : cl2 l lw = cl2 k kw := by
-                            apply witnessIndependent
-                            exact eql
-                          rw ← lem1
-                          rw ← lem2
-                          exact lem0
-                          done
-                        | inr l2 => 
-                          exact pf k kw l2 b
-                          done                      
-                    )
-                  decideContainsRec cl1 cl2 l accum
-              | isFalse contra => isFalse (fun hyp =>
-                            contra ( 
-                              fun b => 
-                                hyp l lw b 
-                              )                           
-                              )
+                          | inr l2 => 
+                            exact pf k kw l2 b
+                            done                      
+                      )
+                  | isFalse contra => isFalse (fun hyp =>
+                              contra ( 
+                                fun b => 
+                                  hyp l lw (Nat.leRefl _) b 
+                                )                           
+                                )
             else
-              let overshoot : n ≤ l := by
-                cases Nat.ltOrGe l n with
-                | inl l1 => exact absurd l1 lw
-                | inr l2 => exact l2
-              let accum: Decidable (containsBeyond cl1 cl2 l) := 
+                let overshoot : n ≤ l := by
+                  cases Nat.ltOrGe l n with
+                  | inl l1 => exact absurd l1 lw
+                  | inr l2 => exact l2
                 isTrue (containsBeyondVacuous cl1 cl2 l overshoot)
-              decideContainsRec cl1 cl2 l accum
+        decideContainsRec cl1 cl2 l accum
 
 
 def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) → 
