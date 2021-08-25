@@ -314,32 +314,6 @@ def varIsPure{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
     fun dom clauses =>
       varIsPureRec index bound parity dom clauses dom 
         (some ⟨pureBeyondVacuous clauses index bound parity dom (Nat.leRefl _)⟩)
-  -- fun dom =>
-  -- match dom with
-  -- | 0 => 
-  --   fun clauses =>
-  --     let evidence : (k : Nat) → (lt : k < 0) →  
-  --       (clauses k lt index bound = none) ∨ (clauses k lt index bound = some parity) := 
-  --         fun k lt => nomatch lt
-  --     some ⟨evidence⟩
-  -- | m + 1 => 
-  --     fun clauses =>
-  --       let head := clauses 0 (zeroLtSucc _) index bound
-  --       if c : (head = none) ∨  (head = some parity) then
-  --         let tailSeq  := tail clauses
-  --         (varIsPure index bound parity _ tailSeq).map (
-  --           fun ⟨ tpf ⟩ =>
-  --             let pf : (j : Nat) → (w : j < (m +1)) → 
-  --               (clauses j w index bound = none) ∨ (clauses j w index bound = some parity) := 
-  --               fun j =>
-  --                 match j with 
-  --                 | 0 => fun w => c
-  --                 | i + 1 => fun w =>
-  --                   let tailWit : i < m := leOfSuccLeSucc w 
-  --                   tpf i tailWit
-  --             ⟨ pf ⟩
-  --         )
-  --       else none
 
 def findPureAux{n : Nat} : (dom: Nat) →  (clauses : FinSeq dom (Clause (n +1))) → 
   (ub: Nat) → (lt : ub < n + 1) → 

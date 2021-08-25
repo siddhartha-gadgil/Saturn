@@ -244,8 +244,6 @@ def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α :=
 def last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq n (Nat.leRefl _)
 
-#check Eq.mp
-
 def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →   
     (seq1 : FinSeq n α) → (seq2 : FinSeq m α) →  
        FinSeq l α := 
@@ -416,11 +414,6 @@ def list{α : Type}{n : Nat}: FinSeq n α → List α :=
   | l + 1 => fun s => (head s) :: (list (tail s))
 
 
-theorem nullsEqual{α: Type}(s1 s2 : FinSeq 0 α) : s1 = s2 :=
-  funext (fun j =>
-            funext (fun lt =>
-              nomatch lt))
-
 def delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α := 
   fun j w =>
     seq (skip k j) (skipPlusOne w)
@@ -585,15 +578,6 @@ def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
   (seq : FinSeq n α) → Option (ElemSeqPred seq pred) :=
   fun seq  =>
     (List.range n).findSome? (fun k => elemPredAt pred seq k)
-  -- match n with
-  -- | 0 => fun seq => none
-  -- | m + 1 =>
-  --     fun seq =>
-  --       if c : pred (head seq) then
-  --         some ⟨0, zeroLtSucc _, c⟩
-  --       else 
-  --         (find? pred (tail seq)).map (fun ⟨i, iw, eqn⟩ => 
-  --           ⟨i +1, succ_lt_succ iw, eqn⟩)
 
 def elemAt{α: Type}[deq: DecidableEq α]{n: Nat}(seq: FinSeq n  α)(elem: α)(k: Nat):
   Option (ElemInSeq seq elem) :=
@@ -607,22 +591,6 @@ def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}:
   (seq: FinSeq n  α) → (elem: α) →  Option (ElemInSeq seq elem) :=
   fun seq elem =>
     (List.range n).findSome? (fun k => elemAt seq elem k)
-    -- match n with
-    -- | 0 => fun _  => fun _ => none
-    -- | m + 1 => 
-    --   fun fn =>
-    --     fun x =>
-    --       if pf : fn 0 (zeroLtSucc m) =  x then
-    --         some ⟨0, (zeroLtSucc m), pf⟩
-    --       else
-    --         let pred := findElem? (tail fn) x
-    --         pred.map (fun ⟨j, jw, eql⟩ => 
-    --           let l1 : fn (j + 1) (succ_lt_succ jw) = (tail fn) j jw := by rfl 
-    --           let l2 : fn (j + 1) (succ_lt_succ jw) = x := by 
-    --                 rw l1
-    --                 exact eql
-    --           ⟨j + 1 , succ_lt_succ jw, l2⟩ 
-    --         )
 
 def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  ExistsElem seq elem :=
@@ -836,56 +804,6 @@ def deqSeq {α : Type}[DecidableEq α] (n: Nat) : (c1 : FinSeq n  α) →
                               (c2: FinSeq n  α) → Decidable (c1 = c2) := 
               fun seq1 seq2 => 
                 deqSeqRec seq1 seq2 n (isTrue (equalBeyondVacuous seq1 seq2 n (Nat.leRefl n)))
-  -- match n with
-  -- | 0 => 
-  --   fun c1 c2 => 
-  --     isTrue (funext 
-  --       (fun x => 
-  --         funext (fun w => nomatch w)))
-  -- | m + 1 => 
-  --   fun c1 c2 =>
-  --     match deqSeq _ (tail c1) (tail c2) with
-  --     | isTrue h => 
-  --         if c : c1 0 (zeroLtSucc m) = c2 (0) (zeroLtSucc m) then
-  --           isTrue 
-  --             (funext fun k =>
-  --               match k with
-  --               | 0 => funext (fun w =>  c)
-  --               | j+ 1 => funext (fun  w => 
-  --                 let l1 : tail c1 j w = c1 (j + 1) w := by rfl
-  --                 let l2 : tail c2 j w = c2 (j + 1) w := by rfl
-  --                 by 
-  --                   rw (Eq.symm l1)                    
-  --                   rw (Eq.symm l2)
-  --                   rw h
-  --                   done
-  --                   ))
-  --         else 
-  --           isFalse (
-  --             fun hyp =>
-  --               let lem : c1 0 (zeroLtSucc m) = c2 0 (zeroLtSucc m) := by
-  --                 rw hyp
-  --               c lem
-  --           )
-  --     |isFalse h => 
-  --       isFalse (
-  --         fun hyp => 
-  --           let lem : (tail c1) = (tail c2) := 
-  --             funext (
-  --               fun j =>
-  --               funext (
-  --               fun w =>
-  --                 let l1 : tail c1 j w = c1 (j + 1) w := by rfl 
-  --                 let l2 : tail c2 j w = c2 (j + 1) w := by rfl                   
-  --                 by 
-  --                   rw l1
-  --                   rw hyp
-  --                   apply Eq.symm
-  --                   exact l2
-  --                   done
-  --                   )
-  --             )
-  --           h lem)
 
 instance {n: Nat}[DecidableEq α] : DecidableEq (FinSeq n  α) := fun c1 c2 => deqSeq _ c1 c2
 
