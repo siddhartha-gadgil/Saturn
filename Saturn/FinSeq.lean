@@ -1,5 +1,15 @@
 open Nat
 
+syntax:max "scowl" (ident)+? : term
+macro_rules  
+| `(scowl $[$es]*) => `(sorry)
+| `(scowl) => `(sorry)
+
+-- def hard_problem : String := scowl
+-- def harder_problem : Nat := scowl strongly
+-- def hardest_problem : Nat := scowl very strongly
+
+
 class Prover(α: Type) where
   statement : (x : α) → Prop
   proof : (x : α) → statement x
@@ -574,10 +584,27 @@ def elemPredAt{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]
         else none 
     else none
 
+def findAux?{α: Type}{n : Nat}(pred : α → Prop)(cursor: Nat)
+      (cursorBound : cursor < n)[DecidablePred pred]:
+  (seq : FinSeq n α) → Option (ElemSeqPred seq pred) := 
+    fun seq =>
+      if eqn : pred (seq cursor cursorBound) 
+        then some ⟨cursor, cursorBound, eqn⟩
+        else 
+          match cursor, cursorBound with
+          | 0, _ => none
+          | l + 1, cb => 
+            let lem : l + 1 ≤  n := by
+                apply (Nat.leTrans ·  cb)
+                apply Nat.leSucc
+                done
+            findAux? pred l lem seq    
+
 def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
   (seq : FinSeq n α) → Option (ElemSeqPred seq pred) :=
-  fun seq  =>
-    (List.range n).findSome? (fun k => elemPredAt pred seq k)
+  match n with
+  | 0 => fun _ =>  none
+  | m + 1 => fun seq => findAux? pred m (Nat.leRefl _) seq
 
 def elemAt{α: Type}[deq: DecidableEq α]{n: Nat}(seq: FinSeq n  α)(elem: α)(k: Nat):
   Option (ElemInSeq seq elem) :=
@@ -587,10 +614,27 @@ def elemAt{α: Type}[deq: DecidableEq α]{n: Nat}(seq: FinSeq n  α)(elem: α)(k
         else none 
     else none
 
+def findElemAux?{α: Type}{n : Nat}(cursor: Nat)
+      (cursorBound : cursor < n)[DecidableEq α]:
+  (seq: FinSeq n  α) → (elem: α) →  Option (ElemInSeq seq elem) := 
+    fun seq  elem =>
+      if eqn : seq cursor cursorBound = elem 
+        then some ⟨cursor, cursorBound, eqn⟩
+        else 
+          match cursor, cursorBound with
+          | 0, _ => none
+          | l + 1, cb => 
+            let lem : l + 1 ≤  n := by
+                apply (Nat.leTrans ·  cb)
+                apply Nat.leSucc
+                done
+            findElemAux? l lem seq elem  
+
 def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  Option (ElemInSeq seq elem) :=
-  fun seq elem =>
-    (List.range n).findSome? (fun k => elemAt seq elem k)
+   match n with
+  | 0 => fun _ _ =>  none
+  | m + 1 => fun seq elem => findElemAux?  m (Nat.leRefl _) seq elem
 
 def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  ExistsElem seq elem :=
