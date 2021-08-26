@@ -8,6 +8,7 @@ def printSolution {n dom : Nat}: (clauses : FinSeq dom (Clause n)) →  IO Unit 
   | l + 1 => 
     fun clauses => 
       do
+        IO.println ("solving problem")
         IO.println (solve clauses).toString
         return ()
 
@@ -16,5 +17,7 @@ def main (args: List String) : IO UInt32 := do
   IO.println "Hello from SATurn!"
   IO.println (solve eg1Statement).toString
   IO.println (solve eg2Statement).toString
-  printSolution (queensClauses n)
+  let problem := (queensClauses n)
+  printSolution problem
+
   return 0
