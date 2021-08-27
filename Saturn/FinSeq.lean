@@ -879,7 +879,7 @@ def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n :=
   | m + 1 => fun seq => Cons (head seq) (vec (tail seq))
 
 
-def equalCoords{α: Type}{n : Nat}(v1 v2 : Vector α n): 
+def equalCoords{α: Type}{n : Nat}{v1 v2 : Vector α n}: 
     v1.at = v2.at → v1 = v2 := 
     match n, v1, v2 with
     | 0, Nil, Nil => fun _ => rfl
@@ -896,7 +896,7 @@ def equalCoords{α: Type}{n : Nat}(v1 v2 : Vector α n):
             done
         rw hypHead
         apply congrArg
-        let base := equalCoords tail1 tail2
+        let base := @equalCoords _ _ tail1 tail2
         apply base
         apply funext
         intro k
@@ -910,3 +910,32 @@ def equalCoords{α: Type}{n : Nat}(v1 v2 : Vector α n):
         rw t2
         rw hyp
         done
+
+theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq := 
+  match n with
+  | zero => by
+    intro seq
+    apply funext
+    intro k
+    apply funext
+    intro kw
+    exact nomatch kw
+    done
+  | succ m => by 
+    intro seq
+    apply funext
+    intro k
+    cases k with
+    | zero => 
+      rfl
+      done
+    | succ k' => 
+      apply funext
+      intro kw
+      have tl :Vector.at (FinSeq.vec seq) (succ k') kw = 
+          Vector.at (FinSeq.vec (tail seq)) k' (Nat.succ_lt_succ kw) by rfl 
+      let base := seqAt (tail seq)
+      rw tl
+      rw base
+      rfl
+      done
