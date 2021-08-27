@@ -56,6 +56,10 @@ inductive SkipImageCase(n m : Nat) where
   | diag : m = n → SkipImageCase n m
   | image : (k : Nat) → skip n k = m →  SkipImageCase n m
 
+structure SkipProvedInv(n m : Nat) where
+  k : Nat
+  eqn : skip n k = m
+
 def skipEquations: (n : Nat) →  (m : Nat) →  SkipEquations n m := 
   fun n m =>
   if c : m < n then
@@ -66,6 +70,44 @@ def skipEquations: (n : Nat) →  (m : Nat) →  SkipEquations n m :=
       | Or.inl lt => absurd lt c
       | Or.inr ge => ge
     SkipEquations.ge lem (skipAbove n m lem)
+
+def provedSkipInverse : (n : Nat) → (m : Nat) → (m ≠ n) →  SkipProvedInv n m :=
+  fun n m eqn =>
+  if mLtn : m < n then
+    ⟨m, skipBelow n m mLtn⟩
+  else
+    let nLtm : n < m := 
+        match Nat.ltOrGe m n with
+        | Or.inl p => absurd p mLtn
+        | Or.inr p => 
+          match Nat.eqOrLtOfLe p with
+          | Or.inl q => absurd (Eq.symm q) eqn
+          |Or.inr q => q
+    let notZero : Not (0 = m) := 
+      fun hyp =>
+        let nLt0 : n < 0 := by
+          rw hyp
+          exact nLtm
+        let nLtn : n < n :=
+          Nat.ltOfLtOfLe nLt0 (Nat.zeroLe _)
+        Nat.ltIrrefl n nLtn
+    let ⟨p, seq⟩ := posSucc m notZero
+    let nLep : n ≤ p := 
+      Nat.leOfSuccLeSucc (by
+        rw ← seq
+        exact nLtm
+        done)
+    let imeq : skip n p = m := by
+      rw seq
+      exact (skipAbove n p nLep)
+      done
+    ⟨p, imeq⟩
+
+def skipInverse (n m : Nat) : (m ≠ n) → Nat := 
+        fun eqn =>  (provedSkipInverse n m eqn).k
+
+theorem skipInverseEqn(n m : Nat)(eqn : m ≠ n): skip n (skipInverse n m eqn) = m  := 
+        (provedSkipInverse n m eqn).eqn
 
 def skipImageCase : (n : Nat) →  (m : Nat) →  SkipImageCase n m := 
   fun n m =>
