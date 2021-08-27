@@ -858,3 +858,55 @@ def deqSeq {α : Type}[DecidableEq α] (n: Nat) : (c1 : FinSeq n  α) →
 
 instance {n: Nat}[DecidableEq α] : DecidableEq (FinSeq n  α) := fun c1 c2 => deqSeq _ c1 c2
 
+inductive Vector (α : Type) : Nat → Type where 
+  | Nil : Vector α zero
+  | Cons{n: Nat}(head: α) (tail: Vector  α n) : Vector α  (n + 1) 
+
+open Vector
+
+def Vector.at {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
+  match n, v with
+  | .(0), Nil => fun k lt => nomatch lt
+  | m + 1, Cons head tail => 
+    fun k =>
+      match k with
+      | 0 => fun _ =>  head
+      | j + 1 => fun w => tail.at j (Nat.succ_lt_succ w) 
+
+def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := 
+  match n with
+  | 0 => fun _ => Vector.Nil
+  | m + 1 => fun seq => Cons (head seq) (vec (tail seq))
+
+
+def equalCoords{α: Type}{n : Nat}(v1 v2 : Vector α n): 
+    v1.at = v2.at → v1 = v2 := 
+    match n, v1, v2 with
+    | 0, Nil, Nil => fun _ => rfl
+    | m + 1, Cons head1 tail1, Cons head2 tail2 =>
+      by
+        intro hyp
+        have h1 : head1 = Vector.at (Cons head1 tail1) zero (Nat.zeroLtSucc m) by rfl
+        have h2 : head2 = Vector.at (Cons head2 tail2) zero (Nat.zeroLtSucc m) by rfl
+        have hypHead : head1 = head2 
+          by 
+            rw h1
+            rw h2
+            rw hyp
+            done
+        rw hypHead
+        apply congrArg
+        let base := equalCoords tail1 tail2
+        apply base
+        apply funext
+        intro k
+        apply funext
+        intro kw
+        have t1 : Vector.at tail1 k kw = 
+          Vector.at (Cons head1 tail1) (k + 1) (Nat.succ_lt_succ kw) by rfl
+        have t2 : Vector.at tail2 k kw = 
+          Vector.at (Cons head2 tail2) (k + 1) (Nat.succ_lt_succ kw) by rfl
+        rw t1
+        rw t2
+        rw hyp
+        done
