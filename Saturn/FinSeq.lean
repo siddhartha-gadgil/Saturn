@@ -52,9 +52,6 @@ inductive SkipEquations(n m : Nat) where
   | lt : m < n → skip n m = m → SkipEquations n m
   | ge : n ≤ m → skip n m = m + 1 → SkipEquations n m   
 
-inductive SkipImageCase(n m : Nat) where
-  | diag : m = n → SkipImageCase n m
-  | image : (k : Nat) → skip n k = m →  SkipImageCase n m
 
 structure SkipProvedInv(n m : Nat) where
   k : Nat
@@ -109,40 +106,6 @@ def skipInverse (n m : Nat) : (m ≠ n) → Nat :=
 theorem skipInverseEqn(n m : Nat)(eqn : m ≠ n): skip n (skipInverse n m eqn) = m  := 
         (provedSkipInverse n m eqn).eqn
 
-def skipImageCase : (n : Nat) →  (m : Nat) →  SkipImageCase n m := 
-  fun n m =>
-  if mLtn : m < n then
-    SkipImageCase.image m (skipBelow n m mLtn)
-  else
-    if mEqn : m = n then
-      SkipImageCase.diag mEqn
-    else
-      let nLtm : n < m := 
-        match Nat.ltOrGe m n with
-        | Or.inl p => absurd p mLtn
-        | Or.inr p => 
-          match Nat.eqOrLtOfLe p with
-          | Or.inl q => absurd (Eq.symm q) mEqn
-          |Or.inr q => q
-      let notZero : Not (0 = m) := 
-        fun hyp =>
-          let nLt0 : n < 0 := by
-            rw hyp
-            exact nLtm
-          let nLtn : n < n :=
-            Nat.ltOfLtOfLe nLt0 (Nat.zeroLe _)
-          Nat.ltIrrefl n nLtn
-      let ⟨p, seq⟩ := posSucc m notZero
-      let nLep : n ≤ p := 
-        Nat.leOfSuccLeSucc (by
-          rw ← seq
-          exact nLtm
-          done)
-      let imeq : skip n p = m := by
-        rw seq
-        exact (skipAbove n p nLep)
-        done
-      SkipImageCase.image p imeq
 
 theorem skipBound: (k j: Nat) →  skip k j < j + 2 :=
     fun k j =>
@@ -502,21 +465,22 @@ theorem skipPreImageBound {i j k n : Nat}: (k < n + 1) → (j < n + 1) →
 def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
                 (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) : 
                   ProvedInsert value seq k kw j jw := 
-          match skipImageCase k j with
-          | SkipImageCase.diag eqn => 
+          if c: j = k then
             let result := value
             let checkImage : 
               (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw := 
                 fun i iw hyp =>
                   let lem : skip k i = k := by
                     rw hyp
-                    rw eqn
+                    rw c
                     done
                   let contra := skipNotDiag k i lem
                   nomatch contra
             let  checkFocus : j = k → result = value := fun  _  => rfl
             ⟨result, checkImage, checkFocus⟩
-          | SkipImageCase.image i eqn => 
+          else  
+            let i := skipInverse k j c 
+            let eqn := skipInverseEqn k j c  
             let bound : i < n  := skipPreImageBound kw jw eqn
             let result := seq i bound
             let checkImage : 
@@ -566,21 +530,22 @@ def insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n
       fun j =>
         funext (
           fun jw => 
-            match skipImageCase k j with
-            | SkipImageCase.diag eqn => 
+            if c : j = k then
               by
               have lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw =
                 insert (seq k kw) n k kw (delete k kw seq) k kw 
                 by
                   apply witnessIndependent
-                  apply eqn
+                  apply c
                   done 
               rw lem1
               rw (insertAtFocus (seq k kw) n k kw (delete k kw seq))
               apply witnessIndependent
-              rw ← eqn
+              rw ← c
               done  
-            | SkipImageCase.image i eqn => 
+            else  
+              let i := skipInverse k j c 
+              let eqn := skipInverseEqn k j c
               let iw : i < n := skipPreImageBound kw jw eqn
               let lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw
                 = insert (seq k kw) n k kw (delete k kw seq) (skip k i) (skipPlusOne iw) := 

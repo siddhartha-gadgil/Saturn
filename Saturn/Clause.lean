@@ -45,14 +45,15 @@ theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
                       contradiction (n + 1) j jw := 
                       fun j jw =>
                       let lem0 : contradiction (n + 1) j jw = none := by rfl
-                      match skipImageCase focus j with
-                      | SkipImageCase.diag eqn => 
-                        match focus, eqn, focusLt with
+                      if c : j= focus then 
+                        match focus, c, focusLt with
                         | .(j), rfl, .(jw) =>
                           by
                             apply insertAtFocus 
                             done                                
-                      | SkipImageCase.image i eqn => 
+                      else  
+                        let i := skipInverse focus j c 
+                        let eqn : skip focus i = j := skipInverseEqn focus j c
                         let iw := skipPreImageBound focusLt jw eqn
                         match j, eqn, jw, lem0 with
                         | .(skip focus i), rfl, .(skipPlusOne iw), lem1 =>  
@@ -314,18 +315,19 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                     ElemSeqPred imageSeqN (contains (base j jw)) := 
                     fun j jw => 
                       let ⟨i, iw , ict⟩ := forward j jw
-                      match skipImageCase k i with
-                      | SkipImageCase.diag eqn => 
+                      if c : i = k then 
                           let lem1 : imageSeq i iw = imageSeq k lt := by
                                 apply witnessIndependent
-                                apply eqn
+                                apply c
                                 done
                           let lem2 : imageSeq i iw ⊇ imageSeqN zi zb := by
                                 rw lem1 
                                 exact zc
                                 done    
                           ⟨zi, zb, containsTrans _ _ _ ict lem2⟩
-                      | SkipImageCase.image ii eqn => 
+                      else 
+                        let ii := skipInverse k i c 
+                        let eqn := skipInverseEqn k i c
                         let iiw := skipPreImageBound lt iw eqn
                         let lem1 : imageSeqN ii iiw = imageSeq (skip k ii) (skipPlusOne iiw)  := by rfl
                         let lem2 : imageSeq (skip k ii) (skipPlusOne iiw) = imageSeq i iw := by

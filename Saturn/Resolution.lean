@@ -151,17 +151,16 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
               fun ⟨kr, ⟨rlt, wr⟩⟩ =>
                  if c : valuation (triple.pivot) (triple.pivotLt)  then 
                     -- the left branch survives
-                    match skipImageCase triple.pivot kl  with
-                    | SkipImageCase.diag eql => 
+                    if cc : kl = triple.pivot then
                       let lem1 : left kl llt = 
                             left triple.pivot triple.pivotLt := by
                             apply witnessIndependent
-                            apply eql
+                            apply cc
                             done 
                       let lem2 : valuation kl llt = 
                             valuation triple.pivot triple.pivotLt := by
                             apply witnessIndependent
-                            apply eql
+                            apply cc
                             done 
                       let lem3 : left kl llt = some true := by
                         rw wl
@@ -179,7 +178,9 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                         assumption
                         done
                       Bool.noConfusion lem6
-                    | SkipImageCase.image i eql => 
+                  else  
+                      let i := skipInverse triple.pivot kl cc 
+                      let eql := skipInverseEqn triple.pivot kl cc 
                       let iw : i < n := skipPreImageBound triple.pivotLt llt eql 
                       let jj := triple.joinRest i iw
                       let leftLem : 
@@ -206,17 +207,16 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                       ⟨kl, ⟨llt, varResolution join (valuation kl llt) (Or.inl (wl))⟩⟩
                   else
                     let cc := eqFalseOfNeTrue c  
-                    match skipImageCase triple.pivot kr  with
-                    | SkipImageCase.diag eql => 
+                    if ccc : kr = triple.pivot then 
                       let lem1 : right kr rlt = 
                             right triple.pivot triple.pivotLt := by
                             apply witnessIndependent
-                            apply eql
+                            apply ccc
                             done 
                       let lem2 : valuation kr rlt = 
                             valuation triple.pivot triple.pivotLt := by
                             apply witnessIndependent
-                            apply eql
+                            apply ccc
                             done 
                       let lem3 : right kr rlt = some false := by
                         rw wr
@@ -234,7 +234,9 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                         assumption
                         done
                       Bool.noConfusion lem6
-                    | SkipImageCase.image i eql => 
+                    else  
+                      let i := skipInverse triple.pivot kr ccc 
+                      let eql := skipInverseEqn triple.pivot kr ccc
                       let iw : i < n := skipPreImageBound triple.pivotLt rlt eql 
                       let jj := triple.joinRest i iw
                       let leftLem : 
@@ -269,17 +271,16 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
               fun ⟨kr, rlt, wr⟩ =>
                  if c : valuation (triple.pivot) (triple.pivotLt)  then 
                     -- the left branch survives
-                    match skipImageCase triple.pivot kl  with
-                    | SkipImageCase.diag eql => 
+                    if cc : kl = triple.pivot then 
                       let lem1 : left kl llt = 
                             left triple.pivot triple.pivotLt := by
                             apply witnessIndependent
-                            apply eql
+                            apply cc
                             done 
                       let lem2 : valuation kl llt = 
                             valuation triple.pivot triple.pivotLt := by
                             apply witnessIndependent
-                            apply eql
+                            apply cc
                             done 
                       let lem3 : left kl llt = some true := by
                         rw wl
@@ -297,7 +298,9 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                         assumption
                         done
                       Bool.noConfusion lem6
-                    | SkipImageCase.image i eql => 
+                    else  
+                      let i := skipInverse triple.pivot kl cc 
+                      let eql := skipInverseEqn triple.pivot kl cc
                       let iw : i < n := skipPreImageBound triple.pivotLt llt eql 
                       let jj := triple.joinRest i iw
                       let leftLem : 
@@ -324,17 +327,16 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                       ⟨kl, llt, varResolution join (valuation kl llt) (Or.inl (wl))⟩
                   else
                     let cc := eqFalseOfNeTrue c  
-                    match skipImageCase triple.pivot kr  with
-                    | SkipImageCase.diag eql => 
+                    if ccc : kr = triple.pivot then  
                       let lem1 : right kr rlt = 
                             right triple.pivot triple.pivotLt := by
                             apply witnessIndependent
-                            apply eql
+                            apply ccc
                             done 
                       let lem2 : valuation kr rlt = 
                             valuation triple.pivot triple.pivotLt := by
                             apply witnessIndependent
-                            apply eql
+                            apply ccc
                             done 
                       let lem3 : right kr rlt = some false := by
                         rw wr
@@ -352,7 +354,9 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                         assumption
                         done
                       Bool.noConfusion lem6
-                    | SkipImageCase.image i eql => 
+                    else  
+                      let i := skipInverse triple.pivot kr ccc 
+                      let eql := skipInverseEqn triple.pivot kr ccc
                       let iw : i < n := skipPreImageBound triple.pivotLt rlt eql 
                       let jj := triple.joinRest i iw
                       let leftLem : 
@@ -432,8 +436,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                   let jj := skip pivotN j
                   let jjw : jj < n + 2 := skipPlusOne jw
                   let notPivot : Not (jj = pivotN) := skipNotDiag pivotN j
-                  match skipImageCase k jj with
-                  | SkipImageCase.diag w =>  
+                  if w : jj = k then  
                     let lem0 := focJoin
                     let eqL : leftN k lt = leftFoc := 
                       insertAtFocus leftFoc (n + 1) k lt left 
@@ -463,17 +466,20 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                       exact lem0
                       done
                     goal
-                  | SkipImageCase.image i w => 
+                  else 
+                    let i := skipInverse k jj w
+                    let w := skipInverseEqn k jj w
                     let iw : i < n + 1 := skipPreImageBound lt jjw w
-                    match skipImageCase rt.pivot i with
-                    | SkipImageCase.diag ww => 
+                    if ww: i = rt.pivot then
                       let lem1 : skip k i = skip k rt.pivot := congrArg (skip k) ww
                       let lem2 : skip k  rt.pivot = jj := by 
                             rw (Eq.symm lem1)
                             exact w
                             done
                       absurd (Eq.symm lem2) notPivot
-                    | SkipImageCase.image ii ww => 
+                    else 
+                      let ii := skipInverse rt.pivot i ww 
+                      let  ww  := skipInverseEqn rt.pivot i ww
                       let iiw : ii < n := skipPreImageBound rt.pivotLt iw ww
                       let eqL : 
                         leftN (skip k i) (skipPlusOne iw) = 
@@ -846,22 +852,23 @@ theorem proofsPreverveNonPos{dom n : Nat}{clauses : FinSeq dom (Clause (n + 1))}
                         proofsPreverveNonPos bf k kw base left leftTree 
                       let rightLem :=
                         proofsPreverveNonPos bf k kw base right rightTree 
-                      match skipImageCase triple.pivot k with
-                      | SkipImageCase.diag eqn => 
-                          match bf, k, eqn, kw, leftLem, rightLem with
+                      if c : k = triple.pivot then 
+                          match bf, k, c, kw, leftLem, rightLem with
                           | false, .(triple.pivot), rfl, .(triple.pivotLt), lL, rL => 
                                 lL (triple.leftPivot)
                           | true, .(triple.pivot), rfl, .(triple.pivotLt), lL, rL => 
                                 rL (triple.rightPivot)
-                      | SkipImageCase.image j eqn => 
-                            let jw := skipPreImageBound triple.pivotLt kw eqn
-                            let joinIm := triple.joinRest j jw
-                            match (skip triple.pivot j), eqn, (skipPlusOne jw), joinIm with 
-                            | .(k), rfl, .(kw), join => 
-                              let lem := 
-                                topJoinNonPos bf (left k kw) (right k kw) (top k kw) join
-                                  leftLem rightLem
-                              lem hyp               
+                      else 
+                          let j := skipInverse triple.pivot k c 
+                          let eqn  := skipInverseEqn triple.pivot k c
+                          let jw := skipPreImageBound triple.pivotLt kw eqn
+                          let joinIm := triple.joinRest j jw
+                          match (skip triple.pivot j), eqn, (skipPlusOne jw), joinIm with 
+                          | .(k), rfl, .(kw), join => 
+                            let lem := 
+                              topJoinNonPos bf (left k kw) (right k kw) (top k kw) join
+                                leftLem rightLem
+                            lem hyp               
 
 
 
