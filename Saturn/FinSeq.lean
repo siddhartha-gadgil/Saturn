@@ -234,7 +234,7 @@ def FinSeq.empty {α: Type} : FinSeq 0 α :=
 def seq{α : Type}(l : List α) : FinSeq (l.length) α := 
   fun j jw => l.get j jw
 
-infixr:66 "+:" => FinSeq.cons
+infixr:66 "+|" => FinSeq.cons
 
 def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
   fun k w =>
@@ -244,7 +244,7 @@ def head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq 0 (zeroLtSucc _)
 
 theorem headTail{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): 
-      (head seq) +: (tail seq) = seq := 
+      (head seq) +| (tail seq) = seq := 
         funext (
           fun k => 
             match k with
@@ -280,7 +280,7 @@ def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →
           rw (Nat.add_comm m 1)
           rw (Nat.add_assoc k 1 m)
           done
-      concatSeqAux ss (init seq1) ((last seq1) +: seq2)
+      concatSeqAux ss (init seq1) ((last seq1) +| seq2)
 
 def concatSeq {α: Type}{n m: Nat}(seq1 : FinSeq n α)(seq2 : FinSeq m α): 
   FinSeq (n + m) α := 
@@ -340,14 +340,14 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
               rw (Nat.add_assoc p 1 m)
               done
           let resolve : concatSeqAux s seq1 seq2=
-              concatSeqAux ss (init seq1) ((last seq1) +: seq2) := rfl
-          let hyp := concatAuxValues ss (init seq1) ((last seq1) +: seq2)
+              concatSeqAux ss (init seq1) ((last seq1) +| seq2) := rfl
+          let hyp := concatAuxValues ss (init seq1) ((last seq1) +| seq2)
           by
             rw resolve
             intro k
             let hyp1 := (hyp k).left
             let lem1 : (∀ (kw : k < p + 1) (w : k < l), 
-                concatSeqAux ss (init seq1) (last seq1+:seq2) k w = seq1 k kw) := 
+                concatSeqAux ss (init seq1) (last seq1+|seq2) k w = seq1 k kw) := 
                 fun kw w => 
                   if kww : k < p then 
                     hyp1 kww w 
@@ -367,8 +367,8 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
                         rw (Nat.add_zero p)
                         assumption
                       let hyp2 := (hyp 0).right (Nat.zeroLe _) ww
-                      let lem2 : concatSeqAux ss (init seq1) (last seq1+:seq2) (p + 0) ww =
-                            concatSeqAux ss (init seq1) (last seq1+:seq2) p w := 
+                      let lem2 : concatSeqAux ss (init seq1) (last seq1+|seq2) (p + 0) ww =
+                            concatSeqAux ss (init seq1) (last seq1+|seq2) p w := 
                             match (p + 0), Nat.add_zero p, ww with
                             | .(p), rfl, ww => rfl
                       by
@@ -379,7 +379,7 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
             let ass := Nat.add_assoc p 1 k
             let comm := Nat.add_comm 1 k
             let lem2 : ∀ (kw : k < m) (w : p + 1 + k < l), 
-                concatSeqAux ss (init seq1) (last seq1+:seq2) (p + 1 + k) w = 
+                concatSeqAux ss (init seq1) (last seq1+|seq2) (p + 1 + k) w = 
                     seq2 k kw := fun kw w =>
                     match p + 1 + k, ass, w with
                     | .(p + (1 + k)), rfl, ww => 
@@ -403,9 +403,9 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
             exact (And.intro lem1 lem2)
             done
 
-infix:65 "++:" => concatSeq
+infix:65 "++|" => concatSeq
 
-theorem concatEmptySeq{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++: (FinSeq.empty) = seq := 
+theorem concatEmptySeq{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (FinSeq.empty) = seq := 
           by
             intro seq
             apply funext
@@ -861,6 +861,8 @@ instance {n: Nat}[DecidableEq α] : DecidableEq (FinSeq n  α) := fun c1 c2 => d
 inductive Vector (α : Type) : Nat → Type where 
   | Nil : Vector α zero
   | Cons{n: Nat}(head: α) (tail: Vector  α n) : Vector α  (n + 1) 
+
+infixr:66 "+:" => Vector.Cons
 
 open Vector
 

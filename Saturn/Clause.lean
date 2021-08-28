@@ -1,9 +1,10 @@
 import Saturn.FinSeq
 open Nat
+open Vector
 
-def Clause(n : Nat) : Type := FinSeq n (Option Bool)
+def Clause(n : Nat) : Type := Vector (Option Bool) n
 
-def Valuation(n: Nat) : Type := FinSeq n  Bool
+def Valuation(n: Nat) : Type := Vector Bool n
 
 def varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
 
@@ -11,45 +12,49 @@ def varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valu
 structure ClauseSat{n: Nat}(clause : Clause n)(valuation: Valuation n) where
   coord : Nat
   bound : coord < n  
-  witness: varSat (clause coord bound) (valuation coord bound)
+  witness: varSat (clause.at coord bound) (valuation.at coord bound)
 
 def clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) := 
-  ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (valuation k b)
+  ∃ (k : Nat), ∃ (b : k < n), varSat (clause.at k b) (valuation.at k b)
 
 instance {n: Nat}(clause : Clause n)(valuation: Valuation n): Prover (ClauseSat clause valuation) where 
-  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause k b) (valuation k b)
+  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause.at k b) (valuation.at k b)
   proof := fun cs => ⟨cs.coord, ⟨cs.bound, cs.witness⟩⟩
 
 def contradiction(n: Nat) : Clause n :=
-  fun _ _ => none
+  FinSeq.vec (fun _ _ => none)
+
+theorem contraAt(n: Nat) : Vector.at (contradiction n) = (fun _ _ => none) := by apply seqAt
+
 
 theorem contradictionFalse (n: Nat) : ∀ valuation : Valuation n, Not (clauseSat (contradiction n) valuation) :=
   fun valuation => fun ⟨k, ⟨b, p⟩⟩ => 
-    let lem1 : (contradiction n) k b = none := by rfl
-    let lem2 := congrArg varSat lem1
-    let lem3 : varSat (contradiction n k b) (valuation k b) = 
-                varSat none (valuation k b) := congr lem2 rfl
-    let lem4 : (varSat none (valuation k b)) = (none = some (valuation k b)) := rfl
-    let lem5 : (none = some (valuation k b)) := by
-      rw (Eq.symm lem4)
-      rw lem4
-      assumption
+    let lem1 : Vector.at (contradiction n) k b = none := by (rw (contraAt n))
+    let lem2 : varSat (Vector.at (contradiction n) k b) = varSat none := congrArg varSat lem1
+    let lem3 : varSat (Vector.at (contradiction n) k b) (valuation.at k b) = 
+                varSat none (valuation.at k b) := congr lem2 rfl
+    let lem4 : (varSat none (valuation.at k b)) = (none = some (valuation.at k b)) := rfl
+    let lem5 : (none = some (valuation.at k b)) := by
+      rw ← lem4
+      rw ← lem2
+      exact p
       done 
     Option.noConfusion lem5
 
 theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
-      insert none n focus focusLt (contradiction n) =
-                            contradiction (n + 1) :=
+      insert none n focus focusLt (Vector.at (contradiction n)) =
+                          Vector.at (contradiction (n + 1)) :=
       let lem0 : (j: Nat) → (jw : j < n + 1) →  
-            insert none n focus focusLt (contradiction n) j jw  =
-                      contradiction (n + 1) j jw := 
+            insert none n focus focusLt (Vector.at (contradiction n)) j jw  =
+                      Vector.at (contradiction (n + 1)) j jw := 
                       fun j jw =>
-                      let lem0 : contradiction (n + 1) j jw = none := by rfl
+                      let lem0 : Vector.at (contradiction (n + 1)) j jw = none := by rw contraAt
                       if c : j= focus then 
                         match focus, c, focusLt with
                         | .(j), rfl, .(jw) =>
                           by
-                            apply insertAtFocus 
+                            rw insertAtFocus 
+                            rw contraAt
                             done                                
                       else  
                         let i := skipInverse focus j c 
@@ -59,8 +64,10 @@ theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
                         | .(skip focus i), rfl, .(skipPlusOne iw), lem1 =>  
                           by
                             rw lem1
-                            apply insertAtImage
-                            exact iw
+                            rw (insertAtImage 
+                               none n focus focusLt (Vector.at (contradiction n))
+                               i iw)
+                            rw contraAt
                             done                               
                  by
                     apply funext
@@ -115,7 +122,7 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
 
 
 def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
-  ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2 k kw = some b → cl1 k kw = some b
+  ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2.at k kw = some b → cl1.at k kw = some b
 
 def contains.self{n: Nat} (cl : Clause n) : contains cl cl :=
   fun k kw b hyp => hyp
@@ -123,7 +130,7 @@ def contains.self{n: Nat} (cl : Clause n) : contains cl cl :=
 infix:65 " ⊇  " => contains
 
 def containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
-  ∀ k : Nat, ∀ kw : k < n, m ≤ k →  ∀ b : Bool, cl2 k kw = some b → cl1 k kw = some b
+  ∀ k : Nat, ∀ kw : k < n, m ≤ k →  ∀ b : Bool, cl2.at k kw = some b → cl1.at k kw = some b
 
 theorem containsImpliesContainsBeyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
   contains cl1 cl2 → containsBeyond cl1 cl2 m := by
@@ -148,8 +155,8 @@ def containsSat{n: Nat} (cl1 cl2 : Clause n) :
   cl1 ⊇  cl2 → (valuation : Valuation n) → ClauseSat cl2 valuation → ClauseSat cl1 valuation :=
     fun dom valuation  =>
       fun ⟨j, jw, vs⟩ =>
-        let lem0 :  cl2 j jw = some (valuation j jw) := vs 
-        let lem1 := dom j jw (valuation j jw) lem0
+        let lem0 :  cl2.at j jw = some (valuation.at j jw) := vs 
+        let lem1 := dom j jw (valuation.at j jw) lem0
         ⟨j, jw, lem1⟩
 
 def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
@@ -166,12 +173,12 @@ def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
                 fun hb =>
                   hyp2 j  (leOfSuccLeSucc kw) b hb
 
-def containsTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
-        cl1 ⊇  cl2 → (tail cl1) ⊇ (tail cl2) :=
-        fun hyp =>
-          fun k w b =>
-            fun dHyp =>
-              hyp (k + 1) (succ_lt_succ w) b dHyp
+-- def containsTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
+--         cl1 ⊇  cl2 → (tail cl1) ⊇ (tail cl2) :=
+--         fun hyp =>
+--           fun k w b =>
+--             fun dHyp =>
+--               hyp (k + 1) (succ_lt_succ w) b dHyp
 
 def containsRefl{n: Nat} (cl : Clause n) :   
   cl ⊇ cl :=
@@ -218,7 +225,7 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
           | l + 1, isTrue pf => 
             let accum: Decidable (containsBeyond cl1 cl2 l) := 
               if lw : l < n then
-                match varDomDecide (cl1 l lw) (cl2 l lw) with
+                match varDomDecide (cl1.at l lw) (cl2.at l lw) with
                 | isTrue pfHead =>                       
                       isTrue (
                         by
@@ -229,11 +236,11 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                           cases Nat.eqOrLtOfLe ineq with
                           | inl eql =>
                             let lem0 := pfHead b
-                            let lem1 : cl1 l lw = cl1 k kw := by
+                            let lem1 : cl1.at l lw = cl1.at k kw := by
                               apply witnessIndependent
                               exact eql
                               done
-                            let lem2 : cl2 l lw = cl2 k kw := by
+                            let lem2 : cl2.at l lw = cl2.at k kw := by
                               apply witnessIndependent
                               exact eql
                             rw ← lem1

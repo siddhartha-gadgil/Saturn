@@ -16,7 +16,7 @@ def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1
     (clauses: FinSeq dom (Clause (n + 1))): 
         (rd : RestrictionData branch focus focusLt clauses) → 
            (head : Clause (n + 1)) → 
-        RestrictionData branch focus focusLt (head +: clauses) := 
+        RestrictionData branch focus focusLt (head +| clauses) := 
         fun rd  head => 
         -- match findElem? (rd.restrictionClauses.restClauses) (delete focus focusLt head) with
         -- | some ⟨p, pLt, peqn⟩ =>
@@ -62,11 +62,11 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
           rw (Nat.add_assoc k 1 domAccum)
           done
       let resolve : concatSeqAux s clausesHead clausesAccum = 
-        concatSeqAux ss (init clausesHead) ((last clausesHead) +: clausesAccum) := rfl
+        concatSeqAux ss (init clausesHead) ((last clausesHead) +| clausesAccum) := rfl
       let recRestAccum := 
         prependResData branch focus focusLt clausesAccum restAccum (last clausesHead)
       restrictionDataAux branch focus focusLt (init clausesHead) 
-          ((last clausesHead) +: clausesAccum) ss recRestAccum clauses 
+          ((last clausesHead) +| clausesAccum) ss recRestAccum clauses 
           (by 
             rw ← resolve
             rw clsEq

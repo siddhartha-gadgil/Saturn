@@ -36,6 +36,6 @@ def rowClauses (n: Nat) : List (Clause (n * n)) :=
   (List.range n).map (fun r => rowClause r n) 
 
 def queensClauses(n: Nat) :=
-  (seq (rowClauses n)) ++: (seq (forbidPairClauses n))
+  (seq (rowClauses n)) ++| (seq (forbidPairClauses n))
 
 #check queensClauses 8
