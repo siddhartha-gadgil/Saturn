@@ -867,13 +867,11 @@ infixr:66 "+:" => Vector.Cons
 open Vector
 
 def Vector.at {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
-  match n, v with
-  | .(0), Nil => fun k lt => nomatch lt
-  | m + 1, Cons head tail => 
-    fun k =>
-      match k with
-      | 0 => fun _ =>  head
-      | j + 1 => fun w => tail.at j (Nat.succ_lt_succ w) 
+  fun j jw =>
+  match n, v, j, jw with
+  | .(zero), Nil, k, lt => nomatch lt
+  | m + 1, Cons head tail, 0, lt => head
+  | m + 1, Cons head tail, j + 1, w =>  tail.at j (Nat.succ_lt_succ w)
 
 def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := 
   match n with
@@ -928,7 +926,13 @@ theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq :=
     apply funext
     intro k
     cases k with
-    | zero => 
+    | zero =>
+      apply funext
+      intro kw 
+      have resolve : seq.vec = Cons (head seq) (FinSeq.vec (tail seq)) by rfl 
+      rw resolve
+      have res2 : Vector.at (head seq+:FinSeq.vec (tail seq)) zero kw = head seq by rfl
+      rw res2
       rfl
       done
     | succ k' => 
