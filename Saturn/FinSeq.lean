@@ -941,3 +941,17 @@ theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq :=
       rw base
       rfl
       done
+
+theorem consCommutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
+          Vector.at (head +: tail) = head +| (Vector.at tail) := by
+            apply funext
+            intro k
+            induction k with
+            | zero =>
+              apply funext
+              intro kw
+              rfl
+            | succ k' =>
+              apply funext
+              intro kw
+              rfl

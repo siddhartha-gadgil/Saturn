@@ -2,7 +2,7 @@ import Saturn.Examples
 import Saturn.DPLL
 import Saturn.NQueens
 
-def printSolution {n dom : Nat}: (clauses : FinSeq dom (Clause n)) →  IO Unit :=
+def printSolution {n dom : Nat}: (clauses : Vector (Clause n) dom) →  IO Unit :=
   match n with
   | 0 => fun _ => pure ()
   | l + 1 => 

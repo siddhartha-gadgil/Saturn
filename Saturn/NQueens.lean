@@ -25,17 +25,18 @@ def forbiddenPairs (n: Nat) : List (Nat × Nat) :=
 def forbidPairClauses (n: Nat) : List (Clause (n * n)) :=
   (forbiddenPairs n).map (
     fun (x, y) =>
-      fun i w => 
-        if i == x || i == y then some false else none
+      FinSeq.vec (fun i w => 
+        if i == x || i == y then some false else none)
       )
 
 def rowClause(r n: Nat) : Clause (n * n) := 
-  fun index _ => if row index n == r then some true else none
+  FinSeq.vec (fun index _ => if row index n == r then some true else none)
 
 def rowClauses (n: Nat) : List (Clause (n * n)) :=
   (List.range n).map (fun r => rowClause r n) 
 
 def queensClauses(n: Nat) :=
-  (seq (rowClauses n)) ++| (seq (forbidPairClauses n))
+  FinSeq.vec 
+  ((seq (rowClauses n)) ++| (seq (forbidPairClauses n)))
 
 #check queensClauses 8

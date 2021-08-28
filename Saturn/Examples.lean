@@ -6,16 +6,16 @@ import Saturn.DPLL
 open Nat
 
 def cl1 : Clause 2 :=   -- P ∨ Q
-  (some true) +| (some true) +| FinSeq.empty
+  (some true) +: (some true) +: Vector.Nil
 
 def cl2 : Clause 2 := -- ¬P
-  (some false) +| (none) +| FinSeq.empty
+  (some false) +: (none) +: Vector.Nil
 
 def cl3 : Clause 2 := -- ¬Q
-  (none) +| (some false) +| FinSeq.empty
+  (none) +: (some false) +: Vector.Nil
 
-def eg1Statement : FinSeq 3 (Clause 2) := cl2 +| cl1 +| cl3 +| FinSeq.empty
-def eg2Statement := tail eg1Statement
+def eg1Statement : Vector (Clause 2) 3 := cl2 +: cl1 +: cl3 +: Vector.Nil
+def eg2Statement := FinSeq.vec (tail eg1Statement.at)
 
 set_option maxHeartbeats 500000
 
