@@ -6,14 +6,14 @@ open Nat
  
 
 def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: FinSeq dom (Clause (n + 1))):
+    (clauses: Vector (Clause (n + 1)) dom):
       (rc: RestrictionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head focus focusLt = some branch) → 
-            RestrictionClauses branch focus focusLt (head +| clauses) := 
+        (head : Clause (n + 1)) → (pos : head.at focus focusLt = some branch) → 
+            RestrictionClauses branch focus focusLt (head +: clauses) := 
           fun rc head pos => 
           let domN := dom + 1
           let codomN := rc.codom
-          let clausesN := head +| clauses
+          let clausesN := head +: clauses
           let forwardN: (k : Nat) →  k < domN → Option Nat  := 
             fun k  => 
             match k with 
@@ -46,19 +46,19 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
 namespace PosResClause
 
 def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: FinSeq dom (Clause (n + 1))):
+    (clauses: Vector (Clause (n + 1)) dom):
       (rc: RestrictionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head focus focusLt = some branch) →
+        (head : Clause (n + 1)) → (pos : head.at focus focusLt = some branch) →
           DroppedProof rc → 
           DroppedProof (addPositiveClause  branch focus focusLt clauses rc head pos) := 
         fun rc head pos drc =>
           let rcN := addPositiveClause  branch focus focusLt clauses rc head pos  
           let domN := dom + 1
           let codomN := rc.codom
-          let clausesN := head +| clauses
+          let clausesN := head +: clauses
           let droppedN : 
               (k : Nat) → (w: k < domN) → rcN.forward k w = none → 
-                  clausesN k w focus focusLt = some branch :=
+                  Vector.at (clausesN.at k w) focus focusLt = some branch :=
                 fun k =>
                   match k with
                   | 0 => fun _ _ => pos
@@ -74,19 +74,19 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           ⟨droppedN⟩
 
 def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: FinSeq dom (Clause (n + 1))):
+    (clauses: Vector (Clause (n + 1)) dom):
       (rc: RestrictionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head focus focusLt = some branch) →
+        (head : Clause (n + 1)) → (pos : head.at focus focusLt = some branch) →
           ForwardRelation rc → 
           ForwardRelation (addPositiveClause  branch focus focusLt clauses rc head pos) := 
         fun rc head pos frc =>
           let rcN := addPositiveClause  branch focus focusLt clauses rc head pos  
           let domN := dom + 1
           let codomN := rc.codom
-          let clausesN := head +| clauses
+          let clausesN := head +: clauses
           let forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
-              (jw : j < codomN) →  delete focus focusLt (clausesN k w) = 
-                rcN.restClauses j jw := 
+              (jw : j < codomN) →  delete focus focusLt (Vector.at (clausesN.at k w)) = 
+                Vector.at (rcN.restClauses.at j jw) := 
                 fun k =>
                 match k with
                 | 0 => fun w j => 
@@ -99,22 +99,23 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           ⟨forwardRelationN⟩
 
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: FinSeq dom (Clause (n + 1))):
+    (clauses: Vector (Clause (n + 1)) dom):
       (rc: RestrictionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head focus focusLt = some branch) →
+        (head : Clause (n + 1)) → (pos : head.at focus focusLt = some branch) →
           ReverseRelation rc → 
           ReverseRelation (addPositiveClause  branch focus focusLt clauses rc head pos) := 
         fun rc head pos rrc =>
           let rcN := addPositiveClause  branch focus focusLt clauses rc head pos  
           let domN := dom + 1
           let codomN := rc.codom
-          let clausesN := head +| clauses
+          let clausesN := head +: clauses
           let relationN : (k : Nat) → (w: k < codomN) → 
-                 rcN.restClauses k w = 
-                  delete focus focusLt (clausesN (rcN.reverse k w) (rcN.reverseWit k w)) := 
+                 Vector.at (rcN.restClauses.at k w) = 
+                  delete focus focusLt 
+                    (Vector.at (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w))) := 
                   fun k w =>
-                  let lem1 : (clausesN (rcN.reverse k w) (rcN.reverseWit k w)) =
-                    clauses (rc.reverse k w) (rc.reverseWit k w) :=  by rfl
+                  let lem1 : (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w)) =
+                    clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  by rfl
                     by
                       rw lem1
                       exact rrc.relation k w
@@ -122,21 +123,23 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           ⟨relationN⟩
 
 def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: FinSeq dom (Clause (n + 1))):
+    (clauses: Vector (Clause (n + 1)) dom):
       (rc: RestrictionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head focus focusLt = some branch) →
+        (head : Clause (n + 1)) → (pos : head.at focus focusLt = some branch) →
           NonPosReverse rc → 
           NonPosReverse (addPositiveClause  branch focus focusLt clauses rc head pos) := 
         fun rc head pos prc =>
           let rcN := addPositiveClause  branch focus focusLt clauses rc head pos  
           let domN := dom + 1
           let codomN := rc.codom
-          let clausesN := head +| clauses
+          let clausesN := head +: clauses
           let pureN : (k : Nat) → (w: k < codomN)  → 
-                Not (clausesN (rcN.reverse k w) (rcN.reverseWit k w) focus focusLt = some branch) :=
+                Not (
+                  Vector.at (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w))
+                     focus focusLt = some branch) :=
                   fun k w =>
-                  let lem1 : clausesN (rcN.reverse k w) (rcN.reverseWit k w) =
-                    clauses (rc.reverse k w) (rc.reverseWit k w) :=  by rfl
+                  let lem1 : clausesN.at (rcN.reverse k w) (rcN.reverseWit k w) =
+                    clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  by rfl
                     by
                       rw lem1
                       exact prc.nonPosRev k w
@@ -145,10 +148,10 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
 
 
 def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: FinSeq dom (Clause (n + 1))): 
-        (head : Clause (n + 1)) → (pos : head focus focusLt = some branch) →
+    (clauses: Vector (Clause (n + 1)) dom): 
+        (head : Clause (n + 1)) → (pos : head.at focus focusLt = some branch) →
         (rd : RestrictionData branch focus focusLt clauses) → 
-        RestrictionData branch focus focusLt (head +| clauses) := 
+        RestrictionData branch focus focusLt (head +: clauses) := 
           fun head pos rd =>
           let rc := addPositiveClause branch focus focusLt clauses rd.restrictionClauses head pos
           ⟨rc, 
