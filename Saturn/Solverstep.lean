@@ -30,13 +30,13 @@ def optCase{α: Type} : (opt: Option α) →  OptCase opt :=
       OptCase.someCase j rfl
 
 
-theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some 0) :=
+theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some zero) :=
   match n with
   | none => fun hyp => 
     Option.noConfusion hyp
   | some j => 
-    fun hyp : some (j + 1) = some 0 =>
-    let lem : j + 1 = 0 := by
+    fun hyp : some (j + 1) = some zero =>
+    let lem : j + 1 = zero := by
       injection hyp
       assumption
     Nat.noConfusion lem
@@ -249,7 +249,7 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))
   Option (SomeUnitClause clauses)  :=
     fun clauses cb  => 
     match cb with 
-    | 0 => fun cbBound optCl => optCl
+    | zero => fun cbBound optCl => optCl
     | m + 1 =>
       fun cbBound optCl =>
       match optCl with
@@ -294,7 +294,7 @@ def pureBeyond{dom n : Nat}(clauses : Vector  (Clause n) dom)
 
 def pureBeyondZero{dom n : Nat}(clauses : Vector  (Clause n) dom)
                 (index: Nat)(bound : index < n)(parity : Bool) : 
-                  pureBeyond clauses index bound parity 0 → 
+                  pureBeyond clauses index bound parity zero → 
                   pureEvidence clauses index bound parity := by
                     intro hyp
                     intro k
@@ -323,7 +323,7 @@ def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
     Option (IsPureVar clauses index bound parity) :=
     fun dom clauses m =>
     match m with
-    | 0 => fun opt => 
+    | zero => fun opt => 
         opt.map (fun pb => ⟨pureBeyondZero clauses index bound parity pb.evidence⟩)
     | p + 1 => 
       fun opt => 
@@ -367,15 +367,15 @@ def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Vector  (Clause (n +1)) do
       Option (HasPureVar clauses) :=
       fun dom clauses ub => 
         match ub with
-        | 0 =>
+        | zero =>
           fun lt =>
-           ((varIsPure 0 lt true dom clauses).map (
+           ((varIsPure zero lt true dom clauses).map (
             fun ⟨evidence⟩ =>
-              HasPureVar.mk 0 lt true evidence
+              HasPureVar.mk zero lt true evidence
               )).orElse (
-                (varIsPure 0 lt false dom clauses).map (
+                (varIsPure zero lt false dom clauses).map (
             fun ⟨evidence⟩ =>
-              HasPureVar.mk 0 lt false evidence
+              HasPureVar.mk zero lt false evidence
               )
               )
         | l + 1 =>

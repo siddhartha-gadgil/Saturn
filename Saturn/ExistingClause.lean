@@ -18,14 +18,14 @@ def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : fo
             let forwardN: (k : Nat) →  k < domN → Option Nat  := 
               fun k  => 
               match k with 
-              | 0 => fun _ => some p
+              | zero => fun _ => some p
               | l + 1 => 
                 fun w : l + 1 < domN   =>  rc.forward l (leOfSuccLeSucc w)
             let forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
               fun k  => 
               match k with 
-              | 0 => fun w => 
-                let lem1 : forwardN 0 w = some p := by rfl
+              | zero => fun w => 
+                let lem1 : forwardN zero w = some p := by rfl
                 by
                   rw lem1
                   exact pw
@@ -63,8 +63,8 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   Vector.at (clausesN.at k w) focus focusLt = some branch :=
                 fun k =>
                   match k with
-                  | 0 => fun x y => 
-                    let lem : rcN.forward 0 x = some p := by rfl
+                  | zero => fun x y => 
+                    let lem : rcN.forward zero x = some p := by rfl
                     let lem2 := (Eq.trans (Eq.symm lem) y)
                     Option.noConfusion lem2
                   | l + 1 => 
@@ -95,16 +95,16 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                 Vector.at (rcN.restClauses.at j jw) := 
                 fun k =>
                 match k with
-                | 0 => fun w j => 
+                | zero => fun w j => 
                   fun sw jw =>
-                    let lem1 : rcN.forward 0 w = some p := by rfl 
+                    let lem1 : rcN.forward zero w = some p := by rfl 
                     let lem2 : some j = some p := Eq.trans (Eq.symm sw) lem1
                     let lem3 : j = p := by 
                       injection lem2
                       assumption
                       done
                     let lem4 : rc.restClauses.at p = rcN.restClauses.at p := by rfl
-                    let lem5 : clausesN.at 0 w = head := by rfl
+                    let lem5 : clausesN.at zero w = head := by rfl
                     by
                       rw (congrArg (
                           fun s => delete focus focusLt (Vector.at s)) lem5)

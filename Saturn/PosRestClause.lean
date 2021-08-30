@@ -17,14 +17,14 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
           let forwardN: (k : Nat) →  k < domN → Option Nat  := 
             fun k  => 
             match k with 
-            | 0 => fun _ => none
+            | zero => fun _ => none
             | l + 1 => 
               fun w : l + 1 < domN   =>  rc.forward l (leOfSuccLeSucc w)
           let forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
             fun k  => 
             match k with 
-            | 0 => fun w => 
-              let lem1 : forwardN 0 w = none := by rfl
+            | zero => fun w => 
+              let lem1 : forwardN zero w = none := by rfl
               by
                 rw lem1
                 exact True.intro
@@ -61,7 +61,7 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   Vector.at (clausesN.at k w) focus focusLt = some branch :=
                 fun k =>
                   match k with
-                  | 0 => fun _ _ => pos
+                  | zero => fun _ _ => pos
                   | l + 1 => 
                     fun w nw =>
                       let lem1 : rcN.forward (l + 1) w = 
@@ -89,7 +89,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                 Vector.at (rcN.restClauses.at j jw) := 
                 fun k =>
                 match k with
-                | 0 => fun w j => 
+                | zero => fun w j => 
                   fun sw =>
                     Option.noConfusion sw
                 | l + 1 => 
