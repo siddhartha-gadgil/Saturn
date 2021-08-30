@@ -960,6 +960,14 @@ theorem consCommutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
               intro kw
               rfl
 
+theorem tailCommutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
+      tail (Vector.at (x +: ys)) = ys.at := 
+        by
+        apply funext
+        intro kw
+        rfl 
+        done
+
 def Vector.map {α β : Type}{n: Nat}(vec: Vector α n) (f : α → β) : Vector β n :=
     FinSeq.vec (fun j jw => f (vec.at j jw))
 
