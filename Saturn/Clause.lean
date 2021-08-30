@@ -283,8 +283,29 @@ def subClause?{l n: Nat}(cl : Clause n)(seq : FinSeq l (Clause n)) :
 structure Containment{dom n : Nat}(base: Vector (Clause n) dom) where
     codom: Nat
     imageSeq : Vector (Clause n) codom
-    forward : (j : Nat) → (jw : j < dom) → ElemSeqPred imageSeq.at (contains (base.at j jw))
-    reverse : (j : Nat) → (jw : j < codom) → ElemInSeq base.at (imageSeq.at j jw) 
+    forwardVec : Vector Nat dom
+    forwardBound : (j : Nat) →  (jw : j < dom) → forwardVec.at j jw < codom
+    forwardEq : (j : Nat) →  (jw : j < dom) → 
+              contains (base.at j jw) (imageSeq.at (forwardVec.at j jw) (forwardBound j jw))
+    reverseVec : Vector Nat codom
+    reverseBound : (j : Nat) →  (jw : j < codom) → reverseVec.at j jw < dom
+    reverseEq : (j : Nat) →  (jw : j < codom) →
+             base.at (reverseVec.at j jw) (reverseBound j jw) = imageSeq.at j jw
+    -- forward : (j : Nat) → (jw : j < dom) → ElemSeqPred imageSeq.at (contains (base.at j jw))
+    -- reverse : (j : Nat) → (jw : j < codom) → ElemInSeq base.at (imageSeq.at j jw) 
+
+def Containment.forward {dom n : Nat}{base: Vector (Clause n) dom}
+      (cntn : Containment base) (j : Nat) (jw : j < dom) : 
+                  ElemSeqPred cntn.imageSeq.at (contains (base.at j jw)) :=
+                ⟨cntn.forwardVec.at j jw, cntn.forwardBound j jw, 
+                    cntn.forwardEq j jw⟩
+                
+
+def Containment.reverse {dom n : Nat}{base: Vector (Clause n) dom}
+      (cntn : Containment base) (j : Nat) (jw : j < cntn.codom) :
+                  ElemInSeq base.at (cntn.imageSeq.at j jw) :=
+                ⟨cntn.reverseVec.at j jw, cntn.reverseBound j jw,
+                    cntn.reverseEq j jw⟩
 
 def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment base :=
     let idVec : Vector Nat dom := FinSeq.vec (fun j jw => j)
@@ -322,8 +343,13 @@ def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment
           rw baseEqn
           exact contains.self (base.at j jw)
           done
-    ⟨dom, base, fun j jw => ⟨j, jw, contains.self (base.at j jw)⟩, 
-          fun j jw => ⟨j, jw, rfl⟩⟩
+    ⟨dom, base, idVec, idBound, baseContains, idVec, idBound, 
+      by 
+      intro j
+      intro jw
+      apply witnessIndependent
+      rw idAt
+      done⟩
 
 
 def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →  
@@ -342,15 +368,20 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
             done
          Nat.notLtZero k l0
         let ⟨l, leqn⟩ := posSucc contn.codom neZero
-        match contn.codom, leqn, contn.imageSeq, contn.forward, contn.reverse with
-        | .(l + 1), rfl, imageSeq, forward, reverse =>
+        match contn.codom, leqn, contn.imageSeq, contn.forward, contn.reverse,
+            contn.forwardVec, contn.forwardBound, contn.forwardEq,
+            contn.reverseVec, contn.reverseBound, contn.reverseEq with
+        | .(l + 1), rfl, imageSeq, forward, reverse, 
+            forwardVec, forwardBound, forwardEq, 
+            reverseVec, reverseBound, revereseEq =>
          if lt : k < (l + 1) then
           let focus := imageSeq.at k lt
           let rest := delete k lt imageSeq.at
           let step  : Containment base :=
             match subClause? focus rest with 
             | none =>  
-                ⟨l + 1, imageSeq, forward, reverse⟩
+                ⟨l + 1, imageSeq, forwardVec, forwardBound, forwardEq,
+                   reverseVec, reverseBound, revereseEq⟩
             | some ⟨zi, zb, zc⟩ => 
               let codomN := l
               let imageSeqN := rest
@@ -444,6 +475,13 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                         rw reverseNAt
                         exact (reverseN j jw).bound
                         done
+              let reverseNAtImage : (j : Nat) → (jw : j < l) →
+                      imageSeqN.vec.at j jw = imageSeqN j jw :=
+                      by
+                        intro j
+                        intro jw
+                        rw seqAt
+                        done
               let reverseNEq : (j : Nat) → (jw : j < codomN) →
                   (base.at (reverseNVec.at j jw) (reverseNBound j jw)) =
                     base.at (reverseN j jw).index (reverseN j jw).bound := by
@@ -452,25 +490,26 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                         apply witnessIndependent
                         rw reverseNAt
                         done
-             ⟨codomN, imageSeqN.vec, (
-               by 
-                have shift: Vector.at (FinSeq.vec imageSeqN) = imageSeqN by rw seqAt
-                rw shift
-                exact forwardN
-             ),
-              (
-               by 
-                have shift: Vector.at (FinSeq.vec imageSeqN) = imageSeqN by rw seqAt
-                rw shift
-                exact reverseN
-             )⟩
+              let reverseNPred : (j : Nat) → (jw : j < codomN) →
+                  base.at (reverseNVec.at j jw) (reverseNBound j jw) =
+                    imageSeqN.vec.at j jw := by
+                        intro j
+                        intro jw
+                        rw (reverseNAtImage j jw)
+                        rw (reverseNEq j jw)
+                        exact (reverseN j jw).equation
+                        done
+             ⟨codomN, imageSeqN.vec, forwardNVec, forwardNBound, forwardNPred,
+                reverseNVec, reverseNBound, reverseNPred⟩
           simplifyNonEmptyContainment k base step
-        else ⟨l + 1, imageSeq, forward, reverse⟩
+        else ⟨l + 1, imageSeq, forwardVec, forwardBound, forwardEq,
+                   reverseVec, reverseBound, revereseEq⟩
 
 def simplifiedContainment{dom n : Nat}: (clauses : Vector (Clause n) dom) → 
                               Containment clauses := 
                     match dom with
                     |0 => fun _ => 
-                      ⟨0, Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
+                      ⟨0, Vector.Nil, Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw,
+                        Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
                     | m + 1 => fun clauses => 
                         simplifyNonEmptyContainment (m + 1) clauses (Containment.identity clauses)
