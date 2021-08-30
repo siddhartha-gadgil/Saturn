@@ -44,7 +44,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
     (clsEq : concatSeqAux s clausesHead.at clausesAccum.at = clauses.at) →    
         RestrictionData branch focus focusLt clauses := 
          match domHead with
-    | 0 => fun clausesHead clausesAccum s restAccum clauses clsEq =>
+    | zero => fun clausesHead clausesAccum s restAccum clauses clsEq =>
       by
         have ss : dom = domAccum by 
           rw ← s
@@ -104,7 +104,7 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
         RestrictionData branch focus focusLt clauses := 
         fun clauses =>
           let rc : RestrictionClauses branch focus focusLt Vector.Nil := 
-              ⟨0, Vector.Nil, 
+              ⟨zero, Vector.Nil, 
                 fun k w => nomatch w, 
                 fun k w => nomatch w, fun k w => nomatch w, fun k w => nomatch w⟩
           let rd : RestrictionData branch focus focusLt Vector.Nil := ⟨rc,
@@ -134,23 +134,23 @@ def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
                     tree 
                 SatSolution.unsat rpf 
 
-def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.at 0 (zeroLtSucc 0) = cl2.at 0 (zeroLtSucc 0)) : 
+def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.at zero (zeroLtSucc zero) = cl2.at zero (zeroLtSucc zero)) : 
                           cl1 = cl2 :=
                             equalCoords 
                             (funext (fun j =>
                                     match j with
-                                    | 0 => funext (fun jw => eql)
+                                    | zero => funext (fun jw => eql)
                                     | i + 1 => funext (fun jw => nomatch jw)
                                     ))
 
-def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.at 0 (zeroLtSucc 0) = some b):
-                                cl = unitClause 0 b 0 (zeroLtSucc 0) := 
-                                let lem1 : Vector.at (unitClause 0 b 0 (zeroLtSucc 0)) 0 (zeroLtSucc 0) = 
+def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.at zero (zeroLtSucc zero) = some b):
+                                cl = unitClause zero b zero (zeroLtSucc zero) := 
+                                let lem1 : Vector.at (unitClause zero b zero (zeroLtSucc zero)) zero (zeroLtSucc zero) = 
                                   some b :=
                                           by
                                             apply unitDiag
-                                let lem2 : cl.at 0 (zeroLtSucc 0) = 
-                                    Vector.at (unitClause 0 b 0 (zeroLtSucc 0)) 0 (zeroLtSucc 0) 
+                                let lem2 : cl.at zero (zeroLtSucc zero) = 
+                                    Vector.at (unitClause zero b zero (zeroLtSucc zero)) zero (zeroLtSucc zero) 
                                       := 
                                           by
                                             rw eql
@@ -158,76 +158,76 @@ def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.at 0 (zeroLtSucc 0) = some b)
                                             done  
                                 lengthOneEqual lem2
 
-def lengthOneContra{cl: Clause 1}(eql : cl.at 0 (zeroLtSucc 0) = none):
+def lengthOneContra{cl: Clause 1}(eql : cl.at zero (zeroLtSucc zero) = none):
                               cl = contradiction 1 := lengthOneEqual eql
 
 def contraSol{n dom: Nat}{clauses : Vector (Clause (n + 1)) dom}{j : Nat}{jw : j < dom}
                 (eqn : clauses.at j jw = contradiction (n + 1)): SatSolution clauses :=
                   SatSolution.unsat (ResolutionTree.assumption j jw _ eqn) 
                 
-def emptySol{n: Nat}(clauses : Vector (Clause (n + 1)) 0) : SatSolution clauses :=
+def emptySol{n: Nat}(clauses : Vector (Clause (n + 1)) zero) : SatSolution clauses :=
         SatSolution.sat (FinSeq.vec (fun k kw => true))  (fun k kw => nomatch kw)
 
 def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolution clauses :=
     match dom with
-    | 0 => fun cls => emptySol cls
+    | zero => fun cls => emptySol cls
     | l + 1 =>
       fun cls =>
       match searchElem cls.at (contradiction 1) with
       | ExistsElem.exsts index bound eqn => contraSol eqn
       | ExistsElem.notExst noContra =>
-        let head := cls.at (0) (zeroLtSucc l) 
-        if c : head.at 0 (zeroLtSucc 0) = none then   
+        let head := cls.at (zero) (zeroLtSucc l) 
+        if c : head.at zero (zeroLtSucc zero) = none then   
           let eqn := lengthOneContra c     
           contraSol eqn
         else 
-          if ct : head.at 0 (zeroLtSucc 0) = some true then
-              match searchElem cls.at (unitClause 0 false 0 (zeroLtSucc 0)) with
+          if ct : head.at zero (zeroLtSucc zero) = some true then
+              match searchElem cls.at (unitClause zero false zero (zeroLtSucc zero)) with
               | ExistsElem.exsts index bound eqn => 
                   let treePf2 := unitProof eqn 
                   let treePf1 : 
-                    ResolutionTree cls (unitClause 0 true 0 (zeroLtSucc 0)) :=
-                    ResolutionTree.assumption 0 (zeroLtSucc l) _ (lengthOneUnit ct)
+                    ResolutionTree cls (unitClause zero true zero (zeroLtSucc zero)) :=
+                    ResolutionTree.assumption zero (zeroLtSucc l) _ (lengthOneUnit ct)
                   let rpf := mergeAlignUnitTrees treePf1 treePf2
                   treeToUnsat rpf
               | ExistsElem.notExst noNeg => 
                  SatSolution.sat (FinSeq.vec (fun _ _ => true)) 
                     fun k kw =>
-                      let lem1 : Not (Vector.at (cls.at k kw) 0 (zeroLtSucc 0) = some false) :=
+                      let lem1 : Not (Vector.at (cls.at k kw) zero (zeroLtSucc zero) = some false) :=
                         fun hyp => noNeg k kw (lengthOneUnit hyp)
-                      let lem2 : Not (Vector.at (cls.at k kw) 0 (zeroLtSucc 0) = none) :=
+                      let lem2 : Not (Vector.at (cls.at k kw) zero (zeroLtSucc zero) = none) :=
                         fun hyp => noContra k kw (lengthOneContra hyp)
-                      let lem : Vector.at (cls.at k kw) 0 (zeroLtSucc 0) = some true :=
-                        match Vector.at (cls.at k kw) 0 (zeroLtSucc 0), lem1, lem2 with
+                      let lem : Vector.at (cls.at k kw) zero (zeroLtSucc zero) = some true :=
+                        match Vector.at (cls.at k kw) zero (zeroLtSucc zero), lem1, lem2 with
                         | some true, l1, l2 => rfl
                         | some false, l1, l2 => absurd (l1 rfl) id
                         | none, l1, l2 => absurd (l2 rfl) id 
-                      ⟨0, zeroLtSucc _, lem⟩                      
+                      ⟨zero, zeroLtSucc _, lem⟩                      
           else 
-            if cf : head.at 0 (zeroLtSucc 0) = some false then
-              match searchElem cls.at (unitClause 0 true 0 (zeroLtSucc 0)) with
+            if cf : head.at zero (zeroLtSucc zero) = some false then
+              match searchElem cls.at (unitClause zero true zero (zeroLtSucc zero)) with
               | ExistsElem.exsts index bound eqn => 
                   let treePf2 := unitProof eqn 
                   let treePf1 : 
-                    ResolutionTree cls (unitClause 0 false 0 (zeroLtSucc 0)) :=
-                    ResolutionTree.assumption 0 (zeroLtSucc l) _ (lengthOneUnit cf)
+                    ResolutionTree cls (unitClause zero false zero (zeroLtSucc zero)) :=
+                    ResolutionTree.assumption zero (zeroLtSucc l) _ (lengthOneUnit cf)
                   let rpf := mergeAlignUnitTrees treePf1 treePf2
                   treeToUnsat rpf
               | ExistsElem.notExst noNeg => 
                  SatSolution.sat (FinSeq.vec (fun _ _ => false)) 
                     fun k kw =>
-                      let lem1 : Not (Vector.at (cls.at k kw) 0 (zeroLtSucc 0) = some true) :=
+                      let lem1 : Not (Vector.at (cls.at k kw) zero (zeroLtSucc zero) = some true) :=
                         fun hyp => noNeg k kw (lengthOneUnit hyp)
-                      let lem2 : Not (Vector.at (cls.at k kw) 0 (zeroLtSucc 0) = none) :=
+                      let lem2 : Not (Vector.at (cls.at k kw) zero (zeroLtSucc zero) = none) :=
                         fun hyp => noContra k kw (lengthOneContra hyp)
-                      let lem : Vector.at (cls.at k kw) 0 (zeroLtSucc 0) = some false :=
-                        match Vector.at (cls.at k kw) 0 (zeroLtSucc 0), lem1, lem2 with
+                      let lem : Vector.at (cls.at k kw) zero (zeroLtSucc zero) = some false :=
+                        match Vector.at (cls.at k kw) zero (zeroLtSucc zero), lem1, lem2 with
                         | some false, l1, l2 => rfl
                         | some true, l1, l2 => False.elim (l1 rfl) 
                         | none, l1, l2 => False.elim (l2 rfl)  
-                      ⟨0, zeroLtSucc _, lem⟩
+                      ⟨zero, zeroLtSucc _, lem⟩
             else 
-                match head.at 0 (zeroLtSucc 0), c, ct, cf with
+                match head.at zero (zeroLtSucc zero), c, ct, cf with
                 | some true, l1, l2, l3 => False.elim (l2 rfl)
                 | some false, l1, l2, l3 => False.elim (l3 rfl)
                 | none, l1, l2, l3 => False.elim (l1 rfl)
@@ -263,7 +263,7 @@ def pureNot(b: Bool): (x : Option Bool) → x = none ∨  x = some b  → Not (x
 
 def solve{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolution clauses :=
       match n with
-      | 0 => fun clauses => lengthOneSolution clauses
+      | zero => fun clauses => lengthOneSolution clauses
       | m + 1 =>
         fun clauses =>
         match findElem? clauses.at (contradiction (m + 2)) with
@@ -327,7 +327,7 @@ def solve{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolution
                           let impure := unitDiag (m + 1) (not par) index bd 
                           absurd impure pure
                 | none =>  
-                  let index := 0
+                  let index := zero
                   let bd := zeroLtSucc (m + 1)
                   let rd := restrictionData false index bd cls
                   let subCls := rd.restrictionClauses.restClauses

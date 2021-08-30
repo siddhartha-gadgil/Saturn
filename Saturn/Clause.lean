@@ -145,7 +145,7 @@ theorem containsImpliesContainsBeyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
     done
   
 theorem containsBeyondZero {n: Nat} (cl1 cl2 : Clause n) :
-  containsBeyond cl1 cl2 0 → contains cl1 cl2 := by
+  containsBeyond cl1 cl2 zero → contains cl1 cl2 := by
     intro h
     intro k
     intro kw
@@ -167,7 +167,7 @@ def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
            fun hyp1 hyp2 =>
             fun k =>
             match k with
-            | 0 => fun w b =>
+            | zero => fun w b =>
               fun hb => 
                 hyp1 b hb
             | j + 1  =>  
@@ -223,7 +223,7 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                 let h := containsImpliesContainsBeyond cl1 cl2 m hyp
                 exact contra h
                 done)
-          | 0, isTrue pf => isTrue (containsBeyondZero cl1 cl2 pf)
+          | zero, isTrue pf => isTrue (containsBeyondZero cl1 cl2 pf)
           | l + 1, isTrue pf => 
             let accum: Decidable (containsBeyond cl1 cl2 l) := 
               if lw : l < n then
@@ -357,12 +357,12 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
       Containment (base) → Containment (base) := 
       fun cursorBound =>
       match cursorBound with
-      | 0 => fun _ => id
+      | zero => fun _ => id
       | k + 1 =>
         fun base contn =>
-          let ⟨j, (ineq : j < contn.codom), _⟩ := contn.forward 0 (zeroLtSucc _)      
-          let neZero : Not (0 = contn.codom) := fun hyp => 
-          let l0 : j < 0 := by
+          let ⟨j, (ineq : j < contn.codom), _⟩ := contn.forward zero (zeroLtSucc _)      
+          let neZero : Not (zero = contn.codom) := fun hyp => 
+          let l0 : j < zero := by
             rw hyp
             exact ineq
             done
@@ -508,8 +508,8 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
 def simplifiedContainment{dom n : Nat}: (clauses : Vector (Clause n) dom) → 
                               Containment clauses := 
                     match dom with
-                    |0 => fun _ => 
-                      ⟨0, Vector.Nil, Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw,
+                    |zero => fun _ => 
+                      ⟨zero, Vector.Nil, Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw,
                         Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
                     | m + 1 => fun clauses => 
                         simplifyNonEmptyContainment (m + 1) clauses (Containment.identity clauses)

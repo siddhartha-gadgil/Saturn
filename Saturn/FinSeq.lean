@@ -22,10 +22,10 @@ structure NatSucc (n: Nat) where
   pred: Nat
   eqn : n = succ (pred)
 
-def posSucc : (n : Nat) → Not (0 = n) → NatSucc n :=
+def posSucc : (n : Nat) → Not (zero = n) → NatSucc n :=
   fun n =>
   match n with
-  | 0 => fun w => absurd rfl w
+  | zero => fun w => absurd rfl w
   | l + 1 => fun _ => ⟨l, rfl⟩
 
 structure ProvedSkip(n m: Nat) where
@@ -80,9 +80,9 @@ def provedSkipInverse : (n : Nat) → (m : Nat) → (m ≠ n) →  SkipProvedInv
           match Nat.eqOrLtOfLe p with
           | Or.inl q => absurd (Eq.symm q) eqn
           |Or.inr q => q
-    let notZero : Not (0 = m) := 
+    let notZero : Not (zero = m) := 
       fun hyp =>
-        let nLt0 : n < 0 := by
+        let nLt0 : n < zero := by
           rw hyp
           exact nLtm
         let nLtn : n < n :=
@@ -223,12 +223,12 @@ def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α :=
   fun k =>
   match k with
-  | 0 => fun _ => head
+  | zero => fun _ => head
   | j + 1 => 
     fun w =>
       tail j (leOfSuccLeSucc w)
 
-def FinSeq.empty {α: Type} : FinSeq 0 α := 
+def FinSeq.empty {α: Type} : FinSeq zero α := 
   fun j jw => nomatch jw
 
 def seq{α : Type}(l : List α) : FinSeq (l.length) α := 
@@ -241,14 +241,14 @@ def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α :=
       seq (k + 1) (succ_lt_succ w)
 
 def head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
-  seq 0 (zeroLtSucc _)
+  seq zero (zeroLtSucc _)
 
 theorem headTail{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): 
       (head seq) +| (tail seq) = seq := 
         funext (
           fun k => 
             match k with
-            | 0 => by rfl 
+            | zero => by rfl 
             | i + 1 => by rfl
         )
 
@@ -263,7 +263,7 @@ def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →
     (seq1 : FinSeq n α) → (seq2 : FinSeq m α) →  
        FinSeq l α := 
     match n with
-    | 0 => fun s => fun _ => fun seq2 =>
+    | zero => fun s => fun _ => fun seq2 =>
       by
         have ss : l = m by 
           rw ← s
@@ -299,7 +299,7 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
       ((kw : k < n) → (w : k < l) → concatSeqAux s seq1 seq2 k w = seq1 k kw) ∧ 
       ((kw : k < m) → (w : (n + k) < l) → concatSeqAux s seq1 seq2 (n + k) w = seq2 k kw) := 
         match n with
-        | 0 => fun s => fun seq1 => fun seq2 =>
+        | zero => fun s => fun seq1 => fun seq2 =>
           by
             have ss : l = m by 
               rw ← s
@@ -311,10 +311,10 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
             have resolve : concatSeqAux s seq1 seq2 = Eq.mpr sf seq2 := rfl
             rw resolve
             let lem1 : ∀ (k : Nat),
-                (∀ (kw : k < 0) (w : k < l), Eq.mpr sf seq2 k w = seq1 k kw) := 
+                (∀ (kw : k < zero) (w : k < l), Eq.mpr sf seq2 k w = seq1 k kw) := 
                   fun k kw => nomatch kw
             let lem2 :  ∀ (k : Nat),
-              ∀ (kw : k < m) (w : 0 + k < l), Eq.mpr sf seq2 (0 + k) w = 
+              ∀ (kw : k < m) (w : zero + k < l), Eq.mpr sf seq2 (zero + k) w = 
               seq2 k kw := 
                 match l, m, ss, sf, seq2 with
                 | d, .(d), rfl, rfl, seq => 
@@ -322,9 +322,9 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
                     intro k
                     intro kw
                     intro w
-                    let zp: 0 + k = k :=
+                    let zp: zero + k = k :=
                         Nat.zero_add k
-                    let lm : Eq.mpr rfl seq (0 + k) w = seq (0 + k) w := rfl 
+                    let lm : Eq.mpr rfl seq (zero + k) w = seq (zero + k) w := rfl 
                     rw lm
                     apply witnessIndependent
                     exact zp
@@ -363,13 +363,13 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
                           absurd contra kww
                     match k, eql, kw, w with
                     | .(p), rfl, pw, w =>
-                      let ww : p + 0 < l := by
+                      let ww : p + zero < l := by
                         rw (Nat.add_zero p)
                         assumption
-                      let hyp2 := (hyp 0).right (Nat.zeroLe _) ww
-                      let lem2 : concatSeqAux ss (init seq1) (last seq1+|seq2) (p + 0) ww =
+                      let hyp2 := (hyp zero).right (Nat.zeroLe _) ww
+                      let lem2 : concatSeqAux ss (init seq1) (last seq1+|seq2) (p + zero) ww =
                             concatSeqAux ss (init seq1) (last seq1+|seq2) p w := 
-                            match (p + 0), Nat.add_zero p, ww with
+                            match (p + zero), Nat.add_zero p, ww with
                             | .(p), rfl, ww => rfl
                       by
                         rw ← lem2
@@ -415,7 +415,7 @@ theorem concatEmptySeq{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (FinSe
             let resolve : concatSeq seq FinSeq.empty =  
                   concatSeqAux rfl seq FinSeq.empty := rfl
             rw resolve
-            have w : k < n + 0 by
+            have w : k < n + zero by
               rw (Nat.add_zero n)
               assumption
               done
@@ -425,7 +425,7 @@ theorem concatEmptySeq{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (FinSe
 
 def list{α : Type}{n : Nat}: FinSeq n α → List α :=
   match n with
-  | 0 => fun _ => []
+  | zero => fun _ => []
   | l + 1 => fun s => (head s) :: (list (tail s))
 
 
@@ -599,7 +599,7 @@ def findAux?{α: Type}{n : Nat}(pred : α → Prop)(cursor: Nat)
         then some ⟨cursor, cursorBound, eqn⟩
         else 
           match cursor, cursorBound with
-          | 0, _ => none
+          | zero, _ => none
           | l + 1, cb => 
             let lem : l + 1 ≤  n := by
                 apply (Nat.leTrans ·  cb)
@@ -610,7 +610,7 @@ def findAux?{α: Type}{n : Nat}(pred : α → Prop)(cursor: Nat)
 def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
   (seq : FinSeq n α) → Option (ElemSeqPred seq pred) :=
   match n with
-  | 0 => fun _ =>  none
+  | zero => fun _ =>  none
   | m + 1 => fun seq => findAux? pred m (Nat.leRefl _) seq
 
 def elemAt{α: Type}[deq: DecidableEq α]{n: Nat}(seq: FinSeq n  α)(elem: α)(k: Nat):
@@ -629,7 +629,7 @@ def findElemAux?{α: Type}{n : Nat}(cursor: Nat)
         then some ⟨cursor, cursorBound, eqn⟩
         else 
           match cursor, cursorBound with
-          | 0, _ => none
+          | zero, _ => none
           | l + 1, cb => 
             let lem : l + 1 ≤  n := by
                 apply (Nat.leTrans ·  cb)
@@ -640,18 +640,18 @@ def findElemAux?{α: Type}{n : Nat}(cursor: Nat)
 def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  Option (ElemInSeq seq elem) :=
    match n with
-  | 0 => fun _ _ =>  none
+  | zero => fun _ _ =>  none
   | m + 1 => fun seq elem => findElemAux?  m (Nat.leRefl _) seq elem
 
 def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  ExistsElem seq elem :=
     match n with
-    | 0 => fun seq  => fun elem => ExistsElem.notExst (fun j jw => nomatch jw)
+    | zero => fun seq  => fun elem => ExistsElem.notExst (fun j jw => nomatch jw)
     | m + 1 => 
       fun fn =>
         fun x =>
-          if pf0 : fn 0 (zeroLtSucc m) =  x then
-            ExistsElem.exsts 0 (zeroLtSucc m) pf0
+          if pf0 : fn zero (zeroLtSucc m) =  x then
+            ExistsElem.exsts zero (zeroLtSucc m) pf0
           else
             match searchElem (tail fn) x with
             | ExistsElem.exsts j jw eql => 
@@ -664,7 +664,7 @@ def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}:
                   ExistsElem.notExst (
                     fun j =>
                     match j with
-                    | 0 => fun jw => pf0 
+                    | zero => fun jw => pf0 
                     | i + 1 => fun iw => tailPf i (leOfSuccLeSucc iw)
                   )
 
@@ -747,17 +747,17 @@ structure ProvedDepUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :�
 def enumOptBool : (n : Nat) → n < 2 → Option Bool :=
   fun n =>
   match n with
-  | 0 => fun _ => some true
+  | zero => fun _ => some true
   | 1 => fun _ => some false
   | 2 => fun _ => none
   | l + 2 => fun w => nomatch w
 
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
     match n with
-    | 0 => fun _ => none
+    | zero => fun _ => none
     | m + 1 => 
       fun seq => 
-        (f (seq 0 (zeroLtSucc m))).orElse (
+        (f (seq zero (zeroLtSucc m))).orElse (
           findSome? f (fun t : Nat => fun w : t < m => seq (t + 1) w )
         ) 
 
@@ -765,7 +765,7 @@ def equalBeyond{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α)(m: Nat): Prop :=
   ∀ k: Nat, ∀ kw : k <n, ∀ mw : m ≤ k, seq1 k kw = seq2 k kw
 
 theorem equalBeyondZero{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α):
-    equalBeyond seq1 seq2 0 → seq1 = seq2 := by
+    equalBeyond seq1 seq2 zero → seq1 = seq2 := by
       intro hyp
       apply funext
       intro k
@@ -803,7 +803,7 @@ def deqSeqRec{α: Type}[DecidableEq α]{n : Nat}(seq1 seq2 : FinSeq n α): (m: N
               done
             exact contra restr
             done)
-      | 0, isTrue pf => 
+      | zero, isTrue pf => 
         isTrue (equalBeyondZero seq1 seq2 pf)
       | l + 1, isTrue pf  => 
         if lw : l < n then
@@ -870,19 +870,19 @@ def Vector.at {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
   fun j jw =>
   match n, v, j, jw with
   | .(zero), Nil, k, lt => nomatch lt
-  | m + 1, Cons head tail, 0, lt => head
+  | m + 1, Cons head tail, zero, lt => head
   | m + 1, Cons head tail, j + 1, w =>  tail.at j (Nat.succ_lt_succ w)
 
 def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := 
   match n with
-  | 0 => fun _ => Vector.Nil
+  | zero => fun _ => Vector.Nil
   | m + 1 => fun seq => Cons (head seq) (vec (tail seq))
 
 
 def equalCoords{α: Type}{n : Nat}{v1 v2 : Vector α n}: 
     v1.at = v2.at → v1 = v2 := 
     match n, v1, v2 with
-    | 0, Nil, Nil => fun _ => rfl
+    | zero, Nil, Nil => fun _ => rfl
     | m + 1, Cons head1 tail1, Cons head2 tail2 =>
       by
         intro hyp
