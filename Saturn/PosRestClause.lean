@@ -14,12 +14,34 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
           let domN := dom + 1
           let codomN := rc.codom
           let clausesN := head +: clauses
+          let forwardVecN := none +: rc.forwardVec
           let forwardN: (k : Nat) →  k < domN → Option Nat  := 
             fun k  => 
             match k with 
             | zero => fun _ => none
             | l + 1 => 
               fun w : l + 1 < domN   =>  rc.forward l (leOfSuccLeSucc w)
+          let forwardNEq : forwardVecN.at = forwardN := by
+                  apply funext
+                  intro j
+                  cases j with
+                  | zero => 
+                    apply funext
+                    intro jw
+                    rfl
+                  | succ i =>
+                    apply funext
+                    intro jw
+                    have tl :forwardVecN.at (succ i) jw = 
+                        tail forwardVecN.at i (Nat.leOfSuccLeSucc jw) := by rfl
+                    rw tl
+                    rw tailCommutes none rc.forwardVec
+                    have fr : forwardN (succ i) jw = 
+                            rc.forward i (leOfSuccLeSucc jw)
+                        by rfl
+                    rw fr
+                    rfl
+                    done
           let forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
             fun k  => 
             match k with 
@@ -36,11 +58,28 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                   rw lem
                   exact (rc.forwardWit l (leOfSuccLeSucc w))
                   done
+          let reverseVecN := rc.reverseVec.map (. + 1)
           let reverseN : (k : Nat) →  k < codomN → Nat := 
             fun k w => (rc.reverse k w) + 1
+          let reverseNEq : reverseVecN.at = reverseN := by
+                  apply funext
+                  intro j
+                  apply funext
+                  intro jw
+                  apply mapAt
+                  done
           let reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
             fun k w => (rc.reverseWit k w)
-          RestrictionClauses.mk codomN rc.restClauses forwardN forwardWitN reverseN reverseWitN
+          RestrictionClauses.mk codomN rc.restClauses 
+                    (forwardVecN) 
+                    (by 
+                      rw forwardNEq
+                      exact forwardWitN) 
+                    reverseVecN
+                    (by 
+                      rw reverseNEq
+                      exact reverseWitN)
+
 
 
 namespace PosResClause
@@ -115,7 +154,46 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     (Vector.at (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w))) := 
                   fun k w =>
                   let lem1 : (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w)) =
-                    clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  by rfl
+                    clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  
+                      by 
+                        have res0:  rcN.reverse k w = rc.reverse k w  + 1 
+                          by
+                            have res1 : rcN.reverse k w = 
+                                      rcN.reverseVec.at k w by rfl 
+                            have res2 : rc.reverse k w =
+                                    rc.reverseVec.at k w by rfl
+                            rw res1
+                            rw res2
+                            have res3 :rcN.reverseVec = 
+                              rc.reverseVec.map (. + 1)  by rfl
+                            rw res3
+                            rw mapAt                                  
+                            done
+                            done
+                        have res00 : clausesN.at (rcN.reverse k w) 
+                                  (rcN.reverseWit k w) =
+                              clauses.at (rc.reverse k w )
+                                (rc.reverseWit k w) by 
+                                  have rs0 : clausesN.at (rcN.reverse k w) 
+                                    (rcN.reverseWit k w) =
+                                      clausesN.at (rc.reverse k w + 1)
+                                        (rc.reverseWit k w) by 
+                                        apply witnessIndependent
+                                        exact res0
+                                        done
+                                  rw rs0
+                                  have dfn : clausesN = head +: clauses by rfl
+                                  rw dfn 
+                                  have td :
+                                    Vector.at (head +: clauses) 
+                                       (rc.reverse k w + 1) 
+                                       (rc.reverseWit k w) =
+                                        clauses.at (rc.reverse k w)
+                                          (rc.reverseWit k w) by rfl
+                                  rw td
+                                  done
+                        rw res00
+                        done
                     by
                       rw lem1
                       exact rrc.relation k w
@@ -139,7 +217,39 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                      focus focusLt = some branch) :=
                   fun k w =>
                   let lem1 : clausesN.at (rcN.reverse k w) (rcN.reverseWit k w) =
-                    clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  by rfl
+                    clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  
+                    by
+                      have res0:  rcN.reverse k w = rc.reverse k w  + 1 
+                          by
+                            have res1 : rcN.reverse k w = 
+                                      rcN.reverseVec.at k w by rfl 
+                            have res2 : rc.reverse k w =
+                                    rc.reverseVec.at k w by rfl
+                            rw res1
+                            rw res2
+                            have res3 :rcN.reverseVec = 
+                              rc.reverseVec.map (. + 1)  by rfl
+                            rw res3
+                            rw mapAt                                  
+                            done
+                      have rs0 : clausesN.at (rcN.reverse k w) 
+                          (rcN.reverseWit k w) =
+                            clausesN.at (rc.reverse k w + 1)
+                              (rc.reverseWit k w) by 
+                              apply witnessIndependent
+                              exact res0
+                              done
+                        rw rs0
+                        have dfn : clausesN = head +: clauses by rfl
+                        rw dfn 
+                        have td :
+                          Vector.at (head +: clauses) 
+                              (rc.reverse k w + 1) 
+                              (rc.reverseWit k w) =
+                              clauses.at (rc.reverse k w)
+                                (rc.reverseWit k w) by rfl
+                      rw td
+                      done
                     by
                       rw lem1
                       exact prc.nonPosRev k w
