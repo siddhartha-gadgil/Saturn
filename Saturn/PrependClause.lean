@@ -54,7 +54,15 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
               | 0 => fun _ => zeroLtSucc _ 
               | l + 1 => fun w => 
                 rc.reverseWit l w
-            RestrictionClauses.mk codomN restClausesN forwardN forwardWitN reverseN reverseWitN
+            RestrictionClauses.mk codomN restClausesN 
+                    (FinSeq.vec forwardN) 
+                    (by 
+                      rw seqAt
+                      exact forwardWitN) 
+                    (FinSeq.vec reverseN)
+                    (by 
+                      rw seqAt
+                      exact reverseWitN)
 
 namespace PrependClause
 
@@ -79,7 +87,9 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   | l + 1 => 
                     fun w nw =>
                       let lem1 : rcN.forward (l + 1) w = 
-                        (rc.forward l (leOfSuccLeSucc w)).map (. + 1)  := by rfl
+                        (rc.forward l (leOfSuccLeSucc w)).map (. + 1)  := 
+                          by 
+                          done
                       let lem2 := Eq.trans (Eq.symm lem1) nw
                       let lem3 := mapNoneIsNone _ _ lem2
                       let lem4 := drc.dropped l (leOfSuccLeSucc w) lem3
@@ -203,6 +213,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                         let lem2 := rrc.relation l (leOfSuccLeSucc w) 
                         by
                           rw lem1
+                          
                           exact lem2
                           done
           ⟨relationN⟩
