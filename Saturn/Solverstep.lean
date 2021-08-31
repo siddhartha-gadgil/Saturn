@@ -60,11 +60,22 @@ structure RestrictionClauses{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : foc
     (clauses: Vector (Clause (n + 1)) dom) where
   codom : Nat
   restClauses : Vector  (Clause n) codom
-  forward : (k: Nat) → k < dom → Option Nat
-  forwardWit : (k: Nat) → (w: k < dom) → boundOpt codom (forward k w)
-  reverse : (k : Nat) → (k < codom) → Nat
-  reverseWit : (k : Nat) → (w : k < codom) → reverse k w < dom
+  forwardVec : Vector (Option Nat) dom
+  forwardWit : (k: Nat) → (w: k < dom) → boundOpt codom (forwardVec.at k w)
+  reverseVec : Vector Nat codom
+  reverseWit : (k : Nat) → (w : k < codom) → reverseVec.at k w < dom
   
+def RestrictionClauses.forward{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
+    {clauses: Vector (Clause (n + 1)) dom}
+      (rc: RestrictionClauses branch focus focusLt clauses) :
+        (j: Nat) → (jw : j < dom) → Option Nat := rc.forwardVec.at
+
+def RestrictionClauses.reverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
+    {clauses: Vector (Clause (n + 1)) dom}
+      (rc: RestrictionClauses branch focus focusLt clauses) :
+        (j: Nat) → (jw : j < rc.codom) → Nat := rc.reverseVec.at
+
+
 structure DroppedProof{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}(
         rc: RestrictionClauses branch focus focusLt clauses)  where

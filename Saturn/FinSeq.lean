@@ -873,10 +873,122 @@ def Vector.at {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
   | m + 1, Cons head tail, zero, lt => head
   | m + 1, Cons head tail, j + 1, w =>  tail.at j (Nat.succ_lt_succ w)
 
-def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := 
-  match n with
-  | zero => fun _ => Vector.Nil
-  | m + 1 => fun seq => Cons (head seq) (vec (tail seq))
+
+def seqVecAux {α: Type}{n m l: Nat}: (s : n + m = l) →   
+    (seq1 : FinSeq n α) → (accum : Vector α m) →  
+       Vector α l:= 
+    match n with
+    | zero => fun s => fun _ => fun seq2 =>
+      by
+        have ss : l = m by 
+          rw ← s
+          apply Nat.zero_add
+          done
+        have sf : Vector α l = Vector α m by
+          rw ss
+        exact Eq.mpr sf seq2
+        done
+    | k + 1 => fun s seq1 seq2 => 
+      let ss : k + (m + 1)  = l := 
+        by
+          rw ← s
+          rw (Nat.add_comm m 1)
+          rw (Nat.add_assoc k 1 m)
+          done
+      seqVecAux ss (init seq1) ((last seq1) +: seq2)
+
+
+def seqVec {α: Type}{n : Nat} : FinSeq n α → Vector α n :=
+    fun seq => seqVecAux (Nat.add_zero n) seq Vector.Nil
+
+theorem prevsum{n m l: Nat}: n + 1 + m = l + 1 → n + m = l := 
+  by
+    rw Nat.add_assoc n 1 m
+    rw Nat.add_comm 1  m
+    rw ← (Nat.add_assoc n m 1)
+    intro hyp
+    have as1 : (n + m) + 1 = succ (n + m) by rfl
+    have as2 : l + 1 = succ l by rfl
+    have sc : succ (n + m) = succ l by
+      rw ← as1
+      rw ← as2
+      exact hyp
+    injection sc
+    assumption
+    done
+
+theorem seqVecConsAux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 : FinSeq (n + 1) α) 
+        (accum : Vector α m) : seqVecAux s seq1 accum =
+                (head seq1) +: (
+                  seqVecAux 
+                  (prevsum s)
+                  (tail seq1)  accum) := 
+                    match n, l, s, seq1 with
+                    |  zero, l, s'', seq1  => 
+                      by
+                      have eql : m = l by
+                        rw ←  prevsum s''
+                        rw Nat.zero_add
+                        done
+                      match m, l, eql, s'', accum with
+                      | m', .(m'), rfl, s', accum =>
+                        have ss : zero + (m' +1) = (m' +1)   by
+                          rw Nat.zero_add
+                        have resolve :
+                          seqVecAux s' seq1 accum =
+                            seqVecAux ss (init seq1) ((last seq1) +: accum) by rfl
+                        rw resolve
+                        have res2 : 
+                          seqVecAux ss (init seq1) (last seq1+:accum) =
+                            (last seq1+:accum) by rfl
+                        rw res2
+                        have res3 : seqVecAux (prevsum s') (tail seq1) accum =  accum by rfl
+                        rw res3
+                        have hh : head seq1 = seq1 0 (zeroLe _) by rfl
+                        have hl: last seq1 = seq1 0 (zeroLe _) by rfl
+                        rw hh
+                        rw hl
+                        done 
+                    | succ n', l, s'', seq1  =>
+                      by 
+                      let ss : (n' + 1) + (m + 1)  = l + 1 := 
+                        by
+                          rw ← s''
+                          rw (Nat.add_comm m 1)
+                          rw (Nat.add_assoc (n' + 1) 1 m)
+                          done
+                      have resolve :
+                        seqVecAux s'' seq1 accum =
+                          seqVecAux ss (init seq1) ((last seq1) +: accum) by rfl
+                      rw resolve
+                      let v := init seq1
+                      let base := seqVecConsAux ss (init seq1) (last seq1+:accum)
+                      rw base
+                      have he : head (init seq1) = head seq1 by rfl
+                      rw he
+                      apply congrArg (Cons (head seq1))
+                      have sss : n' + (m + 1) = l by
+                        rw ← (prevsum ss)
+                        done
+                      have resolve2 :
+                        seqVecAux (prevsum s'') (tail seq1) accum =
+                          seqVecAux sss (init (tail seq1)) 
+                            (last (tail seq1 ) +: accum) by rfl
+                      rw resolve2
+                      have intl:  init (tail seq1) = tail (init seq1) by rfl
+                      rw intl
+                      have lst : last (tail seq1) = last seq1 by rfl
+                      rw lst
+                      done
+
+theorem seqVecConsEqn {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) : 
+          seqVec seq  = (head seq) +: (seqVec (tail seq)) := 
+                  seqVecConsAux _ seq Vector.Nil
+
+def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := seqVec
+  -- match n with
+  -- | zero => fun _ => Vector.Nil
+  -- | m + 1 => fun seq => Cons (head seq) (vec (tail seq))
 
 
 def equalCoords{α: Type}{n : Nat}{v1 v2 : Vector α n}: 
@@ -929,7 +1041,7 @@ theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq :=
     | zero =>
       apply funext
       intro kw 
-      have resolve : seq.vec = Cons (head seq) (FinSeq.vec (tail seq)) by rfl 
+      have resolve : seq.vec = Cons (head seq) (FinSeq.vec (tail seq)) by apply seqVecConsEqn 
       rw resolve
       have res2 : Vector.at (head seq+:FinSeq.vec (tail seq)) zero kw = head seq by rfl
       rw res2
@@ -939,7 +1051,11 @@ theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq :=
       apply funext
       intro kw
       have tl :Vector.at (FinSeq.vec seq) (succ k') kw = 
-          Vector.at (FinSeq.vec (tail seq)) k' (Nat.succ_lt_succ kw) by rfl 
+          Vector.at (FinSeq.vec (tail seq)) k' (Nat.succ_lt_succ kw) by
+              have dfn : FinSeq.vec seq = seqVec seq by rfl
+              rw dfn
+              rw (seqVecConsEqn seq) 
+              rfl 
       let base := seqAt (tail seq)
       rw tl
       rw base
@@ -959,6 +1075,14 @@ theorem consCommutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
               apply funext
               intro kw
               rfl
+
+theorem tailCommutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
+      tail (Vector.at (x +: ys)) = ys.at := 
+        by
+        apply funext
+        intro kw
+        rfl 
+        done
 
 def Vector.map {α β : Type}{n: Nat}(vec: Vector α n) (f : α → β) : Vector β n :=
     FinSeq.vec (fun j jw => f (vec.at j jw))

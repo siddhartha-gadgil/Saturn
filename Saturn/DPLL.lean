@@ -104,9 +104,9 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
         RestrictionData branch focus focusLt clauses := 
         fun clauses =>
           let rc : RestrictionClauses branch focus focusLt Vector.Nil := 
-              ⟨zero, Vector.Nil, 
+              ⟨zero, Vector.Nil, Vector.Nil,
                 fun k w => nomatch w, 
-                fun k w => nomatch w, fun k w => nomatch w, fun k w => nomatch w⟩
+                Vector.Nil, fun k w => nomatch w⟩
           let rd : RestrictionData branch focus focusLt Vector.Nil := ⟨rc,
             ⟨fun k w => nomatch w⟩,
             ⟨fun k w => nomatch w⟩,
