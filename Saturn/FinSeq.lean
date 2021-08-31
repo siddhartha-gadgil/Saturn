@@ -985,10 +985,10 @@ theorem seqVecConsEqn {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) :
           seqVec seq  = (head seq) +: (seqVec (tail seq)) := 
                   seqVecConsAux _ seq Vector.Nil
 
-def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := 
-  match n with
-  | zero => fun _ => Vector.Nil
-  | m + 1 => fun seq => Cons (head seq) (vec (tail seq))
+def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := seqVec
+  -- match n with
+  -- | zero => fun _ => Vector.Nil
+  -- | m + 1 => fun seq => Cons (head seq) (vec (tail seq))
 
 
 def equalCoords{α: Type}{n : Nat}{v1 v2 : Vector α n}: 
@@ -1041,7 +1041,7 @@ theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq :=
     | zero =>
       apply funext
       intro kw 
-      have resolve : seq.vec = Cons (head seq) (FinSeq.vec (tail seq)) by rfl 
+      have resolve : seq.vec = Cons (head seq) (FinSeq.vec (tail seq)) by apply seqVecConsEqn 
       rw resolve
       have res2 : Vector.at (head seq+:FinSeq.vec (tail seq)) zero kw = head seq by rfl
       rw res2
@@ -1051,7 +1051,11 @@ theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq :=
       apply funext
       intro kw
       have tl :Vector.at (FinSeq.vec seq) (succ k') kw = 
-          Vector.at (FinSeq.vec (tail seq)) k' (Nat.succ_lt_succ kw) by rfl 
+          Vector.at (FinSeq.vec (tail seq)) k' (Nat.succ_lt_succ kw) by
+              have dfn : FinSeq.vec seq = seqVec seq by rfl
+              rw dfn
+              rw (seqVecConsEqn seq) 
+              rfl 
       let base := seqAt (tail seq)
       rw tl
       rw base
