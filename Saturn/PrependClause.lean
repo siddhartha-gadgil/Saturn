@@ -37,13 +37,13 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     intro jw
                     have tl :forwardVecN.at (succ i) jw = 
                         tail forwardVecN.at i (Nat.le_of_succ_le_succ jw) := by rfl
-                    rw tl
-                    rw tailCommutes (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) )
-                    rw mapAt
+                    rw [tl,
+                      tailCommutes (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1))),
+                      mapAt]
                     have fr : forwardN (succ i) jw = 
-                            (rc.forward i (le_of_succ_le_succ jw)).map (. + 1)
+                            (rc.forward i (le_of_succ_le_succ jw)).map (. + 1) :=
                         by rfl
-                    rw fr
+                    rw [fr]
                     rfl
                     done
             have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
@@ -63,7 +63,7 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                             (rc.forward l (le_of_succ_le_succ w))
                             (rc.forwardWit l (le_of_succ_le_succ w))
                   by
-                    rw lem
+                    rw [lem]
                     exact lem2
                     done
             let reverseVecN := zero +: (rc.reverseVec.map (. + 1))
@@ -71,7 +71,7 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
               fun k =>
               match k with
               | zero => fun _ => zero
-              | l + 1 => fun w => (rc.reverse l w) + 1
+              | l + 1 => fun w => (rc.reverse l (Nat.le_of_succ_le_succ w)) + 1
             have reverseNEq : reverseVecN.at = reverseN := by
                   apply funext
                   intro j
@@ -86,17 +86,19 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     intro jw
                     have tl :reverseVecN.at (succ i) jw =
                         tail reverseVecN.at i (Nat.le_of_succ_le_succ jw) := by rfl
-                    rw tl
-                    rw tailCommutes zero (rc.reverseVec.map (. + 1))
-                    rw mapAt
+                    rw [tl,
+                       tailCommutes zero (rc.reverseVec.map (. + 1)),
+                        mapAt]
                     rfl
                     done
             have reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
               fun k =>
               match k with
               | zero => fun _ => zero_lt_succ _ 
-              | l + 1 => fun w => 
-                rc.reverseWit l w
+              | l + 1 => fun w => by 
+                  apply succ_le_succ
+                  exact rc.reverseWit l (le_of_succ_le_succ w)
+                  done
             RestrictionClauses.mk codomN restClausesN 
                     (forwardVecN) 
                     ( forwardNEq ▸ forwardWitN) 
@@ -129,25 +131,26 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                         (rc.forward l (le_of_succ_le_succ w)).map (. + 1)  := 
                           by 
                             have res1 : rcN.forward (l + 1) w = 
-                                rcN.forwardVec.at (l + 1) w by rfl
+                                rcN.forwardVec.at (l + 1) w := by rfl
                             have res2 : rc.forward l (le_of_succ_le_succ w) =
-                                rc.forwardVec.at l (le_of_succ_le_succ w) by rfl
+                                rc.forwardVec.at l (le_of_succ_le_succ w) := by rfl
                             rw [res1]
                             rw [res2]
                             have res3 :rcN.forwardVec = 
-                              (some zero) +: (rc.forwardVec.map (fun nop => nop.map (. + 1)) ) by rfl
-                            rw res3
+                              (some zero) +: (rc.forwardVec.map (fun nop => nop.map (. + 1)) ) 
+                                := by rfl
+                            rw [res3]
                             have res4 :
                                 Vector.at ((some zero) +: 
                                   (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) (l + 1) w =
                                 tail (
                                  Vector.at ((some zero) +: 
                                   (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) 
-                                ) l (Nat.le_of_succ_le_succ w) by rfl
-                            rw res4
-                            rw (tailCommutes 
-                                (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))
-                            rw mapAt
+                                ) l (Nat.le_of_succ_le_succ w) := by rfl
+                            rw [res4]
+                            rw [(tailCommutes 
+                                (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))]
+                            rw [mapAt]
                             done
                       let lem2 := Eq.trans (Eq.symm lem1) nw
                       let lem3 := mapNoneIsNone _ _ lem2
@@ -182,15 +185,15 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     let lem4 : delete focus focusLt (Vector.at (clausesN.at zero w )) = 
                         Vector.at (rcN.restClauses.at zero (zero_lt_succ rc.codom)) := 
                           by
-                            have resLHS : clausesN.at zero w  = head by rfl
-                            rw resLHS
+                            have resLHS : clausesN.at zero w  = head := by rfl
+                            rw [resLHS]
                             have resRHS : rcN.restClauses.at zero (zero_lt_succ rc.codom) 
-                                = (delete focus focusLt head.at).vec by rfl
-                            rw resRHS
+                                = (delete focus focusLt head.at).vec := by rfl
+                            rw [resRHS]
                             rw [seqAt]
                             done
                     by
-                      rw lem4
+                      rw [lem4]
                       apply congrArg   
                       apply (witnessIndependent rcN.restClauses.at)
                       exact Eq.symm lem3
@@ -201,25 +204,27 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                       (rc.forward l (le_of_succ_le_succ w)).map (. + 1) := 
                         by 
                         have res1 : rcN.forward (l + 1) w = 
-                                rcN.forwardVec.at (l + 1) w by rfl
+                                rcN.forwardVec.at (l + 1) w := by rfl
                         have res2 : rc.forward l (le_of_succ_le_succ w) =
-                                rc.forwardVec.at l (le_of_succ_le_succ w) by rfl
+                                rc.forwardVec.at l (le_of_succ_le_succ w) := by rfl
                         rw [res1]
                         rw [res2]
                         have res3 :rcN.forwardVec = 
-                          (some zero) +: (rc.forwardVec.map (fun nop => nop.map (. + 1)) ) by rfl
-                        rw res3
+                          (some zero) +: (rc.forwardVec.map (fun nop => nop.map (. + 1)) ) 
+                            := by rfl
+                        rw [res3]
                         have res4 :
                             Vector.at ((some zero) +: 
                               (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) (l + 1) w =
                             tail (
                               Vector.at ((some zero) +: 
                               (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) 
-                            ) l (Nat.le_of_succ_le_succ w) by rfl
-                        rw res4
-                        rw (tailCommutes 
-                            (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))
-                        rw mapAt
+                            ) l (Nat.le_of_succ_le_succ w) := by rfl
+                        rw [res4]
+                        rw [(tailCommutes 
+                            (some zero) 
+                            (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))]
+                        rw [mapAt]
                         done
                     if c : Option.isNone (rcN.forward (l + 1) w) then 
                       fun j sw jw => 
@@ -234,28 +239,30 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                         fun sw jw =>
                           let lem2 : (rc.forward l (le_of_succ_le_succ w)).map (. + 1) =
                             some zero := by
-                            rw [← s]w
+                            rw [← sw]
                             apply Eq.symm
                             have res1 : rcN.forward (l + 1) w = 
-                                rcN.forwardVec.at (l + 1) w by rfl
+                                rcN.forwardVec.at (l + 1) w := by rfl
                             have res2 : rc.forward l (le_of_succ_le_succ w) =
-                                    rc.forwardVec.at l (le_of_succ_le_succ w) by rfl
+                                    rc.forwardVec.at l (le_of_succ_le_succ w)
+                                      := by rfl
                             rw [res1]
                             rw [res2]
                             have res3 :rcN.forwardVec = 
-                              (some zero) +: (rc.forwardVec.map (fun nop => nop.map (. + 1)) ) by rfl
-                            rw res3
+                              (some zero) +: 
+                              (rc.forwardVec.map (fun nop => nop.map (. + 1)) ) := by rfl
+                            rw [res3]
                             have res4 :
                                 Vector.at ((some zero) +: 
                                   (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) (l + 1) w =
                                 tail (
                                   Vector.at ((some zero) +: 
                                   (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) 
-                                ) l (Nat.le_of_succ_le_succ w) by rfl
-                            rw res4
-                            rw (tailCommutes 
-                                (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))
-                            rw mapAt
+                                ) l (Nat.le_of_succ_le_succ w) := by rfl
+                            rw [res4]
+                            rw [(tailCommutes 
+                                (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))]
+                            rw [mapAt]
                             done
                          let lem2  : False := mapPlusOneZero lem2
                          absurd lem2 (fun x => x)
@@ -264,39 +271,40 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                           intros sw jw
                           let lem2 : (rc.forward l (le_of_succ_le_succ w)).map (. + 1) =
                             some (i + 1) := by
-                            rw [← s]w              
+                            rw [← sw]              
                             have res1 : rcN.forward (l + 1) w = 
-                                rcN.forwardVec.at (l + 1) w by rfl
+                                rcN.forwardVec.at (l + 1) w := by rfl
                             have res2 : rc.forward l (le_of_succ_le_succ w) =
-                                    rc.forwardVec.at l (le_of_succ_le_succ w) by rfl
+                                    rc.forwardVec.at l (le_of_succ_le_succ w) := by rfl
                             rw [res1]
                             rw [res2]
                             have res3 :rcN.forwardVec = 
-                              (some zero) +: (rc.forwardVec.map (fun nop => nop.map (. + 1)) ) by rfl
-                            rw res3
+                              (some zero) +: (rc.forwardVec.map (fun nop => nop.map (. + 1)) )
+                               := by rfl
+                            rw [res3]
                             have res4 :
                                 Vector.at ((some zero) +: 
                                   (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) (l + 1) w =
                                 tail (
                                   Vector.at ((some zero) +: 
                                   (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) 
-                                ) l (Nat.le_of_succ_le_succ w) by rfl
-                            rw res4
-                            rw (tailCommutes 
-                                (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))
-                            rw mapAt
+                                ) l (Nat.le_of_succ_le_succ w) := by rfl
+                            rw [res4]
+                            rw [(tailCommutes 
+                                (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))]
+                            rw [mapAt]
                             done
                           let lem3 : rc.forward l (le_of_succ_le_succ w) = some i 
                             := mapPlusOneShift lem2
                           let lem4 := 
                             frc.forwardRelation l (le_of_succ_le_succ w) i lem3 (le_of_succ_le_succ jw)
                           have ll1 : 
-                            clausesN.at (l + 1) w = clauses.at l (le_of_succ_le_succ w) by rfl 
+                            clausesN.at (l + 1) w = clauses.at l (le_of_succ_le_succ w) := by rfl 
                           have ll2 : rcN.restClauses.at (i + 1) jw
-                             = rc.restClauses.at i (le_of_succ_le_succ jw) by rfl
-                          rw ll1
-                          rw ll2
-                          rw lem4
+                             = rc.restClauses.at i (le_of_succ_le_succ jw) := by rfl
+                          rw [ll1]
+                          rw [ll2]
+                          rw [lem4]
                           done
           ⟨forwardRelationN⟩
 
@@ -321,13 +329,13 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     | zero => 
                       fun w  => by 
                         have resRHS : rcN.restClauses.at zero w 
-                                = (delete focus focusLt head.at).vec by rfl
-                        rw resRHS
+                                = (delete focus focusLt head.at).vec := by rfl
+                        rw [resRHS]
                         have lll : 
                           Vector.at (FinSeq.vec (delete focus focusLt (Vector.at head))) =
-                              delete focus focusLt (Vector.at head) by 
+                              delete focus focusLt (Vector.at head) := by 
                                 rw [seqAt]
-                        rw lll
+                        rw [lll]
                         apply (congrArg)
                         apply congrArg
                         rfl
@@ -344,51 +352,55 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                                rc.reverse l (Nat.le_of_succ_le_succ w) + 1 := 
                                 by                                  
                                   have res1 : rcN.reverse (l + 1) w = 
-                                      rcN.reverseVec.at (l + 1) w by rfl
+                                      rcN.reverseVec.at (l + 1) w := by rfl
                                   have res2 : rc.reverse l (le_of_succ_le_succ w) =
-                                          rc.reverseVec.at l (le_of_succ_le_succ w) by rfl
+                                          rc.reverseVec.at l (le_of_succ_le_succ w) := by rfl
                                   rw [res1]
                                   rw [res2]
                                   have res3 :rcN.reverseVec = 
-                                    zero +: (rc.reverseVec.map (. + 1))  by rfl
-                                  rw res3
+                                    zero +: (rc.reverseVec.map (. + 1)) := by rfl
+                                  rw [res3]
                                   have res4 :
                                       Vector.at (zero +: 
                                         (rc.reverseVec.map (. + 1)) ) (l + 1) w =
                                       tail (
                                         Vector.at (zero +: 
                                         (rc.reverseVec.map (. + 1)) ) 
-                                      ) l (Nat.le_of_succ_le_succ w) by rfl
-                                  rw res4
-                                  rw (tailCommutes 
-                                      zero (rc.reverseVec.map (. + 1)))
-                                  rw mapAt                                  
+                                      ) l (Nat.le_of_succ_le_succ w) := by rfl
+                                  rw [res4]
+                                  rw [(tailCommutes 
+                                      zero (rc.reverseVec.map (. + 1)))]
+                                  rw [mapAt]                                  
                                   done
                           have res00 : clausesN.at (rcN.reverse (l + 1) w) 
                                   (rcN.reverseWit (l + 1) w) =
                               clauses.at (rc.reverse l 
                                 (Nat.le_of_succ_le_succ w))
                                 (rc.reverseWit l 
-                                (Nat.le_of_succ_le_succ w)) by 
+                                (Nat.le_of_succ_le_succ w)) := by 
                                   have rs0 : clausesN.at (rcN.reverse (l + 1) w) 
                                     (rcN.reverseWit (l + 1) w) =
-                                      clausesN.at (rc.reverse l (Nat.le_of_succ_le_succ w) + 1)
-                                        (rc.reverseWit l (Nat.le_of_succ_le_succ w)) by 
+                                      clausesN.at 
+                                        (rc.reverse l (Nat.le_of_succ_le_succ w) + 1)
+                                        (succ_le_succ
+                                          (rc.reverseWit l (Nat.le_of_succ_le_succ w))) := by 
                                         apply witnessIndependent
                                         exact res0
                                         done
-                                  rw rs0
-                                  have dfn : clausesN = head +: clauses by rfl
-                                  rw dfn 
+                                  rw [rs0]
+                                  have dfn : clausesN = head +: clauses := by rfl
+                                  rw [dfn] 
                                   have td :
-                                    Vector.at (head +: clauses) 
+                                    Vector.at 
+                                        (head +: clauses) 
                                        (rc.reverse l (Nat.le_of_succ_le_succ w) + 1) 
-                                       (rc.reverseWit l (Nat.le_of_succ_le_succ w)) =
+                                       (succ_le_succ (rc.reverseWit l 
+                                        (Nat.le_of_succ_le_succ w))) =
                                         clauses.at (rc.reverse l (Nat.le_of_succ_le_succ w))
-                                          (rc.reverseWit l (Nat.le_of_succ_le_succ w)) by rfl
-                                  rw td
+                                          (rc.reverseWit l (Nat.le_of_succ_le_succ w)) := by rfl
+                                  rw [td]
                                   done
-                          rw res00                                
+                          rw [res00]                                
                           done
           ⟨relationN⟩
 
@@ -429,51 +441,56 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                                   rc.reverse l (Nat.le_of_succ_le_succ w) + 1 := 
                                     by                                  
                                       have res1 : rcN.reverse (l + 1) w = 
-                                          rcN.reverseVec.at (l + 1) w by rfl
+                                          rcN.reverseVec.at (l + 1) w := by rfl
                                       have res2 : rc.reverse l (le_of_succ_le_succ w) =
-                                              rc.reverseVec.at l (le_of_succ_le_succ w) by rfl
+                                              rc.reverseVec.at l (le_of_succ_le_succ w) := by rfl
                                       rw [res1]
                                       rw [res2]
                                       have res3 :rcN.reverseVec = 
-                                        zero +: (rc.reverseVec.map (. + 1))  by rfl
-                                      rw res3
+                                        zero +: (rc.reverseVec.map (. + 1)) := by rfl
+                                      rw [res3]
                                       have res4 :
                                           Vector.at (zero +: 
                                             (rc.reverseVec.map (. + 1)) ) (l + 1) w =
                                           tail (
                                             Vector.at (zero +: 
                                             (rc.reverseVec.map (. + 1)) ) 
-                                          ) l (Nat.le_of_succ_le_succ w) by rfl
-                                      rw res4
-                                      rw (tailCommutes 
-                                          zero (rc.reverseVec.map (. + 1)))
-                                      rw mapAt                                  
+                                          ) l (Nat.le_of_succ_le_succ w) := by rfl
+                                      rw [res4]
+                                      rw [(tailCommutes 
+                                          zero (rc.reverseVec.map (. + 1)))]
+                                      rw [mapAt]                                  
                                       done
                                 have res00 : clausesN.at (rcN.reverse (l + 1) w) 
                                   (rcN.reverseWit (l + 1) w) =
                                     clauses.at (rc.reverse l 
                                       (Nat.le_of_succ_le_succ w))
                                       (rc.reverseWit l 
-                                      (Nat.le_of_succ_le_succ w)) by 
+                                      (Nat.le_of_succ_le_succ w)) := by 
                                         have rs0 : clausesN.at (rcN.reverse (l + 1) w) 
                                           (rcN.reverseWit (l + 1) w) =
-                                            clausesN.at (rc.reverse l (Nat.le_of_succ_le_succ w) + 1)
-                                              (rc.reverseWit l (Nat.le_of_succ_le_succ w)) by 
+                                            clausesN.at 
+                                              (rc.reverse l (Nat.le_of_succ_le_succ w) + 1)
+                                              (succ_le_succ 
+                                                (rc.reverseWit l (Nat.le_of_succ_le_succ w)
+                                                )) := by 
                                               apply witnessIndependent
                                               exact res0
                                               done
-                                        rw rs0
-                                        have dfn : clausesN = head +: clauses by rfl
-                                        rw dfn 
+                                        rw [rs0]
+                                        have dfn : clausesN = head +: clauses := by rfl
+                                        rw [dfn] 
                                         have td :
-                                          Vector.at (head +: clauses) 
+                                          Vector.at 
+                                            (head +: clauses) 
                                             (rc.reverse l (Nat.le_of_succ_le_succ w) + 1) 
-                                            (rc.reverseWit l (Nat.le_of_succ_le_succ w)) =
+                                            (succ_le_succ
+                                              (rc.reverseWit l (Nat.le_of_succ_le_succ w))) =
                                               clauses.at (rc.reverse l (Nat.le_of_succ_le_succ w))
-                                                (rc.reverseWit l (Nat.le_of_succ_le_succ w)) by rfl
-                                        rw td
+                                                (rc.reverseWit l (Nat.le_of_succ_le_succ w)) := by rfl
+                                        rw [td]
                                         done
-                                rw res00
+                                rw [res00]
                                 done
                     let lem2 := Eq.trans (Eq.symm lem) hyp
                     prc.nonPosRev l (le_of_succ_le_succ w) lem2

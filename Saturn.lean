@@ -10,14 +10,20 @@ def printSolution {n dom : Nat}: (clauses : Vector (Clause n) dom) →  IO Unit 
     fun clauses => 
       do
         IO.println ("solving problem")
-        IO.println (solve clauses).toString
+        IO.println (solveSAT clauses).toString
         return ()
 
 def main (args: List String) : IO UInt32 := do
-  let n := Option.getD (bind (args.head?) (String.toNat?)) zero
+  let n : Nat := 
+    match args.head? with
+    | none => 0 
+    | some s =>
+      match s.toNat? with
+      | some n => n 
+      | none => 0  
   IO.println "Hello from SATurn!"
-  IO.println (solve eg1Statement).toString
-  IO.println (solve eg2Statement).toString
+  IO.println (solveSAT eg1Statement).toString
+  IO.println (solveSAT eg2Statement).toString
   let problem := (queensClauses n)
   printSolution problem
 

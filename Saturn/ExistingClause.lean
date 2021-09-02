@@ -35,12 +35,12 @@ def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : fo
                     intro jw
                     have tl :forwardVecN.at (succ i) jw = 
                         tail forwardVecN.at i (Nat.le_of_succ_le_succ jw) := by rfl
-                    rw tl
-                    rw tailCommutes (some p) rc.forwardVec
+                    rw [tl]
+                    rw [tailCommutes (some p) rc.forwardVec]
                     have fr : forwardN (succ i) jw = 
-                            rc.forward i (le_of_succ_le_succ jw)
+                            rc.forward i (le_of_succ_le_succ jw) :=
                         by rfl
-                    rw fr
+                    rw [fr]
                     rfl
                     done
             have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
@@ -66,7 +66,7 @@ def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : fo
                   apply mapAt
                   done
             have reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
-              fun k w => (rc.reverseWit k w)
+              fun k w => succ_le_succ (rc.reverseWit k  w)
 
             RestrictionClauses.mk codomN rc.restClauses 
                   (forwardVecN) 
@@ -133,12 +133,12 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     let lem4 : rc.restClauses.at p = rcN.restClauses.at p := by rfl
                     let lem5 : clausesN.at zero w = head := by rfl
                     by
-                      rw (congrArg (
-                          fun s => delete focus focusLt (Vector.at s)) lem5)
-                      rw ← eqf
-                      rw lem4
+                      rw [(congrArg (
+                          fun s => delete focus focusLt (Vector.at s)) lem5)]
+                      rw [← eqf]
+                      rw [lem4]
                       apply congrArg Vector.at  
-                      rw (witnessIndependent rcN.restClauses.at)
+                      rw [(witnessIndependent rcN.restClauses.at)]
                       rw [lem3]
                       done
                 | l + 1 => 
@@ -168,43 +168,44 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                   let resolve : clausesN.at (rcN.reverse k w) (rcN.reverseWit k w) =
                     clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  
                     by 
-                    have res0:  rcN.reverse k w = rc.reverse k w  + 1 
+                    have res0:  rcN.reverse k w = rc.reverse k w  + 1 :=
                           by
                             have res1 : rcN.reverse k w = 
-                                      rcN.reverseVec.at k w by rfl 
+                                      rcN.reverseVec.at k w := by rfl 
                             have res2 : rc.reverse k w =
-                                    rc.reverseVec.at k w by rfl
+                                    rc.reverseVec.at k w := by rfl
                             rw [res1]
                             rw [res2]
                             have res3 :rcN.reverseVec = 
-                              rc.reverseVec.map (. + 1)  by rfl
-                            rw res3
-                            rw mapAt                                  
+                              rc.reverseVec.map (. + 1) := by rfl
+                            rw [res3]
+                            rw [mapAt]                                  
                             done
                             done
                     have res00 : clausesN.at (rcN.reverse k w) 
                               (rcN.reverseWit k w) =
                           clauses.at (rc.reverse k w )
-                            (rc.reverseWit k w) by 
+                            (rc.reverseWit k w) := by 
                               have rs0 : clausesN.at (rcN.reverse k w) 
                                 (rcN.reverseWit k w) =
-                                  clausesN.at (rc.reverse k w + 1)
-                                    (rc.reverseWit k w) by 
+                                  clausesN.at 
+                                    (rc.reverse k w + 1)
+                                    (succ_le_succ (rc.reverseWit k w)) := by 
                                     apply witnessIndependent
                                     exact res0
                                     done
-                              rw rs0
-                              have dfn : clausesN = head +: clauses by rfl
-                              rw dfn 
+                              rw [rs0]
+                              have dfn : clausesN = head +: clauses := by rfl
+                              rw [dfn] 
                               have td :
                                 Vector.at (head +: clauses) 
                                     (rc.reverse k w + 1) 
-                                    (rc.reverseWit k w) =
+                                    (succ_le_succ (rc.reverseWit k w)) =
                                     clauses.at (rc.reverse k w)
-                                      (rc.reverseWit k w) by rfl
-                              rw td
+                                      (rc.reverseWit k w) := by rfl
+                              rw [td]
                               done
-                    rw res00
+                    rw [res00]
                     done
                   resolve ▸ rrc.relation k w
           ⟨relationN⟩
@@ -229,36 +230,36 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   let resolve : clausesN.at (rcN.reverse k w) (rcN.reverseWit k w) =
                     clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  
                     by 
-                      have res0:  rcN.reverse k w = rc.reverse k w  + 1 
+                      have res0:  rcN.reverse k w = rc.reverse k w  + 1 :=
                           by
                             have res1 : rcN.reverse k w = 
-                                      rcN.reverseVec.at k w by rfl 
+                                      rcN.reverseVec.at k w := by rfl 
                             have res2 : rc.reverse k w =
-                                    rc.reverseVec.at k w by rfl
+                                    rc.reverseVec.at k w := by rfl
                             rw [res1]
                             rw [res2]
                             have res3 :rcN.reverseVec = 
-                              rc.reverseVec.map (. + 1)  by rfl
-                            rw res3
-                            rw mapAt                                  
+                              rc.reverseVec.map (. + 1) := by rfl
+                            rw [res3]
+                            rw [mapAt]                                  
                             done
                       have rs0 : clausesN.at (rcN.reverse k w) 
                           (rcN.reverseWit k w) =
                             clausesN.at (rc.reverse k w + 1)
-                              (rc.reverseWit k w) by 
+                              (succ_le_succ (rc.reverseWit k w)) := by 
                               apply witnessIndependent
                               exact res0
                               done
-                        rw rs0
-                        have dfn : clausesN = head +: clauses by rfl
-                        rw dfn 
+                        rw [rs0]
+                        have dfn : clausesN = head +: clauses := by rfl
+                        rw [dfn] 
                         have td :
                           Vector.at (head +: clauses) 
                               (rc.reverse k w + 1) 
-                              (rc.reverseWit k w) =
+                              (succ_le_succ (rc.reverseWit k w)) =
                               clauses.at (rc.reverse k w)
-                                (rc.reverseWit k w) by rfl
-                      rw td
+                                (rc.reverseWit k w) := by rfl
+                      rw [td]
                       done
                   resolve ▸ prc.nonPosRev k w
           ⟨pureN⟩

@@ -21,8 +21,8 @@ set_option maxHeartbeats 500000
 
 -- structured solutions
 
-def eg1Soln := solve (eg1Statement)
-def eg2Soln := solve (eg2Statement)
+def eg1Soln := solveSAT (eg1Statement)
+def eg2Soln := solveSAT (eg2Statement)
 
 #eval eg1Soln.toString
 #eval eg2Soln.toString
