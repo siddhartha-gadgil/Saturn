@@ -39,11 +39,11 @@ def getJoin (bf : Bool)(left right : Option Bool) :
               fun wr => ⟨some b, Join.someNone b rfl rfl rfl⟩
             | some bb => 
               fun wr =>
-                let lem1 : Not (bb = bf) := by
+                have lem1 : Not (bb = bf) := by
                   intro hyp
                   exact (wr (congrArg some hyp))
                   done
-                let lem2 : bb = b := notNot bf bb b lem1 c
+                have lem2 : bb = b := notNot bf bb b lem1 c
                 ⟨some b, Join.someSome b rfl (congrArg some lem2) rfl⟩
 
 def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top →
@@ -56,7 +56,7 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
             Option.noConfusion lem
           | Join.someNone b wl _ wt => 
             fun nwl _  hyp => 
-              let lem : left = some bf := by
+              have lem : left = some bf := by
                 rw wl
                 rw ← wt
                 assumption
@@ -64,7 +64,7 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
               nwl lem
           | Join.noneSome b _ wr wt => 
             fun _ nwr  hyp => 
-              let lem : right = some bf := by
+              have lem : right = some bf := by
                 rw wr
                 rw ← wt
                 assumption
@@ -72,7 +72,7 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
               nwr lem
           | Join.someSome b wl _ wt => 
             fun nwl _  hyp => 
-              let lem : left = some bf := by
+              have lem : left = some bf := by
                 rw wl
                 rw ← wt
                 assumption
@@ -95,7 +95,7 @@ theorem varResolution {left right top : Option Bool}(join: Join left right top)(
     | Join.someNone b pl pr pt =>
       match hyp with
       | Or.inl (heq : left = some valuationVal) => 
-        let lem : top = left := Eq.trans pt (Eq.symm pl)
+        have lem : top = left := Eq.trans pt (Eq.symm pl)
         Eq.trans lem heq
       | Or.inr heq => 
         let contra: none = some (valuationVal) := Eq.trans (Eq.symm pr) heq
@@ -106,15 +106,15 @@ theorem varResolution {left right top : Option Bool}(join: Join left right top)(
         let contra: none = some (valuationVal) := Eq.trans (Eq.symm pl) heq
         Option.noConfusion contra
       | Or.inr heq => 
-        let lem : top = right := Eq.trans pt (Eq.symm pr)
+        have lem : top = right := Eq.trans pt (Eq.symm pr)
         Eq.trans lem heq  
     | Join.someSome b pl pr pt => 
       match hyp with
       | Or.inl heq => 
-        let lem : top = left := Eq.trans pt (Eq.symm pl)
+        have lem : top = left := Eq.trans pt (Eq.symm pl)
         Eq.trans lem heq
       | Or.inr heq => 
-        let lem : top = right := Eq.trans pt (Eq.symm pr)
+        have lem : top = right := Eq.trans pt (Eq.symm pr)
         Eq.trans lem heq
 
  
@@ -154,28 +154,28 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                  if c : valuation.at (triple.pivot) (triple.pivotLt)  then 
                     -- the left branch survives
                     if cc : kl = triple.pivot then
-                      let lem1 : left.at kl llt = 
+                      have lem1 : left.at kl llt = 
                             left.at triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply cc
                             done 
-                      let lem2 : valuation.at kl llt = 
+                      have lem2 : valuation.at kl llt = 
                             valuation.at triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply cc
                             done 
-                      let lem3 : left.at kl llt = some true := by
+                      have lem3 : left.at kl llt = some true := by
                         rw wl
                         rw lem2
                         rw c
                         done
-                      let lem4 : left.at kl llt = some false := by
+                      have lem4 : left.at kl llt = some false := by
                         rw lem1
                         exact triple.leftPivot
                         done 
-                      let lem5 : some true = some false := 
+                      have lem5 : some true = some false := 
                         Eq.trans (Eq.symm lem3) lem4
-                      let lem6 : true = false := by 
+                      have lem6 : true = false := by 
                         injection lem5
                         assumption
                         done
@@ -210,28 +210,28 @@ def tripleStepProof{n: Nat}(left right top : Clause (n + 1))
                   else
                     let cc := eqFalseOfNeTrue c  
                     if ccc : kr = triple.pivot then 
-                      let lem1 : right.at kr rlt = 
+                      have lem1 : right.at kr rlt = 
                             right.at triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply ccc
                             done 
-                      let lem2 : valuation.at kr rlt = 
+                      have lem2 : valuation.at kr rlt = 
                             valuation.at triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply ccc
                             done 
-                      let lem3 : right.at kr rlt = some false := by
+                      have lem3 : right.at kr rlt = some false := by
                         rw wr
                         rw lem2
                         rw cc
                         done
-                      let lem4 : right.at kr rlt = some true := by
+                      have lem4 : right.at kr rlt = some true := by
                         rw lem1
                         exact triple.rightPivot
                         done 
-                      let lem5 : some false = some true := 
+                      have lem5 : some false = some true := 
                         Eq.trans (Eq.symm lem3) lem4
-                      let lem6 : false = true := by 
+                      have lem6 : false = true := by 
                         injection lem5
                         assumption
                         done
@@ -274,28 +274,28 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                  if c : valuation.at (triple.pivot) (triple.pivotLt)  then 
                     -- the left branch survives
                     if cc : kl = triple.pivot then 
-                      let lem1 : left.at kl llt = 
+                      have lem1 : left.at kl llt = 
                             left.at triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply cc
                             done 
-                      let lem2 : valuation.at kl llt = 
+                      have lem2 : valuation.at kl llt = 
                             valuation.at triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply cc
                             done 
-                      let lem3 : left.at kl llt = some true := by
+                      have lem3 : left.at kl llt = some true := by
                         rw wl
                         rw lem2
                         rw c
                         done
-                      let lem4 : left.at kl llt = some false := by
+                      have lem4 : left.at kl llt = some false := by
                         rw lem1
                         exact triple.leftPivot
                         done 
-                      let lem5 : some true = some false := 
+                      have lem5 : some true = some false := 
                         Eq.trans (Eq.symm lem3) lem4
-                      let lem6 : true = false := by 
+                      have lem6 : true = false := by 
                         injection lem5
                         assumption
                         done
@@ -330,28 +330,28 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                   else
                     let cc := eqFalseOfNeTrue c  
                     if ccc : kr = triple.pivot then  
-                      let lem1 : right.at kr rlt = 
+                      have lem1 : right.at kr rlt = 
                             right.at triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply ccc
                             done 
-                      let lem2 : valuation.at kr rlt = 
+                      have lem2 : valuation.at kr rlt = 
                             valuation.at triple.pivot triple.pivotLt := by
                             apply witnessIndependent
                             apply ccc
                             done 
-                      let lem3 : right.at kr rlt = some false := by
+                      have lem3 : right.at kr rlt = some false := by
                         rw wr
                         rw lem2
                         rw cc
                         done
-                      let lem4 : right.at kr rlt = some true := by
+                      have lem4 : right.at kr rlt = some true := by
                         rw lem1
                         exact triple.rightPivot
                         done 
-                      let lem5 : some false = some true := 
+                      have lem5 : some false = some true := 
                         Eq.trans (Eq.symm lem3) lem4
-                      let lem6 : false = true := by 
+                      have lem6 : false = true := by 
                         injection lem5
                         assumption
                         done
@@ -409,21 +409,21 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
           let rightN := insert rightFoc (n + 1) k lt right.at
           let topN := insert topFoc (n + 1) k lt top.at
           let leftPivotN : leftN pivotN pivotNLt = some false := 
-            let lem1 : leftN pivotN pivotNLt = left.at rt.pivot rt.pivotLt := 
+            have lem1 : leftN pivotN pivotNLt = left.at rt.pivot rt.pivotLt := 
               insertAtImage leftFoc (n + 1) k lt left.at rt.pivot rt.pivotLt
             by
               rw lem1
               exact rt.leftPivot
               done
           let rightPivotN : rightN pivotN pivotNLt = some true := 
-            let lem1 : rightN pivotN pivotNLt = right.at rt.pivot rt.pivotLt := 
+            have lem1 : rightN pivotN pivotNLt = right.at rt.pivot rt.pivotLt := 
               insertAtImage rightFoc (n + 1) k lt right.at rt.pivot rt.pivotLt
             by
               rw lem1
               exact rt.rightPivot
               done
           let topPivotN : topN pivotN pivotNLt = none := 
-            let lem1 : topN pivotN pivotNLt = top.at rt.pivot rt.pivotLt := 
+            have lem1 : topN pivotN pivotNLt = top.at rt.pivot rt.pivotLt := 
               insertAtImage topFoc (n + 1) k lt top.at rt.pivot rt.pivotLt
             by
               rw lem1
@@ -473,8 +473,8 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                     let w := skipInverseEqn k jj w
                     let iw : i < n + 1 := skipPreImageBound lt jjw w
                     if ww: i = rt.pivot then
-                      let lem1 : skip k i = skip k rt.pivot := congrArg (skip k) ww
-                      let lem2 : skip k  rt.pivot = jj := by 
+                      have lem1 : skip k i = skip k rt.pivot := congrArg (skip k) ww
+                      have lem2 : skip k  rt.pivot = jj := by 
                             rw (Eq.symm lem1)
                             exact w
                             done
@@ -636,8 +636,8 @@ def resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : C
         match tree with
         | ResolutionTree.assumption j jw .(top) eqn  => 
           fun valuation base  => 
-            let lem0 : clauses.at j jw = top := eqn
-            let lem1 : clauseSat (clauses.at j jw) valuation := base j jw
+            have lem0 : clauses.at j jw = top := eqn
+            have lem1 : clauseSat (clauses.at j jw) valuation := base j jw
           by
             rw (Eq.symm lem0)
             exact lem1
@@ -660,7 +660,7 @@ def resolutionToSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Cla
         match tree with
         | ResolutionTree.assumption j jw .(top) eqn => 
           fun valuation base  => 
-            let lem1 : ClauseSat (clauses.at j jw) valuation := base j jw
+            have lem1 : ClauseSat (clauses.at j jw) valuation := base j jw
           by
             rw ← eqn
             exact lem1
@@ -792,15 +792,15 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
             let topFocus := cl.at focus focusLt
             let nonPosLem : Not (topFocus = some branch)  := 
                 np.nonPosRev j jw
-            let lem1 : Vector.at (rc.restClauses.at j jw) = 
+            have lem1 : Vector.at (rc.restClauses.at j jw) = 
                   delete focus focusLt (Vector.at (clauses.at k kw)) 
                        := by
                        apply rr.relation
                        done
-            let lem3 : insert (cl.at focus focusLt) (n + 1) focus focusLt 
+            have lem3 : insert (cl.at focus focusLt) (n + 1) focus focusLt 
                           (delete focus focusLt cl.at) = cl.at 
                           := insertDelete focus focusLt cl.at
-            let lem : insert topFocus (n + 1) focus focusLt top.at = cl.at := by
+            have lem : insert topFocus (n + 1) focus focusLt top.at = cl.at := by
                       rw ← ttp
                       rw lem1
                       rw lem3
@@ -842,7 +842,7 @@ def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n +
                                 (contradiction (n + 1)) rpf 
             match pbt.topFocus, pbt.nonPos, pbt.provedTree with 
             | none, _, tree => 
-                let lem :
+                have lem :
                   FinSeq.vec (insert none (Nat.add n 1) focus focusLt (Vector.at (contradiction (n + 1)))) =
                     contradiction (n + 2) := by
                       rw (contradictionInsNone focus focusLt)
@@ -855,7 +855,7 @@ def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n +
                             done
                 LiftedResPf.contra t
             | some b, ineq, tree =>
-                let lemPar : Not (b = branch) := fun hyp => ineq (congrArg some hyp)
+                have lemPar : Not (b = branch) := fun hyp => ineq (congrArg some hyp)
                 let par : b = not branch := notNot2 branch lemPar
                 let t : ResolutionTree clauses (unitClause (n + 1) (not branch) focus focusLt) := 
                           by
@@ -899,8 +899,8 @@ theorem proofsPreverveNonPos{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
                   match tree with
                   | ResolutionTree.assumption ind  bd .(top) chk =>
                     fun  hyp => 
-                      let lem0 : clauses.at ind bd = top := chk
-                      let lem1 : Not (top.at k kw = some bf) := by
+                      have lem0 : clauses.at ind bd = top := chk
+                      have lem1 : Not (top.at k kw = some bf) := by
                               rw (Eq.symm lem0)
                               exact (base ind bd)
                       absurd hyp lem1

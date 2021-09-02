@@ -99,13 +99,9 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                 rc.reverseWit l w
             RestrictionClauses.mk codomN restClausesN 
                     (forwardVecN) 
-                    (by 
-                      rw forwardNEq
-                      exact forwardWitN) 
+                    ( forwardNEq ▸ forwardWitN) 
                     reverseVecN
-                    (by 
-                      rw reverseNEq
-                      exact reverseWitN)
+                    (reverseNEq ▸ reverseWitN)
 
 namespace PrependClause
 

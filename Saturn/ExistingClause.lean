@@ -47,18 +47,14 @@ def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : fo
               fun k  => 
               match k with 
               | zero => fun w => 
-                let lem1 : forwardN zero w = some p := by rfl
-                by
-                  rw lem1
-                  exact pw
-                  done
+                let resolve : forwardN zero w = some p := by rfl
+                resolve ▸ pw
               | l + 1 => 
                 fun w : l + 1 < domN   => 
-                  let lem : forwardN (l + 1) w = rc.forward l (leOfSuccLeSucc w) := by rfl 
-                  by
-                    rw lem
-                    exact (rc.forwardWit l (leOfSuccLeSucc w))
-                    done
+                  let lem : forwardN (l + 1) w = rc.forward l (leOfSuccLeSucc w) := 
+                      by rfl 
+                  lem ▸ (rc.forwardWit l (leOfSuccLeSucc w))
+                    
             let reverseVecN := rc.reverseVec.map (. + 1)
             let reverseN : (k : Nat) →  k < codomN → Nat := 
               fun k w => (rc.reverse k w) + 1
@@ -74,13 +70,11 @@ def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : fo
 
             RestrictionClauses.mk codomN rc.restClauses 
                   (forwardVecN) 
-                  (by 
-                    rw forwardNEq
-                    exact forwardWitN) 
+                  (forwardNEq ▸ forwardWitN) 
                   reverseVecN
-                  (by 
-                    rw reverseNEq
-                    exact reverseWitN)namespace ExistingClauses
+                  (reverseNEq ▸ reverseWitN)
+                  
+namespace ExistingClauses
 
 def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
@@ -105,13 +99,10 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     Option.noConfusion lem2
                   | l + 1 => 
                     fun w nw =>
-                      let lem1 : rcN.forward (l + 1) w = 
+                      let resolve : rcN.forward (l + 1) w = 
                         rc.forward l (leOfSuccLeSucc w) := by rfl
-                      let lem2 := Eq.trans (Eq.symm lem1) nw
-                      let lem3 := drc.dropped l (leOfSuccLeSucc w) lem2
-                      by
-                        exact lem3
-                        done
+                      let lem2 := Eq.trans (Eq.symm resolve) nw
+                      drc.dropped l (leOfSuccLeSucc w) lem2
           ⟨droppedN⟩
 
 def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
@@ -133,8 +124,8 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                 match k with
                 | zero => fun w j => 
                   fun sw jw =>
-                    let lem1 : rcN.forward zero w = some p := by rfl 
-                    let lem2 : some j = some p := Eq.trans (Eq.symm sw) lem1
+                    let resolve : rcN.forward zero w = some p := by rfl 
+                    let lem2 : some j = some p := Eq.trans (Eq.symm sw) resolve
                     let lem3 : j = p := by 
                       injection lem2
                       assumption
@@ -174,7 +165,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                   delete focus focusLt 
                     (Vector.at (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w))) := 
                   fun k w =>
-                  let lem1 : clausesN.at (rcN.reverse k w) (rcN.reverseWit k w) =
+                  let resolve : clausesN.at (rcN.reverse k w) (rcN.reverseWit k w) =
                     clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  
                     by 
                     have res0:  rcN.reverse k w = rc.reverse k w  + 1 
@@ -215,10 +206,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                               done
                     rw res00
                     done
-                    by
-                      rw lem1
-                      exact rrc.relation k w
-                      done
+                  resolve ▸ rrc.relation k w
           ⟨relationN⟩
 
 def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
@@ -238,7 +226,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   Vector.at (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w))
                      (focus) focusLt = some branch) :=
                   fun k w =>
-                  let lem1 : clausesN.at (rcN.reverse k w) (rcN.reverseWit k w) =
+                  let resolve : clausesN.at (rcN.reverse k w) (rcN.reverseWit k w) =
                     clauses.at (rc.reverse k w) (rc.reverseWit k w) :=  
                     by 
                       have res0:  rcN.reverse k w = rc.reverse k w  + 1 
@@ -272,10 +260,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                                 (rc.reverseWit k w) by rfl
                       rw td
                       done
-                    by
-                      rw lem1
-                      exact prc.nonPosRev k w
-                      done 
+                  resolve ▸ prc.nonPosRev k w
           ⟨pureN⟩
 
 def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)

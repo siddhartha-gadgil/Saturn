@@ -72,8 +72,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
               rw seqAt
               rfl
               done
-            rw sm
-            exact ra
+            exact (Eq.symm sm) ▸ ra
             done
         exact clausesTrans
         done
@@ -145,12 +144,14 @@ def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.at zero (zeroLtSucc zero) = cl2
 
 def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.at zero (zeroLtSucc zero) = some b):
                                 cl = unitClause zero b zero (zeroLtSucc zero) := 
-                                let lem1 : Vector.at (unitClause zero b zero (zeroLtSucc zero)) zero (zeroLtSucc zero) = 
-                                  some b :=
+                                let lem1 : Vector.at 
+                                  (unitClause zero b zero (zeroLtSucc zero)) zero (zeroLtSucc zero) = 
+                                    some b :=
                                           by
                                             apply unitDiag
                                 let lem2 : cl.at zero (zeroLtSucc zero) = 
-                                    Vector.at (unitClause zero b zero (zeroLtSucc zero)) zero (zeroLtSucc zero) 
+                                    Vector.at (unitClause zero b zero (zeroLtSucc zero)) 
+                                      zero (zeroLtSucc zero) 
                                       := 
                                           by
                                             rw eql
