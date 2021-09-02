@@ -131,7 +131,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
               let lem3 : Vector.at (clauses.at k w) focus focusLt = 
                 some (insert branch n focus focusLt valuation.at focus focusLt) := 
                 by
-                  rw lem1
+                  rw [lem1]
                   apply (congrArg some)
                   exact Eq.symm lem2
                   done
@@ -140,15 +140,15 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
                     (FinSeq.vec (insert branch n focus focusLt 
                       (Vector.at valuation))) focus focusLt)) := 
                       by 
-                        rw (seqAt (insert branch n focus focusLt 
-                      (Vector.at valuation)))
-                        rw lem3
+                        rw [seqAt (insert branch n focus focusLt 
+                      (Vector.at valuation))]
+                        rw [lem3]
                         done
               ⟨focus, focusLt, lem4⟩
             | OptCase.someCase j eqn => 
               let bound := rc.forwardWit k w 
               let jWitAux : boundOpt rc.codom (some j) := by
-                rw (Eq.symm eqn)
+                rw [←  eqn]
                 exact bound
                 done
               let jWit : j < rc.codom := jWitAux
@@ -159,8 +159,8 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
               let lem3 : delete focus focusLt (Vector.at (clauses.at k w)) i iw =
                   some (valuation.at i iw) := 
                     by
-                    rw (Eq.symm lem2)
-                    rw lem1
+                    rw [←  lem2]
+                    rw [lem1]
                     done
               let lem4 : delete focus focusLt (Vector.at (clauses.at k w)) i iw =
                 (Vector.at (clauses.at k w)) (skip focus i) (skipPlusOne iw) := by
@@ -174,17 +174,17 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
               let lem6 : (Vector.at (clauses.at k w)) (skip focus i) (skipPlusOne iw) =
                           some (insert branch n focus focusLt valuation.at 
                               (skip focus i) (skipPlusOne iw)) := by
-                              rw (Eq.symm lem4)
-                              rw lem3
-                              rw lem5
+                              rw [← lem4]
+                              rw [lem3]
+                              rw [lem5]
                               done
               let lem7 : (Vector.at (Vector.at clauses k w) (skip focus i) (skipPlusOne iw)) =
                 some (
                   (Vector.at (FinSeq.vec (insert branch n focus focusLt (Vector.at valuation))) 
                     (skip focus i) (skipPlusOne iw))) := 
                       by
-                        rw (seqAt (insert branch n focus focusLt (Vector.at valuation)))
-                        rw lem6
+                        rw [seqAt (insert branch n focus focusLt (Vector.at valuation))]
+                        rw [lem6]
                         done
               ⟨skip focus i, skipPlusOne iw, lem7⟩
 
@@ -196,8 +196,8 @@ theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           Vector.at (unitClause n b k w) k w = b := by
             have resolve  : unitClause n b k w = 
                 FinSeq.vec (insert (some b) n k w (Vector.at (contradiction n))) := rfl
-            rw resolve
-            rw seqAt
+            rw [resolve]
+            rw [seqAt]
             apply insertAtFocus (some b) n k w (Vector.at (contradiction n))
             done
 
@@ -207,11 +207,11 @@ theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
                   intros i iw
                   have resolve  : unitClause n b k w = 
                         FinSeq.vec (insert (some b) n k w (Vector.at (contradiction n))) := rfl
-                  rw resolve
-                  rw seqAt 
+                  rw [resolve]
+                  rw [seqAt] 
                   let ins := insertAtImage (some b) n k w (Vector.at (contradiction n)) i iw
-                  rw ins
-                  rw contraAt
+                  rw [ins]
+                  rw [contraAt]
                   done
 
 structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
@@ -258,14 +258,14 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))
         match clauseUnit (clauses m cbBound) with
         | some u => some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩ 
         | none => 
-          someUnitClauseAux clauses m (Nat.leTrans (Nat.leSucc m) cbBound) none
+          someUnitClauseAux clauses m (Nat.le_trans (Nat.le_succ m) cbBound) none
           
 
 
 def someUnitClause {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))) →  
   Option (SomeUnitClause clauses)  := 
     fun clauses =>
-     someUnitClauseAux clauses l (Nat.leRefl l) none
+     someUnitClauseAux clauses l (Nat.le_refl l) none
 
 structure HasPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom) where
   index : Nat
@@ -299,7 +299,7 @@ def pureBeyondZero{dom n : Nat}(clauses : Vector  (Clause n) dom)
                     intro hyp
                     intro k
                     intro kw
-                    exact hyp k kw  (Nat.zeroLe k)
+                    exact hyp k kw  (Nat.zero_le k)
                     done   
 
 def pureBeyondVacuous{dom n : Nat}(clauses : Vector  (Clause n) dom)
@@ -308,9 +308,9 @@ def pureBeyondVacuous{dom n : Nat}(clauses : Vector  (Clause n) dom)
                   intro k
                   intro kw
                   intro ineq
-                  let inq := Nat.leTrans le ineq
-                  let inq2 := Nat.ltOfLtOfLe kw inq
-                  exact (False.elim (Nat.ltIrrefl k inq2))
+                  let inq := Nat.le_trans le ineq
+                  let inq2 := Nat.lt_of_lt_of_le kw inq
+                  exact (False.elim (Nat.lt_irrefl k inq2))
                   done
 
 structure IsPureVarBeyond{dom n : Nat}(clauses : Vector  (Clause n) dom)
@@ -338,13 +338,13 @@ def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
                     intro k 
                     intro kw
                     intro ineq
-                    cases Nat.eqOrLtOfLe ineq with
+                    cases Nat.eq_or_lt_of_le ineq with
                     | inl eql =>           
                       let lem1 : clauses.at p pw = clauses.at k kw := by
                         apply witnessIndependent
                         exact eql
                         done
-                      rw ← lem1
+                      rw [← lem1]
                       exact pf
                       done
                     | inr l2 => 
@@ -360,7 +360,7 @@ def varIsPure{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
     Option (IsPureVar clauses index bound parity) :=
     fun dom clauses =>
       varIsPureRec index bound parity dom clauses dom 
-        (some ⟨pureBeyondVacuous clauses index bound parity dom (Nat.leRefl _)⟩)
+        (some ⟨pureBeyondVacuous clauses index bound parity dom (Nat.le_refl _)⟩)
 
 def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Vector  (Clause (n +1)) dom) → 
   (ub: Nat) → (lt : ub < n + 1) → 
@@ -381,22 +381,22 @@ def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Vector  (Clause (n +1)) do
         | l + 1 =>
           fun lt =>
             let atCursor := 
-                ((varIsPure l (leStep lt) true dom clauses).map (
+                ((varIsPure l (le_step  (le_of_succ_le_succ lt)) true dom clauses).map (
               fun ⟨evidence⟩ =>
-                HasPureVar.mk l (leStep lt) true evidence
+                HasPureVar.mk l (le_step (le_of_succ_le_succ lt)) true evidence
                 )
                 ).orElse (              
-                (varIsPure l (leStep lt) false dom clauses).map (
+                (varIsPure l (le_step (le_of_succ_le_succ lt)) false dom clauses).map (
               fun ⟨evidence⟩ =>
-                HasPureVar.mk l (leStep lt) false evidence
+                HasPureVar.mk l (le_step (le_of_succ_le_succ lt)) false evidence
                 ))
             match atCursor with
             | some res => some res
             |none =>
-              findPureAux dom clauses l (leStep lt)
+              findPureAux dom clauses l (le_step (le_of_succ_le_succ lt))
             
 def hasPure{n : Nat}{dom: Nat}(clauses : Vector  (Clause (n +1)) dom) 
              : Option (HasPureVar clauses) :=
-          findPureAux dom clauses n (Nat.leRefl _)
+          findPureAux dom clauses n (Nat.le_refl _)
 
 

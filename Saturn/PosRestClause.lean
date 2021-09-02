@@ -20,7 +20,7 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
             match k with 
             | zero => fun _ => none
             | l + 1 => 
-              fun w : l + 1 < domN   =>  rc.forward l (leOfSuccLeSucc w)
+              fun w : l + 1 < domN   =>  rc.forward l (le_of_succ_le_succ w)
           have forwardNEq : forwardVecN.at = forwardN := by
                   apply funext
                   intro j
@@ -33,11 +33,11 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                     apply funext
                     intro jw
                     have tl :forwardVecN.at (succ i) jw = 
-                        tail forwardVecN.at i (Nat.leOfSuccLeSucc jw) := by rfl
+                        tail forwardVecN.at i (Nat.le_of_succ_le_succ jw) := by rfl
                     rw tl
                     rw tailCommutes none rc.forwardVec
                     have fr : forwardN (succ i) jw = 
-                            rc.forward i (leOfSuccLeSucc jw)
+                            rc.forward i (le_of_succ_le_succ jw)
                         by rfl
                     rw fr
                     rfl
@@ -48,17 +48,17 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
             | zero => fun w => 
               let resolve : forwardN zero w = none := by rfl
               by
-                rw resolve
+                rw [resolve]
                 have  boundOpt codomN none = True by rfl
                 rw this
                 exact True.intro
                 done
             | l + 1 => 
               fun w : l + 1 < domN   => 
-                let lem : forwardN (l + 1) w = rc.forward l (leOfSuccLeSucc w) := by rfl 
+                let lem : forwardN (l + 1) w = rc.forward l (le_of_succ_le_succ w) := by rfl 
                 by
                   rw lem
-                  exact (rc.forwardWit l (leOfSuccLeSucc w))
+                  exact (rc.forwardWit l (le_of_succ_le_succ w))
                   done
           let reverseVecN := rc.reverseVec.map (. + 1)
           let reverseN : (k : Nat) →  k < codomN → Nat := 
@@ -100,9 +100,9 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   | l + 1 => 
                     fun w nw =>
                       let resolve : rcN.forward (l + 1) w = 
-                        rc.forward l (leOfSuccLeSucc w) := by rfl
+                        rc.forward l (le_of_succ_le_succ w) := by rfl
                       let lem2 := Eq.trans (Eq.symm resolve) nw
-                      let lem3 := drc.dropped l (leOfSuccLeSucc w) lem2
+                      let lem3 := drc.dropped l (le_of_succ_le_succ w) lem2
                       by
                         exact lem3
                         done
@@ -130,7 +130,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                 | l + 1 => 
                   fun w j => 
                     fun sw =>
-                      frc.forwardRelation l (leOfSuccLeSucc w) j sw
+                      frc.forwardRelation l (le_of_succ_le_succ w) j sw
           ⟨forwardRelationN⟩
 
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
@@ -158,8 +158,8 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                                       rcN.reverseVec.at k w by rfl 
                             have res2 : rc.reverse k w =
                                     rc.reverseVec.at k w by rfl
-                            rw res1
-                            rw res2
+                            rw [res1]
+                            rw [res2]
                             have res3 :rcN.reverseVec = 
                               rc.reverseVec.map (. + 1)  by rfl
                             rw res3
@@ -218,8 +218,8 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                                       rcN.reverseVec.at k w by rfl 
                             have res2 : rc.reverse k w =
                                     rc.reverseVec.at k w by rfl
-                            rw res1
-                            rw res2
+                            rw [res1]
+                            rw [res2]
                             have res3 :rcN.reverseVec = 
                               rc.reverseVec.map (. + 1)  by rfl
                             rw res3

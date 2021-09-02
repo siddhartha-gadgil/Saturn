@@ -31,14 +31,14 @@ theorem contraAt(n: Nat) : Vector.at (contradiction n) = (fun _ _ => none) := by
 
 theorem contradictionFalse (n: Nat) : ∀ valuation : Valuation n, Not (clauseSat (contradiction n) valuation) :=
   fun valuation => fun ⟨k, ⟨b, p⟩⟩ => 
-    let lem1 : Vector.at (contradiction n) k b = none := by (rw (contraAt n))
+    let lem1 : Vector.at (contradiction n) k b = none := by rw [contraAt n]
     let lem2 : varSat (Vector.at (contradiction n) k b) = varSat none := congrArg varSat lem1
     let lem3 : varSat (Vector.at (contradiction n) k b) (valuation.at k b) = 
                 varSat none (valuation.at k b) := congr lem2 rfl
     let lem4 : (varSat none (valuation.at k b)) = (none = some (valuation.at k b)) := rfl
     let lem5 : (none = some (valuation.at k b)) := by
-      rw ← lem4
-      rw ← lem2
+      rw [← lem4]
+      rw [← lem2]
       exact p
       done 
     Option.noConfusion lem5
@@ -50,13 +50,14 @@ theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
             insert none n focus focusLt (Vector.at (contradiction n)) j jw  =
                       Vector.at (contradiction (n + 1)) j jw := 
                       fun j jw =>
-                      let lem0 : Vector.at (contradiction (n + 1)) j jw = none := by rw contraAt
+                      let lem0 : Vector.at (contradiction (n + 1)) j jw = none := 
+                          by rw [contraAt]
                       if c : j= focus then 
                         match focus, c, focusLt with
                         | .(j), rfl, .(jw) =>
                           by
-                            rw insertAtFocus 
-                            rw contraAt
+                            rw [insertAtFocus] 
+                            rw [contraAt]
                             done                                
                       else  
                         let i := skipInverse focus j c 
@@ -65,11 +66,11 @@ theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
                         match j, eqn, jw, lem0 with
                         | .(skip focus i), rfl, .(skipPlusOne iw), lem1 =>  
                           by
-                            rw lem1
-                            rw (insertAtImage 
+                            rw [lem1]
+                            rw [insertAtImage 
                                none n focus focusLt (Vector.at (contradiction n))
-                               i iw)
-                            rw contraAt
+                               i iw]
+                            rw [contraAt]
                             done                               
                  by
                     apply funext
@@ -107,7 +108,7 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
             isTrue (fun b => 
                       fun hyp =>
                        by
-                        rw c
+                        rw [c]
                         exact hyp
                         done)
           else 
@@ -150,7 +151,7 @@ theorem containsBeyondZero {n: Nat} (cl1 cl2 : Clause n) :
     intro k
     intro kw
     intro b
-    exact h k kw (Nat.zeroLe _) b
+    exact h k kw (Nat.zero_le _) b
     done
 
 def containsSat{n: Nat} (cl1 cl2 : Clause n) :
@@ -173,7 +174,7 @@ def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
             | j + 1  =>  
               fun  kw b =>
                 fun hb =>
-                  hyp2 j  (leOfSuccLeSucc kw) b hb
+                  hyp2 j  (le_of_succ_le_succ kw) b hb
 
 -- def containsTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
 --         cl1 ⊇  cl2 → (tail cl1) ⊇ (tail cl2) :=
@@ -199,8 +200,8 @@ def containsTrans{n: Nat} (cl1 cl2 cl3 : Clause n) :
                 apply dHyp
                 done
 
-#check Nat.eqOrLtOfLe
-#check Nat.ltIrrefl
+#check Nat.eq_or_lt_of_le
+#check Nat.lt_irrefl
 
 def containsBeyondVacuous{n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
     (n ≤ m) → containsBeyond cl1 cl2 m := by
@@ -208,9 +209,9 @@ def containsBeyondVacuous{n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
       intro k
       intro kw
       intro ineq
-      let inq := Nat.leTrans h ineq
-      let inq2 := Nat.ltOfLtOfLe kw inq
-      exact (False.elim (Nat.ltIrrefl k inq2))
+      let inq := Nat.le_trans h ineq
+      let inq2 := Nat.lt_of_lt_of_le kw inq
+      exact (False.elim (Nat.lt_irrefl k inq2))
       done
 
 def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
@@ -235,7 +236,7 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                           intro kw
                           intro ineq
                           intro b
-                          cases Nat.eqOrLtOfLe ineq with
+                          cases Nat.eq_or_lt_of_le ineq with
                           | inl eql =>
                             let lem0 := pfHead b
                             let lem1 : cl1.at l lw = cl1.at k kw := by
@@ -245,8 +246,8 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                             let lem2 : cl2.at l lw = cl2.at k kw := by
                               apply witnessIndependent
                               exact eql
-                            rw ← lem1
-                            rw ← lem2
+                            rw [← lem1]
+                            rw [← lem2]
                             exact lem0
                             done
                           | inr l2 => 
@@ -256,12 +257,12 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                   | isFalse contra => isFalse (fun hyp =>
                               contra ( 
                                 fun b => 
-                                  hyp l lw (Nat.leRefl _) b 
+                                  hyp l lw (Nat.le_refl _) b 
                                 )                           
                                 )
             else
                 let overshoot : n ≤ l := by
-                  cases Nat.ltOrGe l n with
+                  cases Nat.lt_or_ge l n with
                   | inl l1 => exact absurd l1 lw
                   | inr l2 => exact l2
                 isTrue (containsBeyondVacuous cl1 cl2 l overshoot)
@@ -271,7 +272,7 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
 def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) → 
                                           Decidable (cl1 ⊇   cl2) :=
     fun cl1 cl2 => decideContainsRec cl1 cl2 n 
-        (isTrue (containsBeyondVacuous cl1 cl2 n (Nat.leRefl _)))
+        (isTrue (containsBeyondVacuous cl1 cl2 n (Nat.le_refl _)))
 
 instance {n: Nat}{cl: Clause n} : DecidablePred (contains cl) :=
   decideContains n cl
@@ -312,12 +313,12 @@ def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment
     let idAt : (j : Nat) → (jw : j < dom) → idVec.at j jw = j := by
       intro j
       intro jw
-      rw seqAt
+      rw [seqAt]
       done
     let idBound : (j : Nat) → (jw : j < dom) → idVec.at j jw < dom := by
       intro j
       intro jw
-      rw idAt
+      rw [idAt]
       exact jw
       done
 
@@ -325,8 +326,8 @@ def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment
           idVec.at (idVec.at j jw) (idBound j jw) = j := by
           intro j
           intro jw
-          rw idAt
-          rw idAt
+          rw [idAt]
+          rw [idAt]
           done
 
     let baseEqn : (j : Nat) → (jw : j < dom) →
@@ -334,13 +335,13 @@ def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment
           intro j
           intro jw
           apply witnessIndependent
-          rw idAt
+          rw [idAt]
           done
     let baseContains : (j : Nat) → (jw : j < dom) →
           contains (base.at j jw) (base.at (idVec.at j jw) (idBound j jw)) := by
           intro j
           intro jw
-          rw baseEqn
+          rw [baseEqn]
           exact contains.self (base.at j jw)
           done
     ⟨dom, base, idVec, idBound, baseContains, idVec, idBound, 
@@ -348,7 +349,7 @@ def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment
       intro j
       intro jw
       apply witnessIndependent
-      rw idAt
+      rw [idAt]
       done⟩
 
 
@@ -360,13 +361,13 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
       | zero => fun _ => id
       | k + 1 =>
         fun base contn =>
-          let ⟨j, (ineq : j < contn.codom), _⟩ := contn.forward zero (zeroLtSucc _)      
-          let neZero : Not (zero = contn.codom) := fun hyp => 
-          let l0 : j < zero := by
-            rw hyp
+          let ⟨j, (ineq : j < contn.codom), _⟩ := contn.forward zero (zero_lt_succ _)      
+          let neZero : Not (0 = contn.codom) := fun hyp => 
+          let l0 : j < 0 := by
+            rw [hyp]
             exact ineq
             done
-         Nat.notLtZero k l0
+          Nat.not_lt_zero j l0
         let ⟨l, leqn⟩ := posSucc contn.codom neZero
         match contn.codom, leqn, contn.imageSeq, contn.forward, contn.reverse,
             contn.forwardVec, contn.forwardBound, contn.forwardEq,
@@ -396,7 +397,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                                 apply c
                                 done
                           let lem2 : imageSeq.at i iw ⊇ imageSeqN zi zb := by
-                                rw lem1 
+                                rw [lem1] 
                                 exact zc
                                 done    
                           ⟨zi, zb, containsTrans _ _ _ ict lem2⟩
@@ -410,8 +411,8 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                                         apply eqn
                                         done 
                         ⟨ii, iiw, by 
-                                  rw lem1
-                                  rw lem2
+                                  rw [lem1]
+                                  rw [lem2]
                                   exact ict
                                   done⟩
               let forwardNVec := FinSeq.vec (fun j jw => (forwardN j jw).index)
@@ -420,13 +421,13 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                       by
                         intro j
                         intro jw
-                        rw seqAt 
+                        rw [seqAt] 
                         done
               have forwardNBound : (j : Nat) → (jw : j < domN) →
                       forwardNVec.at j jw < codomN := by
                         intro j
                         intro jw
-                        rw forwardNAt
+                        rw [forwardNAt]
                         exact (forwardN j jw).bound
                         done
               have forwardNEq : (j : Nat) → (jw : j < domN) → 
@@ -436,7 +437,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                           intro j
                           intro jw
                           apply witnessIndependent
-                          rw forwardNAt
+                          rw [forwardNAt]
                           done
               have forwardNPred : (j : Nat) → (jw : j < domN) →
                     contains (base.at j jw) 
@@ -446,10 +447,9 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                           intro jw
                           have se : 
                             (imageSeqN.vec.at (forwardNVec.at j jw) (forwardNBound j jw)) =
-                            (imageSeqN (forwardNVec.at j jw) (forwardNBound j jw)) by
-                              rw seqAt
-                          rw se
-                          rw (forwardNEq j jw)
+                            (imageSeqN (forwardNVec.at j jw) (forwardNBound j jw)) := by
+                              rw [seqAt]
+                          rw [se, forwardNEq j jw]
                           exact (forwardN j jw).equation
                           done
               let reverseN : (j : Nat) → (jw : j < codomN) → 
@@ -466,13 +466,13 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                       by
                         intro j
                         intro jw
-                        rw seqAt
+                        rw [seqAt]
                         done
               have reverseNBound : (j : Nat) → (jw : j < codomN) →
                       reverseNVec.at j jw < domN := by
                         intro j
                         intro jw
-                        rw reverseNAt
+                        rw [reverseNAt]
                         exact (reverseN j jw).bound
                         done
               have reverseNAtImage : (j : Nat) → (jw : j < l) →
@@ -480,7 +480,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                       by
                         intro j
                         intro jw
-                        rw seqAt
+                        rw [seqAt]
                         done
               have reverseNEq : (j : Nat) → (jw : j < codomN) →
                   (base.at (reverseNVec.at j jw) (reverseNBound j jw)) =
@@ -488,15 +488,15 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                         intro j
                         intro jw
                         apply witnessIndependent
-                        rw reverseNAt
+                        rw [reverseNAt]
                         done
               have reverseNPred : (j : Nat) → (jw : j < codomN) →
                   base.at (reverseNVec.at j jw) (reverseNBound j jw) =
                     imageSeqN.vec.at j jw := by
                         intro j
                         intro jw
-                        rw (reverseNAtImage j jw)
-                        rw (reverseNEq j jw)
+                        rw [reverseNAtImage j jw]
+                        rw [reverseNEq j jw]
                         exact (reverseN j jw).equation
                         done
              ⟨codomN, imageSeqN.vec, forwardNVec, forwardNBound, forwardNPred,
