@@ -22,7 +22,7 @@ def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : fo
               | zero => fun _ => some p
               | l + 1 => 
                 fun w : l + 1 < domN   =>  rc.forward l (leOfSuccLeSucc w)
-            let forwardNEq : forwardVecN.at = forwardN := by
+            have forwardNEq : forwardVecN.at = forwardN := by
                   apply funext
                   intro j
                   cases j with
@@ -43,7 +43,7 @@ def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : fo
                     rw fr
                     rfl
                     done
-            let forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
+            have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
               fun k  => 
               match k with 
               | zero => fun w => 
@@ -60,27 +60,27 @@ def addExistingPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : fo
                     exact (rc.forwardWit l (leOfSuccLeSucc w))
                     done
             let reverseVecN := rc.reverseVec.map (. + 1)
-          let reverseN : (k : Nat) →  k < codomN → Nat := 
-            fun k w => (rc.reverse k w) + 1
-          let reverseNEq : reverseVecN.at = reverseN := by
+            let reverseN : (k : Nat) →  k < codomN → Nat := 
+              fun k w => (rc.reverse k w) + 1
+            have reverseNEq : reverseVecN.at = reverseN := by
                   apply funext
                   intro j
                   apply funext
                   intro jw
                   apply mapAt
                   done
-            let reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
+            have reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
               fun k w => (rc.reverseWit k w)
 
             RestrictionClauses.mk codomN rc.restClauses 
-                    (forwardVecN) 
-                    (by 
-                      rw forwardNEq
-                      exact forwardWitN) 
-                    reverseVecN
-                    (by 
-                      rw reverseNEq
-                      exact reverseWitN)namespace ExistingClauses
+                  (forwardVecN) 
+                  (by 
+                    rw forwardNEq
+                    exact forwardWitN) 
+                  reverseVecN
+                  (by 
+                    rw reverseNEq
+                    exact reverseWitN)namespace ExistingClauses
 
 def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
@@ -126,7 +126,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let domN := dom + 1
           let codomN := rc.codom
           let clausesN := head +: clauses
-          let forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
+          have forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
               (jw : j < codomN) →  delete focus focusLt (Vector.at (clausesN.at k w )) = 
                 Vector.at (rcN.restClauses.at j jw) := 
                 fun k =>
@@ -169,7 +169,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let domN := dom + 1
           let codomN := rc.codom
           let clausesN := head +: clauses
-          let relationN : (k : Nat) → (w: k < codomN) → 
+          have relationN : (k : Nat) → (w: k < codomN) → 
                  Vector.at (rcN.restClauses.at k w) = 
                   delete focus focusLt 
                     (Vector.at (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w))) := 
@@ -233,7 +233,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let domN := dom + 1
           let codomN := rc.codom
           let clausesN := head +: clauses
-          let pureN : (k : Nat) → (w: k < codomN)  → 
+          have pureN : (k : Nat) → (w: k < codomN)  → 
                 Not (
                   Vector.at (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w))
                      (focus) focusLt = some branch) :=

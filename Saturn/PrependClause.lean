@@ -24,7 +24,7 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
               | zero => fun _ => some zero
               | l + 1 => 
                 fun w : l + 1 < domN   =>  (rc.forward l (leOfSuccLeSucc w)).map (. + 1)
-            let forwardNEq : forwardVecN.at = forwardN := by
+            have forwardNEq : forwardVecN.at = forwardN := by
                   apply funext
                   intro j
                   cases j with
@@ -46,7 +46,7 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     rw fr
                     rfl
                     done
-            let forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
+            have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
               fun k  => 
               match k with 
               | zero => fun w => 
@@ -72,7 +72,7 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
               match k with
               | zero => fun _ => zero
               | l + 1 => fun w => (rc.reverse l w) + 1
-            let reverseNEq : reverseVecN.at = reverseN := by
+            have reverseNEq : reverseVecN.at = reverseN := by
                   apply funext
                   intro j
                   cases j with
@@ -91,7 +91,7 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     rw mapAt
                     rfl
                     done
-            let reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
+            have reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
               fun k =>
               match k with
               | zero => fun _ => zeroLtSucc _ 
@@ -170,7 +170,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let domN := dom + 1
           let codomN := rc.codom + 1
           let clausesN := head +: clauses
-          let forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
+          have forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
               (jw : j < codomN) →  delete focus focusLt (Vector.at (clausesN.at k w)) = 
                 Vector.at (rcN.restClauses.at j jw) := 
                 fun k =>
@@ -316,7 +316,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let domN := dom + 1
           let codomN := rcN.codom
           let clausesN := head +: clauses
-          let relationN : (k : Nat) → (w: k < codomN) → 
+          have relationN : (k : Nat) → (w: k < codomN) → 
                  Vector.at (rcN.restClauses.at k w) = 
                   delete focus focusLt 
                       (Vector.at (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w))) := 
@@ -407,7 +407,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let domN := dom + 1
           let codomN := rc.codom + 1
           let clausesN := head +: clauses
-          let pureN : (k : Nat) → (w: k < codomN)  → 
+          have pureN : (k : Nat) → (w: k < codomN)  → 
                 Not (
                   Vector.at (clausesN.at (rcN.reverse k w) (rcN.reverseWit k w)) 
                     (focus) focusLt = some branch) :=
