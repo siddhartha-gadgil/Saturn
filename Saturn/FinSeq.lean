@@ -1026,9 +1026,6 @@ theorem seqVecConsEqn {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) :
                   seqVecConsAux _ seq Vector.Nil
 
 def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := seqVec
-  -- match n with
-  -- | zero => fun _ => Vector.Nil
-  -- | m + 1 => fun seq => Cons (head seq) (vec (tail seq))
 
 
 def equalCoords{α: Type}{n : Nat}{v1 v2 : Vector α n}: 

@@ -4,9 +4,6 @@ import Saturn.Solverstep
 import Saturn.Resolution
 import Saturn.PosRestClause
 import Saturn.PrependClause
-import Saturn.ExistingClause
--- set_option trace.Elab.definition true
--- set_option pp.all true
 
 open Nat
 
@@ -25,10 +22,6 @@ def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1
            (head : Clause (n + 1)) → 
         RestrictionData branch focus focusLt (head +: clauses) := 
         fun rd  head => 
-        -- match findElem? (rd.restrictionClauses.restClauses) (delete focus focusLt head) with
-        -- | some ⟨p, pLt, peqn⟩ =>
-        --     ExistingClauses.prependResData branch focus focusLt clauses rd head p pLt peqn
-        -- | none => 
           if c : head.at focus focusLt = some branch then
             PosResClause.prependResData branch focus focusLt clauses head c rd
           else

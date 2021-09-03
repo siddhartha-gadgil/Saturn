@@ -176,13 +176,6 @@ def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
                 fun hb =>
                   hyp2 j  (le_of_succ_le_succ kw) b hb
 
--- def containsTail{n: Nat} (cl1 cl2 : Clause (n + 1)) :
---         cl1 ⊇  cl2 → (tail cl1) ⊇ (tail cl2) :=
---         fun hyp =>
---           fun k w b =>
---             fun dHyp =>
---               hyp (k + 1) (succ_lt_succ w) b dHyp
-
 def containsRefl{n: Nat} (cl : Clause n) :   
   cl ⊇ cl :=
     fun k w b => 
