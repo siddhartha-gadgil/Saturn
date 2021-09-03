@@ -281,6 +281,17 @@ def subClause?{l n: Nat}(cl : Clause n)(seq : FinSeq l (Clause n)) :
                     Option (ElemSeqPred seq (contains cl)) := 
               find? (contains cl) seq
 
+def parityCount{n: Nat}  (b: Bool) (cl : Clause n) : Nat :=
+    let p : Option Bool →  Bool :=
+      fun bo =>
+        match bo with
+        | some bb => bb = b
+        | none => false
+    cl.count p
+
+def countBelow (p1 n1 p2 n2 : Nat) : Bool :=
+  (p1 ≤ p2) ∧ (n1 ≤ n2) ∧ ((p1 < p2) ∨ (n1 < n2)) 
+
 structure Containment{dom n : Nat}(base: Vector (Clause n) dom) where
     codom: Nat
     imageSeq : Vector (Clause n) codom
@@ -354,13 +365,13 @@ def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment
 
 
 def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →  
-      (base : Vector (Clause n) (d + 1)) → 
+      (base : Vector (Clause n) (d + 1)) → Vector Nat (d + 1) → Vector Nat (d + 1) → 
       Containment (base) → Containment (base) := 
       fun cursorBound =>
       match cursorBound with
-      | zero => fun _ => id
+      | zero => fun _ _ _ => id
       | k + 1 =>
-        fun base contn =>
+        fun base posCount negCount contn =>
           let ⟨j, (ineq : j < contn.codom), _⟩ := contn.forward zero (zero_lt_succ _)      
           let neZero : Not (0 = contn.codom) := fun hyp => 
           let l0 : j < 0 := by
@@ -378,8 +389,15 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
          if lt : k < (l + 1) then
           let focus := imageSeq.at k lt
           let rest := delete k lt imageSeq.at
+          let posFocus := posCount.at (reverseVec.at k lt) (reverseBound k lt)
+          let negFocus := negCount.at (reverseVec.at k lt) (reverseBound k lt)
+          let filter : FinSeq l Bool := 
+              delete k lt (fun j jw =>
+                countBelow (posCount.at (reverseVec.at j jw) (reverseBound j jw))
+                  (negCount.at (reverseVec.at j jw) (reverseBound j jw)) 
+                    posFocus negFocus)
           let step  : Containment base :=
-            match subClause? focus rest with 
+            match findFiltered? filter (contains focus) rest with 
             | none =>  
                 ⟨l + 1, imageSeq, forwardVec, forwardBound, forwardEq,
                    reverseVec, reverseBound, revereseEq⟩
@@ -501,7 +519,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                         done
              ⟨codomN, imageSeqN.vec, forwardNVec, forwardNBound, forwardNPred,
                 reverseNVec, reverseNBound, reverseNPred⟩
-          simplifyNonEmptyContainment k base step
+          simplifyNonEmptyContainment k base posCount negCount step
         else ⟨l + 1, imageSeq, forwardVec, forwardBound, forwardEq,
                    reverseVec, reverseBound, revereseEq⟩
 
@@ -512,4 +530,7 @@ def simplifiedContainment{dom n : Nat}: (clauses : Vector (Clause n) dom) →
                       ⟨zero, Vector.Nil, Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw,
                         Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
                     | m + 1 => fun clauses => 
-                        simplifyNonEmptyContainment (m + 1) clauses (Containment.identity clauses)
+                        let posCount : Vector Nat (m + 1) := clauses.map (parityCount true)
+                        let negCount : Vector Nat (m + 1) := clauses.map (parityCount false)
+                        simplifyNonEmptyContainment (m + 1) clauses
+                            posCount negCount (Containment.identity clauses)

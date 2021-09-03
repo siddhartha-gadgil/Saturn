@@ -1,5 +1,7 @@
 open Nat
 
+#eval false && (dbgTrace "hello" (fun _ =>  true))
+
 class Prover(α: Type) where
   statement : (x : α) → Prop
   proof : (x : α) → statement x
@@ -610,6 +612,38 @@ def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
   | zero => fun _ =>  none
   | m + 1 => fun seq => findAux? pred m (Nat.le_refl _) seq
 
+def findFilteredAux?{α: Type}{n : Nat}(filter : FinSeq n Bool)(pred : α → Prop)(cursor: Nat)
+      (cursorBound : cursor < n)[DecidablePred pred]:
+  (seq : FinSeq n α) → Option (ElemSeqPred seq pred) := 
+    fun seq =>
+    if filter cursor cursorBound then
+      if eqn : pred (seq cursor cursorBound) 
+        then some ⟨cursor, cursorBound, eqn⟩
+        else 
+          match cursor, cursorBound with
+          | zero, _ => none
+          | l + 1, cb => 
+            let lem : l + 1 ≤  n := by
+                apply (Nat.le_trans ·  cb)
+                apply Nat.le_succ
+                done
+            findFilteredAux? filter pred l lem seq    
+    else
+      match cursor, cursorBound with
+          | zero, _ => none
+          | l + 1, cb => 
+            let lem : l + 1 ≤  n := by
+                apply (Nat.le_trans ·  cb)
+                apply Nat.le_succ
+                done
+            findFilteredAux? filter pred l lem seq
+
+def findFiltered?{α: Type}{n : Nat}(filter : FinSeq n Bool)(pred : α → Prop)[DecidablePred pred]:
+  (seq : FinSeq n α) → Option (ElemSeqPred seq pred) :=
+  match n, filter with
+  | zero, _ => fun _ =>  none
+  | m + 1, filter => fun seq => findFilteredAux? filter pred m (Nat.le_refl _) seq
+
 def elemAt{α: Type}[deq: DecidableEq α]{n: Nat}(seq: FinSeq n  α)(elem: α)(k: Nat):
   Option (ElemInSeq seq elem) :=
     if lt : k <n then 
@@ -871,6 +905,14 @@ def Vector.at {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
   | m + 1, Cons head tail, zero, lt => head
   | m + 1, Cons head tail, j + 1, w =>  tail.at j (Nat.le_of_succ_le_succ w)
 
+def countAux {α : Type}{n : Nat}(v: Vector α n)(pred: α → Bool)(accum : Nat) : Nat :=
+  match n, v, accum with
+  | .(zero), Nil, accum => accum
+  | m + 1, Cons head tail, accum => 
+      if (pred head) then countAux tail pred (accum + 1) else countAux tail pred accum
+
+def Vector.count {α : Type}{n : Nat}(v: Vector α n)(pred: α → Bool) : Nat :=
+    countAux v pred zero
 
 def seqVecAux {α: Type}{n m l: Nat}: (s : n + m = l) →   
     (seq1 : FinSeq n α) → (accum : Vector α m) →  
