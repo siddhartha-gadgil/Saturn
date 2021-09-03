@@ -11,9 +11,9 @@ More details can be found in the related [blog post](https://siddhartha-gadgil.g
 
 ## Exploring and running
 
-The file `Exploring.lean` illustrates, for some simple examples, both obtaining structured proofs and proofs or disproofs of propositions. However as this runs in interpreted mode, the examples are very simple.
+The file `Examples.lean` illustrates, for some basic examples, both obtaining structured proofs and proofs or disproofs of propositions. However as this runs in interpreted mode, the examples are very simple.
 
-One can run a compiled version in a command line. This solves the simple examples in the file `Exploring.lean` and also the N-Queens problem if one chooses. To run this assuming `leanpkg` is installed, one can do the following (in linux) for example:
+One can run a compiled version in a command line. This solves the basic examples in the file `Examples.lean` and also the N-Queens problem (if one chooses) for specified `N`. To run this assuming `leanpkg` is installed, one can do the following (in linux) for example:
 
 ```bash
 $ leanpkg build bin
