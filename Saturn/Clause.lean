@@ -524,13 +524,12 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                    reverseVec, reverseBound, revereseEq⟩
 
 def simplifiedContainment{dom n : Nat}: (clauses : Vector (Clause n) dom) → 
+                             Vector Nat dom → Vector Nat dom → 
                               Containment clauses := 
                     match dom with
-                    |zero => fun _ => 
+                    |zero => fun _ _ _ => 
                       ⟨zero, Vector.Nil, Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw,
                         Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
-                    | m + 1 => fun clauses => 
-                        let posCount : Vector Nat (m + 1) := clauses.map (parityCount true)
-                        let negCount : Vector Nat (m + 1) := clauses.map (parityCount false)
+                    | m + 1 => fun clauses posCount negCount =>                                                          
                         simplifyNonEmptyContainment (m + 1) clauses
                             posCount negCount (Containment.identity clauses)

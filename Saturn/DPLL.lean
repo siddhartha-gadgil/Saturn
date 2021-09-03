@@ -273,13 +273,17 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
       | zero => fun clauses => lengthOneSolution clauses
       | m + 1 =>
         fun clauses =>
+        let posCount  := clauses.map (parityCount true)
+        let negCount  := clauses.map (parityCount false)
         match findElem? clauses.at (contradiction (m + 2)) with
         | some z => contraSol z.equation 
         | none =>     
-          let cntn := simplifiedContainment clauses
+          let cntn := simplifiedContainment clauses posCount negCount
           let cls := cntn.imageSeq
+          let posCount  := cls.map (parityCount true)
+          let negCount  := cls.map (parityCount false)
           let solution : SatSolution cls :=
-              match someUnitClause cls.at with
+              match someUnitClause cls.at posCount negCount with
               | some ⟨i, iw, index, bd, par, eql⟩ => 
                   let rd := restrictionData par index bd cls
                   let subCls := rd.restrictionClauses.restClauses

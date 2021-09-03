@@ -245,9 +245,10 @@ structure SomeUnitClause{l n : Nat}(clauses : FinSeq l  (Clause (n + 1))) where
   equality : clauses pos posBound = unitClause n parity index bound
 
 def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))) →  
+  Vector Nat l →  Vector Nat l →
   (cb: Nat) → (cbBound : cb ≤  l) → Option (SomeUnitClause clauses) → 
   Option (SomeUnitClause clauses)  :=
-    fun clauses cb  => 
+    fun clauses posCount negCount cb => 
     match cb with 
     | zero => fun cbBound optCl => optCl
     | m + 1 =>
@@ -255,17 +256,21 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))
       match optCl with
       | some scl => some scl
       | none => 
+        if (posCount.at m cbBound) + (negCount.at m cbBound) = 1 then
         match clauseUnit (clauses m cbBound) with
         | some u => some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩ 
         | none => 
-          someUnitClauseAux clauses m (Nat.le_trans (Nat.le_succ m) cbBound) none
-          
+          someUnitClauseAux clauses 
+            posCount negCount m (Nat.le_trans (Nat.le_succ m) cbBound) none
+        else none
 
 
 def someUnitClause {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))) →  
+  Vector Nat l → 
+  Vector Nat l →
   Option (SomeUnitClause clauses)  := 
-    fun clauses =>
-     someUnitClauseAux clauses l (Nat.le_refl l) none
+    fun clauses posCount negCount =>
+     someUnitClauseAux clauses posCount negCount l (Nat.le_refl l) none
 
 structure HasPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom) where
   index : Nat
