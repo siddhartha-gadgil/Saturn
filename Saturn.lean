@@ -3,13 +3,13 @@ import Saturn.DPLL
 import Saturn.NQueens
 open Nat
 
-def printSolution {n dom : Nat}: (clauses : Vector (Clause n) dom) →  IO Unit :=
+def printSolution {n dom : Nat}: (clauses : Vector (Clause n) dom) → Nat →  IO Unit :=
   match n with
-  | zero => fun _ => pure ()
+  | zero => fun _ _ => pure ()
   | l + 1 => 
-    fun clauses => 
+    fun clauses q => 
       do
-        IO.println ("solving problem")
+        IO.println (s!"Solving the {q}-Queens problem")
         IO.println (solveSAT clauses).toString
         return ()
 
@@ -21,10 +21,12 @@ def main (args: List String) : IO UInt32 := do
       match s.toNat? with
       | some n => n 
       | none => 0  
-  IO.println "Hello from SATurn!"
+  IO.println "SATurn: A SAT solver-prover in lean"
+  IO.println "Solving the sat problem with clauses {P ∨ Q}, {P} and {¬Q}"
   IO.println (solveSAT eg1Statement).toString
+  IO.println "Solving the sat problem with clauses {P ∨ Q} and {¬Q}"
   IO.println (solveSAT eg2Statement).toString
   let problem := (queensClauses n)
-  printSolution problem
+  printSolution problem n
 
   return 0

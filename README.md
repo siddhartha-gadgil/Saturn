@@ -1,12 +1,25 @@
 # SATurn : SAT Solver-prover in lean 4
 
-__SATurn__ is a SAT solver-prover in lean 4 based on the DPLL algorithm. Given a SAT problem, we get either a solution or a resolution tree showing why there is no solution. Being written in Lean 4 allows:
+__SATurn__ is a SAT solver-prover in lean 4 based on the DPLL algorithm. Given a SAT problem, we get either a solution or a resolution tree showing why there is no solution. Being written in Lean 4 gives the following attractive features:
 
 * The program generates proofs in the foundations of the lean prover, so these are independently checked (both for existence and non-existence of solutions).
 * The program itself is checked by lean, so guaranteed to terminate and give a correct answer.
 
-Proofs can be obtained by using the methods `solve` and `proveOrDisprove` in the file `DPLL.lean`. The former gives an object in a type representing either verified solutions or resolution trees. The latter gives a proof of existence or non-existence verified by the _lean prover_. 
+Proofs can be obtained by using the methods `solve` and `proveOrDisprove` in the file `DPLL.lean`. The former gives an object in a type representing either verified solutions or resolution trees. The latter gives a proof of existence or non-existence verified by the _lean prover_.
 
-Many improvements are necessary, and some are forthcoming (including convenience is usability.)
+More details can be found in the related [blog post](https://siddhartha-gadgil.github.io/automating-mathematics/posts/sat-prover-lean/).
 
-__Running:__ This code is developed using `lean 4.0.0-M2` and assumes that this is installed.
+## Exploring and running
+
+The file `Exploring.lean` illustrates, for some simple examples, both obtaining structured proofs and proofs or disproofs of propositions. However as this runs in interpreted mode, the examples are very simple.
+
+One can run a compiled version in a command line. This solves the simple examples in the file `Exploring.lean` and also the N-Queens problem if one chooses. To run this assuming `leanpkg` is installed, one can do the following (in linux) for example:
+
+```bash
+$ leanpkg build bin
+$ build/bin/Saturn 7
+```
+
+The above commands run the basic examples and the 7-queens problem. Without an argument (such as `7` in the above example) just the basic examples are run. 
+
+Note that the performance is slow, to a large extent because the underlying collections used are not optimized for performance.

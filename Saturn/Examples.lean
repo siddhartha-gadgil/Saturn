@@ -14,8 +14,8 @@ def cl2 : Clause 2 := -- ¬P
 def cl3 : Clause 2 := -- ¬Q
   (none) +: (some false) +: Vector.Nil
 
-def eg1Statement : Vector (Clause 2) 3 := cl2 +: cl1 +: cl3 +: Vector.Nil
-def eg2Statement := FinSeq.vec (tail eg1Statement.at)
+def eg1Statement : Vector (Clause 2) 3 := cl2 +: cl1 +: cl3 +: Vector.Nil -- all three clauses
+def eg2Statement := FinSeq.vec (tail eg1Statement.at) -- clauses 1 and 3 only
 
 set_option maxHeartbeats 500000
 
@@ -30,8 +30,8 @@ def eg2Soln := solveSAT (eg2Statement)
 -- theorems: can directly use `proveOrDisprove`; we are avoiding computing twice
 -- note that a refined type is specified, the opposite will give an error
 
-def eg1 : unsat eg1Statement := getProof eg1Soln -- should be unsat
-def eg2 : sat eg2Statement := getProof eg2Soln -- should be sat
+def eg1 : unsat eg1Statement := getProof eg1Soln -- should be unsat, sat is a compiler error
+def eg2 : sat eg2Statement := getProof eg2Soln -- should be sat, unsat is a compiler error
 
 #check eg1
 #check eg2
