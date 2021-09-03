@@ -9,7 +9,8 @@ def printSolution {n dom : Nat}: (clauses : Vector (Clause n) dom) → Nat →  
   | l + 1 => 
     fun clauses q => 
       do
-        IO.println (s!"Solving the {q}-Queens problem")
+        IO.println ""
+        IO.println (s!"Solving the {q}-Queens problem (may take a while):")
         IO.println (solveSAT clauses).toString
         return ()
 
@@ -21,10 +22,13 @@ def main (args: List String) : IO UInt32 := do
       match s.toNat? with
       | some n => n 
       | none => 0  
+  IO.println ""
   IO.println "SATurn: A SAT solver-prover in lean"
-  IO.println "Solving the sat problem with clauses {P ∨ Q}, {P} and {¬Q}"
+  IO.println ""
+  IO.println "Solving the sat problem with clauses {P ∨ Q}, {P} and {¬Q}:"
   IO.println (solveSAT eg1Statement).toString
-  IO.println "Solving the sat problem with clauses {P ∨ Q} and {¬Q}"
+  IO.println ""
+  IO.println "Solving the sat problem with clauses {P ∨ Q} and {¬Q}:"
   IO.println (solveSAT eg2Statement).toString
   let problem := (queensClauses n)
   printSolution problem n
