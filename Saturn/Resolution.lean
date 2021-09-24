@@ -81,7 +81,7 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
               nwl lem
 
 
-theorem varResolution {left right top : Option Bool}(join: Join left right top)(valuationVal : Bool) :
+theorem var_resolution_step {left right top : Option Bool}(join: Join left right top)(valuationVal : Bool) :
   Or (varSat left valuationVal) (varSat right valuationVal) → (varSat top valuationVal)  :=
   fun hyp  =>
     match join with
@@ -145,7 +145,7 @@ def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
                       (by rw [contraAt])
                       ⟩
 
-def triple_stepProof{n: Nat}(left right top : Clause (n + 1))
+theorem triple_step_proof{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
         (valuation: Valuation (n + 1))  → (clauseSat left valuation) → 
         (clauseSat right valuation) → (clauseSat top valuation) := 
@@ -205,7 +205,7 @@ def triple_stepProof{n: Nat}(left right top : Clause (n + 1))
                         rw [leftLem, rightLem, topLem]
                         exact triple.joinRest i iw
                         done 
-                      ⟨kl, ⟨llt, varResolution join (valuation.coords kl llt) (Or.inl (wl))⟩⟩
+                      ⟨kl, ⟨llt, var_resolution_step join (valuation.coords kl llt) (Or.inl (wl))⟩⟩
                   else
                     let cc := eq_false_of_ne_true c  
                     if ccc : kr = triple.pivot then 
@@ -259,9 +259,9 @@ def triple_stepProof{n: Nat}(left right top : Clause (n + 1))
                         rw [leftLem, rightLem, topLem]
                         exact triple.joinRest i iw
                         done 
-                      ⟨kr, ⟨rlt, varResolution join (valuation.coords kr rlt) (Or.inr (wr))⟩⟩
+                      ⟨kr, ⟨rlt, var_resolution_step join (valuation.coords kr rlt) (Or.inr (wr))⟩⟩
 
-def triple_stepSat{n: Nat}(left right top : Clause (n + 1))
+def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
         (valuation: Valuation (n + 1))  → (ClauseSat left valuation) → 
         (ClauseSat right valuation) → (ClauseSat top valuation) := 
@@ -321,7 +321,7 @@ def triple_stepSat{n: Nat}(left right top : Clause (n + 1))
                         rw [leftLem, rightLem, topLem]
                         exact triple.joinRest i iw
                         done 
-                      ⟨kl, llt, varResolution join (valuation.coords kl llt) (Or.inl (wl))⟩
+                      ⟨kl, llt, var_resolution_step join (valuation.coords kl llt) (Or.inl (wl))⟩
                   else
                     let cc := eq_false_of_ne_true c  
                     if ccc : kr = triple.pivot then  
@@ -375,7 +375,7 @@ def triple_stepSat{n: Nat}(left right top : Clause (n + 1))
                         rw [leftLem, rightLem, topLem]
                         exact triple.joinRest i iw
                         done 
-                      ⟨kr, rlt, varResolution join (valuation.coords kr rlt) (Or.inr (wr))⟩
+                      ⟨kr, rlt, var_resolution_step join (valuation.coords kr rlt) (Or.inr (wr))⟩
 
 structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
   (left right top : Clause (n + 1))(k: Nat)(lt : k < succ (n + 1)) where
@@ -591,9 +591,10 @@ def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
                 leftTree.toString ++ "} and {" ++ rightTree.toString ++ "}"
 
 
-def resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):
+theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):
   (tree : ResolutionTree clauses top) →  (valuation :Valuation (n + 1))→ 
-    ((j : Nat) → (jw : j < dom) → clauseSat (clauses.coords j jw) valuation) → clauseSat top valuation := 
+    ((j : Nat) → (jw : j < dom) → clauseSat (clauses.coords j jw) valuation) → 
+            clauseSat top valuation := 
       fun tree  => 
         match tree with
         | ResolutionTree.assumption j jw .(top) eqn  => 
@@ -609,7 +610,7 @@ def resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : C
                 resolutionToProof clauses left leftTree valuation base 
               let rightBase : clauseSat right valuation := 
                 resolutionToProof clauses right rightTree  valuation base 
-              let lemStep := triple_stepProof left right top triple valuation leftBase rightBase
+              let lemStep := triple_step_proof left right top triple valuation leftBase rightBase
             by
               exact lemStep
               done
@@ -632,7 +633,7 @@ def resolutionToSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Cla
                 resolutionToSat clauses left leftTree valuation base 
               let rightBase : ClauseSat right valuation := 
                 resolutionToSat clauses right rightTree valuation base 
-              let lemStep := triple_stepSat left right top triple valuation leftBase rightBase
+              let lemStep := tripleStepSat left right top triple valuation leftBase rightBase
             by
               exact lemStep
               done

@@ -13,35 +13,6 @@ def boundOptSucc(n: Nat)(p: Option Nat) : boundOpt n p → boundOpt (n + 1) (p.m
   | none => fun h => True.intro
   | some a => fun h : a < n => succ_lt_succ h
 
-theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none 
-  | none, rfl => by rfl
-
-theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some zero) :=
-  match n with
-  | none => fun hyp => 
-    Option.noConfusion hyp
-  | some j => 
-    fun hyp : some (j + 1) = some zero =>
-    let lem : j + 1 = zero := by
-      injection hyp
-      assumption
-    Nat.noConfusion lem
-
-theorem mapPlusOneShift{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1) → 
-  n = some m :=
-    match n with
-  | none => fun hyp => 
-    Option.noConfusion hyp
-  | some j => 
-    fun hyp : some (j + 1) = some (m + 1) => 
-      let lem1 : j + 1 = m + 1 := by
-        injection hyp
-        assumption
-      let lem2 : j = m := by
-        injection lem1
-        assumption 
-    congrArg some lem2
-
 structure RestrictionClauses{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom) where
   codom : Nat

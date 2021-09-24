@@ -106,6 +106,37 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     reverseVecN
                     (reverseNEq ▸ reverseWitN)
 
+
+theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none 
+  | none, rfl => by rfl
+
+theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some zero) :=
+  match n with
+  | none => fun hyp => 
+    Option.noConfusion hyp
+  | some j => 
+    fun hyp : some (j + 1) = some zero =>
+    let lem : j + 1 = zero := by
+      injection hyp
+      assumption
+    Nat.noConfusion lem
+
+theorem mapPlusOneShift{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1) → 
+  n = some m :=
+    match n with
+  | none => fun hyp => 
+    Option.noConfusion hyp
+  | some j => 
+    fun hyp : some (j + 1) = some (m + 1) => 
+      let lem1 : j + 1 = m + 1 := by
+        injection hyp
+        assumption
+      let lem2 : j = m := by
+        injection lem1
+        assumption 
+    congrArg some lem2
+
+
 namespace PrependClause
 
 def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
