@@ -13,23 +13,8 @@ def boundOptSucc(n: Nat)(p: Option Nat) : boundOpt n p → boundOpt (n + 1) (p.m
   | none => fun h => True.intro
   | some a => fun h : a < n => succ_lt_succ h
 
-theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none :=
-  fun x eqn =>
-  match x, eqn with
+theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none 
   | none, rfl => by rfl
-
-inductive OptCase{α: Type} (opt: Option α) where
-  | noneCase : opt = none → OptCase opt
-  | someCase : (x : α) → (opt = some x) → OptCase opt
-
-def optCase{α: Type} : (opt: Option α) →  OptCase opt :=
-    fun x =>
-    match x with
-    | none =>  
-      OptCase.noneCase rfl
-    | some j => 
-      OptCase.someCase j rfl
-
 
 theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some zero) :=
   match n with
@@ -112,7 +97,6 @@ structure RestrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus 
     reverseRelation : ReverseRelation restrictionClauses
     nonPosReverse : NonPosReverse restrictionClauses 
 
-
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
     (dp : DroppedProof rc) (fr: ForwardRelation rc): 
@@ -122,10 +106,10 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
           ClauseSat (clauses.coords j jw) (FinSeq.vec (insert branch n focus focusLt valuation.coords)) := 
         fun valuation pf =>
           fun k w => 
-            let splitter := optCase (rc.forward k w)
-            match splitter with
-            | OptCase.noneCase eqn => 
-              let lem1 : Vector.coords (clauses.coords k w) focus focusLt = some branch := dp.dropped k w eqn
+            let splitter := (rc.forward k w)
+            match eq:splitter with
+            | none => 
+              let lem1 : Vector.coords (clauses.coords k w) focus focusLt = some branch := dp.dropped k w eq
               let lem2 : insert branch n focus focusLt valuation.coords focus focusLt = branch := by 
                 apply insertAtFocus
                 done
@@ -146,14 +130,14 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
                         rw [lem3]
                         done
               ⟨focus, focusLt, lem4⟩
-            | OptCase.someCase j eqn => 
+            | some j => 
               let bound := rc.forwardWit k w 
               let jWitAux : boundOpt rc.codom (some j) := by
-                rw [←  eqn]
+                rw [←  eq]
                 exact bound
                 done
               let jWit : j < rc.codom := jWitAux
-              let lem1 := fr.forwardRelation k w j eqn jWit
+              let lem1 := fr.forwardRelation k w j eq jWit
               let ⟨i, iw, vs⟩ := pf j jWit
               let lem2 : Vector.coords (rc.restClauses.coords j jWit) i iw = 
                       some (valuation.coords i iw) := vs
