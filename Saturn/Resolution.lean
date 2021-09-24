@@ -680,11 +680,6 @@ def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
   | SatSolution.sat valuation evidence =>
           ⟨valuation, fun k kw => getProof (evidence k kw)⟩
 
-instance {dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
-                   : Prover (SatSolution clauses) where
-      statement := fun sol => solutionProp sol 
-      proof := fun sol => solutionProof sol
-
 def treeToUnsat{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom} :
                 (rpf : ResolutionTree clauses (contradiction _)) → 
                         SatSolution clauses := fun rpf =>

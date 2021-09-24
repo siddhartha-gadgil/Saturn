@@ -1,6 +1,5 @@
 open Nat
 
-#eval false && (dbgTrace "hello" (fun _ =>  true))
 
 class Prover(α: Type) where
   statement : (x : α) → Prop
@@ -20,6 +19,16 @@ def posSucc : (n : Nat) → Not (zero = n) → NatSucc n :=
   | zero => fun w => absurd rfl w
   | l + 1 => fun _ => ⟨l, rfl⟩
 
+-- TODO: move skip to separate file
+/-
+The function `skip n` function skips the natural number `n`, with numbers `n` this mapped
+to themselves and those above mapped to the next number. The image is the complement of `n` 
+among natural numbers. 
+
+We need various properties of `skip`, so we define it as a function with associated identities,
+and project to the value and the desired properties. The structure `ProvedSkip` consists of the
+result of `skip` and the associated identities.
+-/
 structure ProvedSkip(n m: Nat) where
   result : Nat
   lt : m < n → result = m
@@ -40,31 +49,25 @@ def skipBelow(n m : Nat) : m < n → (skip n m = m) :=
 def skipAbove(n m : Nat) : n ≤ m → (skip n m = m + 1) :=
   fun hyp => (provedSkip n m).ge hyp
 
-inductive SkipEquations(n m : Nat) where
-  | lt : m < n → skip n m = m → SkipEquations n m
-  | ge : n ≤ m → skip n m = m + 1 → SkipEquations n m   
+-- for convenience
+def skipNotBelow(n m : Nat) : Not (m < n) → (skip n m = m + 1) :=
+  fun hyp =>
+    let lem : n ≤ m :=
+      match Nat.lt_or_ge m n with
+      | Or.inl lt => absurd lt hyp
+      | Or.inr ge => ge 
+    skipAbove n m lem
 
 
 structure SkipProvedInv(n m : Nat) where
   k : Nat
   eqn : skip n k = m
 
-def skipEquations: (n : Nat) →  (m : Nat) →  SkipEquations n m := 
-  fun n m =>
-  if c : m < n then
-    SkipEquations.lt c (skipBelow n m c)
-  else
-    let lem : n ≤ m :=
-      match Nat.lt_or_ge m n with
-      | Or.inl lt => absurd lt c
-      | Or.inr ge => ge
-    SkipEquations.ge lem (skipAbove n m lem)
-
 def provedSkipInverse : (n : Nat) → (m : Nat) → (m ≠ n) →  SkipProvedInv n m :=
   fun n m eqn =>
   if mLtn : m < n then
     ⟨m, skipBelow n m mLtn⟩
-  else
+  else 
     let nLtm : n < m := 
         match Nat.lt_or_ge m n with
         | Or.inl p => absurd p mLtn
@@ -101,14 +104,15 @@ theorem skipInverseEqn(n m : Nat)(eqn : m ≠ n): skip n (skipInverse n m eqn) =
 
 theorem skipBound: (k j: Nat) →  skip k j < j + 2 :=
     fun k j =>
-      match skipEquations k j with
-      | SkipEquations.lt _ eqn => 
-          by 
-            rw [eqn]
-            apply Nat.le_step
-            apply Nat.le_refl
-            done
-      | SkipEquations.ge _ eqn => 
+      if c : j < k then
+        let eqn := skipBelow k j c 
+        by 
+          rw [eqn]
+          apply Nat.le_step
+          apply Nat.le_refl
+          done
+      else 
+        let eqn := skipNotBelow k j c
         by 
           rw [eqn]
           apply Nat.le_refl
@@ -116,13 +120,14 @@ theorem skipBound: (k j: Nat) →  skip k j < j + 2 :=
 
 theorem skipLowerBound :(k j: Nat) →  j ≤ skip k j  :=
     fun k j =>
-      match skipEquations k j with
-      | SkipEquations.lt ineqn eqn => 
+      if c : j < k then
+        let eqn := skipBelow k j c  
           by 
             rw [eqn]
             apply Nat.le_refl
             done
-      | SkipEquations.ge ineqn eqn => 
+      else 
+        let eqn := skipNotBelow k j c
         by 
           rw [eqn]
           apply Nat.le_step
@@ -131,10 +136,10 @@ theorem skipLowerBound :(k j: Nat) →  j ≤ skip k j  :=
 
 theorem skipSharpLowerBound :(k j: Nat) →  Or (j + 1 ≤ skip k j) (j <  k)  :=
     fun k j =>
-      match skipEquations k j with
-      | SkipEquations.lt ineqn eqn => 
-          Or.inr ineqn
-      | SkipEquations.ge ineqn eqn => 
+      if c : j < k then
+          Or.inr c
+      else
+          let eqn := skipNotBelow k j c
           Or.inl (by 
                     rw [eqn]
                     apply Nat.le_refl
@@ -193,25 +198,28 @@ def skipPlusOne {n k j : Nat} : j < n → skip k j < n + 1 :=
 
 theorem skipNotDiag (k: Nat) : (j: Nat) → Not (skip k j = k) :=
   fun j =>
-    match skipEquations k j with
-    | SkipEquations.lt ineqn eqn => 
+    if c : j < k then
+      let eqn := skipBelow k j c  
       fun hyp =>
         let lem1 : k ≤  j := by
           rw [←hyp] 
           rw [eqn]
           apply Nat.le_refl
           done
-        let lem2  := Nat.lt_of_lt_of_le ineqn lem1
+        let lem2  := Nat.lt_of_lt_of_le c lem1
         not_succ_le_self j lem2
-    | SkipEquations.ge ineqn eqn => 
-      fun hyp =>  
-        let lem1 : j + 1 ≤ k := by
-          rw [←hyp] 
+    else 
+      let eqn := skipNotBelow k j c 
+      fun hyp => 
+        let lemEq : j + 1 = k := by
+          rw [←hyp]
           rw [eqn]
-          apply Nat.le_refl
-          done
-        let lem2 : j < j := Nat.le_trans lem1 ineqn
-        Nat.lt_irrefl j lem2
+        let lemIneq : j < k := by
+          rw [←lemEq]
+          apply Nat.lt_succ_self
+        c lemIneq
+        
+-- Beginning of FinSeq proper
 
 def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 
