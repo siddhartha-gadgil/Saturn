@@ -9,11 +9,11 @@ open Nat
 
 instance {n: Nat} : DecidableEq (Clause n) := 
   fun c1 c2 =>
-  match decEq c1.at c2.at with
-  | isTrue pf => isTrue (equalCoords pf)
+  match decEq c1.coords c2.coords with
+  | isTrue pf => isTrue (coords_eq_implies_vec_eq pf)
   | isFalse contra => isFalse (
       fun hyp =>
-        contra (congrArg Vector.at hyp)
+        contra (congrArg Vector.coords hyp)
   )
 
 def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
@@ -22,7 +22,7 @@ def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1
            (head : Clause (n + 1)) → 
         RestrictionData branch focus focusLt (head +: clauses) := 
         fun rd  head => 
-          if c : head.at focus focusLt = some branch then
+          if c : head.coords focus focusLt = some branch then
             PosResClause.prependResData branch focus focusLt clauses head c rd
           else
             PrependClause.prependResData branch focus focusLt clauses head c rd
@@ -34,7 +34,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
     (s : domHead + domAccum = dom) → 
     (restAcum : RestrictionData branch focus focusLt clausesAccum) → 
     (clauses: Vector (Clause (n + 1)) dom) →
-    (clsEq : concatSeqAux s clausesHead.at clausesAccum.at = clauses.at) →    
+    (clsEq : concatSeqAux s clausesHead.coords clausesAccum.coords = clauses.coords) →    
         RestrictionData branch focus focusLt clauses := 
          match domHead with
     | zero => fun clausesHead clausesAccum s restAccum clauses clsEq =>
@@ -47,22 +47,22 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
           rw [ss]
         have sff : Vector (Clause (n + 1)) dom  = Vector (Clause (n + 1)) domAccum := by
           rw [ss]
-        have resolve : concatSeqAux s clausesHead.at clausesAccum.at = 
-            Eq.mpr sf clausesAccum.at := by rfl
-        have clSeq : clauses = FinSeq.vec (clauses.at) := by 
-          apply equalCoords
-          rw [seqAt]
+        have resolve : concatSeqAux s clausesHead.coords clausesAccum.coords = 
+            Eq.mpr sf clausesAccum.coords := by rfl
+        have clSeq : clauses = FinSeq.vec (clauses.coords) := by 
+          apply coords_eq_implies_vec_eq
+          rw [seq_to_vec_coords]
           done
         rw [clSeq]
         rw [← clsEq]
         rw [resolve] 
         let clausesTrans: RestrictionData branch focus focusLt 
-              (FinSeq.vec (Eq.mpr sf clausesAccum.at))  :=
+              (FinSeq.vec (Eq.mpr sf clausesAccum.coords))  :=
           match dom , domAccum, ss, sf, clausesAccum, restAccum with
           | d, .(d), rfl, rfl, cls,  ra => by
-            have sm : FinSeq.vec (Eq.mpr rfl (Vector.at cls)) = cls := by 
-              apply equalCoords
-              rw [seqAt]
+            have sm : FinSeq.vec (Eq.mpr rfl (Vector.coords cls)) = cls := by 
+              apply coords_eq_implies_vec_eq
+              rw [seq_to_vec_coords]
               rfl
               done
             exact (Eq.symm sm) ▸ ra
@@ -76,17 +76,17 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
           rw [(Nat.add_comm domAccum 1)]
           rw [(Nat.add_assoc k 1 domAccum)]
           done
-      let resolve : concatSeqAux s clausesHead.at clausesAccum.at = 
-        concatSeqAux ss (init clausesHead.at) ((last clausesHead.at) +| clausesAccum.at) := rfl
+      let resolve : concatSeqAux s clausesHead.coords clausesAccum.coords = 
+        concatSeqAux ss (init clausesHead.coords) ((last clausesHead.coords) +| clausesAccum.coords) := rfl
       let recRestAccum := 
-        prependResData branch focus focusLt clausesAccum restAccum (last clausesHead.at)
-      restrictionDataAux branch focus focusLt (FinSeq.vec (init clausesHead.at)) 
-          ((last clausesHead.at) +: clausesAccum) ss recRestAccum clauses 
+        prependResData branch focus focusLt clausesAccum restAccum (last clausesHead.coords)
+      restrictionDataAux branch focus focusLt (FinSeq.vec (init clausesHead.coords)) 
+          ((last clausesHead.coords) +: clausesAccum) ss recRestAccum clauses 
           (by 
-            have sm : Vector.at (FinSeq.vec (init (Vector.at clausesHead))) =
-                init (Vector.at clausesHead) := by rw [seqAt]
+            have sm : Vector.coords (FinSeq.vec (init (Vector.coords clausesHead))) =
+                init (Vector.coords clausesHead) := by rw [seq_to_vec_coords]
             rw [sm,
-               (consCommutes (last (Vector.at clausesHead)) clausesAccum),
+               (cons_commutes (last (Vector.coords clausesHead)) clausesAccum),
                ← resolve,
                clsEq]
             done)
@@ -111,7 +111,7 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                 exact False.elim contra
             )⟩⟩
           restrictionDataAux branch focus focusLt clauses Vector.Nil 
-              (Nat.add_zero dom) rd clauses (concatEmptySeq clauses.at)
+              (Nat.add_zero dom) rd clauses (concat_empty_seq_id clauses.coords)
 
 def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
     (cntn : Containment clauses):
@@ -123,7 +123,7 @@ def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
                 fun k kw => 
                         let ⟨ind, bd, w⟩ := cntn.forward k kw
                         let ev := pf ind bd
-                        let lem := containsSat (clauses.at k kw) (cntn.imageSeq.at ind bd) w val
+                        let lem := containsSat (clauses.coords k kw) (cntn.imageSeq.coords ind bd) w val
                         lem ev)
               
           | SatSolution.unsat tree => 
@@ -132,24 +132,24 @@ def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
                     tree 
                 SatSolution.unsat rpf 
 
-def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.at zero (zero_lt_succ zero) = cl2.at zero (zero_lt_succ zero)) : 
+def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.coords zero (zero_lt_succ zero) = cl2.coords zero (zero_lt_succ zero)) : 
                           cl1 = cl2 :=
-                            equalCoords 
+                            coords_eq_implies_vec_eq 
                             (funext (fun j =>
                                     match j with
                                     | zero => funext (fun jw => eql)
                                     | i + 1 => funext (fun jw => nomatch jw)
                                     ))
 
-def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.at zero (zero_lt_succ zero) = some b):
+def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.coords zero (zero_lt_succ zero) = some b):
                                 cl = unitClause zero b zero (zero_lt_succ zero) := 
-                                let lem1 : Vector.at 
+                                let lem1 : Vector.coords 
                                   (unitClause zero b zero (zero_lt_succ zero)) zero (zero_lt_succ zero) = 
                                     some b :=
                                           by
                                             apply unitDiag
-                                let lem2 : cl.at zero (zero_lt_succ zero) = 
-                                    Vector.at (unitClause zero b zero (zero_lt_succ zero)) 
+                                let lem2 : cl.coords zero (zero_lt_succ zero) = 
+                                    Vector.coords (unitClause zero b zero (zero_lt_succ zero)) 
                                       zero (zero_lt_succ zero) 
                                       := 
                                           by
@@ -158,11 +158,11 @@ def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.at zero (zero_lt_succ zero) =
                                             done  
                                 lengthOneEqual lem2
 
-def lengthOneContra{cl: Clause 1}(eql : cl.at zero (zero_lt_succ zero) = none):
+def lengthOneContra{cl: Clause 1}(eql : cl.coords zero (zero_lt_succ zero) = none):
                               cl = contradiction 1 := lengthOneEqual eql
 
 def contraSol{n dom: Nat}{clauses : Vector (Clause (n + 1)) dom}{j : Nat}{jw : j < dom}
-                (eqn : clauses.at j jw = contradiction (n + 1)): SatSolution clauses :=
+                (eqn : clauses.coords j jw = contradiction (n + 1)): SatSolution clauses :=
                   SatSolution.unsat (ResolutionTree.assumption j jw _ eqn) 
                 
 def emptySol{n: Nat}(clauses : Vector (Clause (n + 1)) zero) : SatSolution clauses :=
@@ -173,16 +173,16 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
     | zero => fun cls => emptySol cls
     | l + 1 =>
       fun cls =>
-      match searchElem cls.at (contradiction 1) with
+      match searchElem cls.coords (contradiction 1) with
       | ExistsElem.exsts index bound eqn => contraSol eqn
       | ExistsElem.notExst noContra =>
-        let head := cls.at (zero) (zero_lt_succ l) 
-        if c : head.at zero (zero_lt_succ zero) = none then   
+        let head := cls.coords (zero) (zero_lt_succ l) 
+        if c : head.coords zero (zero_lt_succ zero) = none then   
           let eqn := lengthOneContra c     
           contraSol eqn
         else 
-          if ct : head.at zero (zero_lt_succ zero) = some true then
-              match searchElem cls.at (unitClause zero false zero (zero_lt_succ zero)) with
+          if ct : head.coords zero (zero_lt_succ zero) = some true then
+              match searchElem cls.coords (unitClause zero false zero (zero_lt_succ zero)) with
               | ExistsElem.exsts index bound eqn => 
                   let treePf2 := unitProof eqn 
                   let treePf1 : 
@@ -193,19 +193,19 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
               | ExistsElem.notExst noNeg => 
                  SatSolution.sat (FinSeq.vec (fun _ _ => true)) 
                     fun k kw =>
-                      let lem1 : Not (Vector.at (cls.at k kw) zero (zero_lt_succ zero) = some false) :=
+                      let lem1 : Not (Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = some false) :=
                         fun hyp => noNeg k kw (lengthOneUnit hyp)
-                      let lem2 : Not (Vector.at (cls.at k kw) zero (zero_lt_succ zero) = none) :=
+                      let lem2 : Not (Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = none) :=
                         fun hyp => noContra k kw (lengthOneContra hyp)
-                      let lem : Vector.at (cls.at k kw) zero (zero_lt_succ zero) = some true :=
-                        match Vector.at (cls.at k kw) zero (zero_lt_succ zero), lem1, lem2 with
+                      let lem : Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = some true :=
+                        match Vector.coords (cls.coords k kw) zero (zero_lt_succ zero), lem1, lem2 with
                         | some true, l1, l2 => rfl
                         | some false, l1, l2 => absurd (l1 rfl) id
                         | none, l1, l2 => absurd (l2 rfl) id 
                       ⟨zero, zero_lt_succ _, lem⟩                      
           else 
-            if cf : head.at zero (zero_lt_succ zero) = some false then
-              match searchElem cls.at (unitClause zero true zero (zero_lt_succ zero)) with
+            if cf : head.coords zero (zero_lt_succ zero) = some false then
+              match searchElem cls.coords (unitClause zero true zero (zero_lt_succ zero)) with
               | ExistsElem.exsts index bound eqn => 
                   let treePf2 := unitProof eqn 
                   let treePf1 : 
@@ -216,18 +216,18 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
               | ExistsElem.notExst noNeg => 
                  SatSolution.sat (FinSeq.vec (fun _ _ => false)) 
                     fun k kw =>
-                      let lem1 : Not (Vector.at (cls.at k kw) zero (zero_lt_succ zero) = some true) :=
+                      let lem1 : Not (Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = some true) :=
                         fun hyp => noNeg k kw (lengthOneUnit hyp)
-                      let lem2 : Not (Vector.at (cls.at k kw) zero (zero_lt_succ zero) = none) :=
+                      let lem2 : Not (Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = none) :=
                         fun hyp => noContra k kw (lengthOneContra hyp)
-                      let lem : Vector.at (cls.at k kw) zero (zero_lt_succ zero) = some false :=
-                        match Vector.at (cls.at k kw) zero (zero_lt_succ zero), lem1, lem2 with
+                      let lem : Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = some false :=
+                        match Vector.coords (cls.coords k kw) zero (zero_lt_succ zero), lem1, lem2 with
                         | some false, l1, l2 => rfl
                         | some true, l1, l2 => False.elim (l1 rfl) 
                         | none, l1, l2 => False.elim (l2 rfl)  
                       ⟨zero, zero_lt_succ _, lem⟩
             else 
-                match head.at zero (zero_lt_succ zero), c, ct, cf with
+                match head.coords zero (zero_lt_succ zero), c, ct, cf with
                 | some true, l1, l2, l3 => False.elim (l2 rfl)
                 | some false, l1, l2, l3 => False.elim (l3 rfl)
                 | none, l1, l2, l3 => False.elim (l1 rfl)
@@ -268,7 +268,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
         fun clauses =>
         let posCount  := clauses.map (parityCount true)
         let negCount  := clauses.map (parityCount false)
-        match findElem? clauses.at (contradiction (m + 2)) with
+        match findElem? clauses.coords (contradiction (m + 2)) with
         | some z => contraSol z.equation 
         | none =>     
           let cntn := simplifiedContainment clauses posCount negCount
@@ -276,7 +276,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
           let posCount  := cls.map (parityCount true)
           let negCount  := cls.map (parityCount false)
           let solution : SatSolution cls :=
-              match someUnitClause cls.at posCount negCount with
+              match someUnitClause cls.coords posCount negCount with
               | some ⟨i, iw, index, bd, par, eql⟩ => 
                   let rd := restrictionData par index bd cls
                   let subCls := rd.restrictionClauses.restClauses
@@ -285,7 +285,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                   | SatSolution.sat valuation pf => 
                     let pb :=  pullBackSolution par index bd cls 
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
-                    let valuationN := insert par _ index bd valuation.at
+                    let valuationN := insert par _ index bd valuation.coords
                     SatSolution.sat valuationN.vec pb
                   | SatSolution.unsat tree  => 
                       let liftedProof :=
@@ -309,7 +309,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                   | SatSolution.sat valuation pf => 
                     let pb :=  pullBackSolution par index bd cls 
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
-                    let valuationN := insert par _ index bd valuation.at
+                    let valuationN := insert par _ index bd valuation.coords
                     SatSolution.sat valuationN.vec pb
                   | SatSolution.unsat tree => 
                       let liftedProof :=
@@ -321,9 +321,9 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                           treeToUnsat pf
                       | LiftedResPf.unit rpf => 
                           let base : (j : Nat) → (lt : j < cntn.codom) → 
-                              Not (Vector.at (cls.at j lt) index bd = some (not par)) := 
+                              Not (Vector.coords (cls.coords j lt) index bd = some (not par)) := 
                                 fun j jw => 
-                                  pureNot par (Vector.at (cls.at j jw) index bd) (evid j jw)
+                                  pureNot par (Vector.coords (cls.coords j jw) index bd) (evid j jw)
                           let pure :=
                             proofsPreverveNonPos (not par) index bd base
                                    (unitClause (m + 1) (!par) index bd)
@@ -341,7 +341,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                   | SatSolution.sat valuation pf => 
                     let pb :=  pullBackSolution false index bd cls 
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
-                    let valuationN := insert false _ index bd valuation.at
+                    let valuationN := insert false _ index bd valuation.coords
                     SatSolution.sat valuationN.vec pb
                   | SatSolution.unsat tree => 
                       let liftedProof : LiftedResPf false zero bd cls :=
@@ -360,7 +360,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                           | SatSolution.sat valuation pf => 
                             let pb :=  pullBackSolution true index bd cls 
                                 rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
-                            let valuationN := insert true _ index bd valuation.at
+                            let valuationN := insert true _ index bd valuation.coords
                             SatSolution.sat valuationN.vec pb
                           | SatSolution.unsat tree  => 
                               let liftedProof :=
@@ -390,11 +390,11 @@ def sat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
           ∃ valuation : Valuation (n + 1),  
            ∀ (p : Nat),
             ∀ pw : p < dom, 
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (Vector.at (clauses.at p pw) k kw) = some (valuation.at k kw)
+              ∃ (k : Nat), ∃ (kw : k < n + 1), (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw)
 
 def unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
           ∀ valuation : Valuation (n + 1),  
            Not (∀ (p : Nat),
             ∀ pw : p < dom,   
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (Vector.at (clauses.at p pw) k kw) = some (valuation.at k kw))
+              ∃ (k : Nat), ∃ (kw : k < n + 1), (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw))
 

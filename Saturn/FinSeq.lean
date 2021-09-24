@@ -10,10 +10,9 @@ def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x
 
 def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
 
--- TODO: move skip to separate file
-        
--- Beginning of FinSeq proper
-
+ /- `FinSeq` is an implementation of finite sequences. We define insertion and deletion 
+ and prove properties of these operations. We also show equality is decidable for `FinSeq α` 
+ if it is for `α`. We also search within finite sequences. -/
 def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 
 def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α :=
@@ -36,14 +35,6 @@ def FinSeq.tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α :=
 def FinSeq.head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq zero (zero_lt_succ _)
 
-theorem headTail{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): 
-      (seq.head) +| (seq.tail) = seq := 
-        funext (
-          fun k => 
-            match k with
-            | zero => by rfl 
-            | i + 1 => by rfl
-        )
 
 def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
   fun k w =>
@@ -78,7 +69,7 @@ def concatSeq {α: Type}{n m: Nat}(seq1 : FinSeq n α)(seq2 : FinSeq m α):
   FinSeq (n + m) α := 
     concatSeqAux rfl seq1 seq2
 
-theorem witnessIndependent{α : Type}{n : Nat}(seq: FinSeq n α) :
+theorem witness_independent{α : Type}{n : Nat}(seq: FinSeq n α) :
     (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
         (i = j) → seq i iw = seq j jw :=
         fun i j iw jw eqn =>
@@ -86,7 +77,7 @@ theorem witnessIndependent{α : Type}{n : Nat}(seq: FinSeq n α) :
           | .(i), rfl, ijw =>
                rfl
 
-theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →   
+theorem concat_aux_eqs{α: Type}{n m l: Nat}: (s : n + m = l) →   
     (seq1 : FinSeq n α) → (seq2 : FinSeq m α) → (k: Nat) → 
       ((kw : k < n) → (w : k < l) → concatSeqAux s seq1 seq2 k w = seq1 k kw) ∧ 
       ((kw : k < m) → (w : (n + k) < l) → concatSeqAux s seq1 seq2 (n + k) w = seq2 k kw) := 
@@ -118,7 +109,7 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
                         Nat.zero_add k
                     let lm : Eq.mpr rfl seq (zero + k) w = seq (zero + k) w := rfl 
                     rw [lm]
-                    apply witnessIndependent
+                    apply witness_independent
                     exact zp
                     done
             exact (fun k => And.intro (lem1 k) (lem2 k))
@@ -133,7 +124,7 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
               done
           let resolve : concatSeqAux s seq1 seq2=
               concatSeqAux ss (init seq1) ((last seq1) +| seq2) := rfl
-          let hyp := concatAuxValues ss (init seq1) ((last seq1) +| seq2)
+          let hyp := concat_aux_eqs ss (init seq1) ((last seq1) +| seq2)
           by
             rw [resolve]
             intro k
@@ -199,7 +190,7 @@ theorem concatAuxValues{α: Type}{n m l: Nat}: (s : n + m = l) →
 
 infix:65 "++|" => concatSeq
 
-theorem concatEmptySeq{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (FinSeq.empty) = seq := 
+theorem concat_empty_seq_id{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (FinSeq.empty) = seq := 
           by
             intro seq
             apply funext
@@ -213,7 +204,7 @@ theorem concatEmptySeq{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (FinSe
               rw [(Nat.add_zero n)]
               assumption
               done
-            let lem := (concatAuxValues rfl seq FinSeq.empty k).left kw w
+            let lem := (concat_aux_eqs rfl seq FinSeq.empty k).left kw w
             exact lem
             done
 
@@ -225,7 +216,7 @@ def FinSeq.list{α : Type}{n : Nat}: FinSeq n α → List α :=
 
 def delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α := 
   fun j w =>
-    seq (skip k j) (skipPlusOne w)
+    seq (skip k j) (skip_le_succ w)
 
 structure ProvedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
                 (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) where
@@ -233,31 +224,6 @@ structure ProvedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
   checkImage : (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw
   checkFocus : j = k → result = value
 
-
-theorem skipPreImageBound {i j k n : Nat}: (k < n + 1) → (j < n + 1) → 
-                                skip k i = j → i < n :=
-          fun kw jw eqn =>
-            match skipSharpLowerBound k i with
-              | Or.inl ineq =>
-                by 
-                  have lem1 : i <  j :=
-                  by
-                    rw [← eqn]
-                    exact ineq
-                    done                 
-                  have lem2 : i < n :=
-                  by
-                    apply Nat.lt_of_lt_of_le
-                    apply lem1
-                    apply Nat.le_of_succ_le_succ
-                    apply jw
-                    done 
-                  exact lem2
-                  done
-              | Or.inr ineqn => by
-                  apply Nat.lt_of_lt_of_le ineqn 
-                  apply Nat.le_of_succ_le_succ
-                  apply kw
 
 def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
                 (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) : 
@@ -271,25 +237,25 @@ def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
                     rw [hyp]
                     rw [c]
                     done
-                  let contra := skipNotDiag k i lem
+                  let contra := skip_no_fixedpoints k i lem
                   nomatch contra
             let  checkFocus : j = k → result = value := fun  _  => rfl
             ⟨result, checkImage, checkFocus⟩
           else  
             let i := skipInverse k j c 
-            let eqn := skipInverseEqn k j c  
-            let bound : i < n  := skipPreImageBound kw jw eqn
+            let eqn := skip_inverse_eq k j c  
+            let bound : i < n  := skip_preimage_lt kw jw eqn
             let result := seq i bound
             let checkImage : 
               (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw := 
                 fun i1 iw1 hyp =>
                   let lem1 : i1 = i := by 
-                    apply (skipInjective k)
+                    apply (skip_injective k)
                     rw [hyp]
                     rw [(Eq.symm eqn)]
                     done
                   let lem2 : seq i1 iw1 = seq i bound := 
-                    witnessIndependent seq i1 i iw1 bound lem1
+                    witness_independent seq i1 i iw1 bound lem1
                   by
                     rw [lem2]
                     done
@@ -299,7 +265,7 @@ def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
                     rw [eqn]
                     rw [hyp]
                     done
-                  let contra := skipNotDiag k i lem
+                  let contra := skip_no_fixedpoints k i lem
                   nomatch contra 
             ⟨result, checkImage, checkFocus⟩
 
@@ -308,19 +274,19 @@ def insert{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
   fun n k lt seq j w =>  
     (provedInsert n value seq k lt j w).result
 
-def insertAtFocus{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+theorem insertAtFocus{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (seq :FinSeq n   α) →  
       insert value n k lt seq k lt = value :=
     fun n k lt seq  =>   
       (provedInsert n value seq k lt k lt).checkFocus rfl
 
-def insertAtImage(value: α) : (n : Nat) →  (k: Nat) → 
+theorem insertAtImage(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (seq :FinSeq n   α) → (i : Nat) → (iw : i < n) → 
-      insert value n k lt seq (skip k i) (skipPlusOne iw) = seq i iw :=
+      insert value n k lt seq (skip k i) (skip_le_succ iw) = seq i iw :=
       fun n k lt seq i iw => 
-       (provedInsert n value seq k lt (skip k i) (skipPlusOne iw)).checkImage i iw rfl 
+       (provedInsert n value seq k lt (skip k i) (skip_le_succ iw)).checkImage i iw rfl 
 
-def insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α) :
+theorem insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α) :
   insert (seq k kw) n k kw (delete k kw seq) = seq := 
     let delSeq := delete k kw seq
     funext (
@@ -332,31 +298,31 @@ def insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n
               have lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw =
                 insert (seq k kw) n k kw (delete k kw seq) k kw :=
                 by
-                  apply witnessIndependent
+                  apply witness_independent
                   apply c
                   done 
               rw [lem1]
               rw [(insertAtFocus (seq k kw) n k kw (delete k kw seq))]
-              apply witnessIndependent
+              apply witness_independent
               rw [← c]
               done  
             else  
               let i := skipInverse k j c 
-              let eqn := skipInverseEqn k j c
-              let iw : i < n := skipPreImageBound kw jw eqn
+              let eqn := skip_inverse_eq k j c
+              let iw : i < n := skip_preimage_lt kw jw eqn
               let lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw
-                = insert (seq k kw) n k kw (delete k kw seq) (skip k i) (skipPlusOne iw) := 
+                = insert (seq k kw) n k kw (delete k kw seq) (skip k i) (skip_le_succ iw) := 
                   by 
-                    apply witnessIndependent
+                    apply witness_independent
                     rw [← eqn]
                     done
               let lem2 := insertAtImage (seq k kw) n k kw (delete k kw seq) i iw
-              let lem3 : delete k kw seq i iw = seq (skip k i) (skipPlusOne iw) := by rfl
+              let lem3 : delete k kw seq i iw = seq (skip k i) (skip_le_succ iw) := by rfl
               by
                 rw [lem1]
                 rw [lem2]
                 rw [lem3]
-                apply witnessIndependent
+                apply witness_independent
                 exact eqn
                 done
         )
@@ -442,13 +408,6 @@ def findFiltered?{α: Type}{n : Nat}(filter : FinSeq n Bool)(pred : α → Prop)
   | zero, _ => fun _ =>  none
   | m + 1, filter => fun seq => findFilteredAux? filter pred m (Nat.le_refl _) seq
 
-def elemAt{α: Type}[deq: DecidableEq α]{n: Nat}(seq: FinSeq n  α)(elem: α)(k: Nat):
-  Option (ElemInSeq seq elem) :=
-    if lt : k <n then 
-      if eqn : seq k lt = elem 
-        then some ⟨k, lt, eqn⟩
-        else none 
-    else none
 
 def findElemAux?{α: Type}{n : Nat}(cursor: Nat)
       (cursorBound : cursor < n)[DecidableEq α]:
@@ -566,11 +525,11 @@ def deqSeqRec{α: Type}[DecidableEq α]{n : Nat}(seq1 seq2 : FinSeq n α): (m: N
                     | inl eql =>
                       let lem0 := pfHead
                       let lem1 : seq1 l lw = seq1 k kw := by
-                        apply witnessIndependent
+                        apply witness_independent
                         exact eql
                         done
                       let lem2 : seq2 l lw = seq2 k kw := by
-                        apply witnessIndependent
+                        apply witness_independent
                         exact eql
                       rw [← lem1]
                       rw [← lem2]
@@ -613,12 +572,12 @@ infixr:66 "+:" => Vector.Cons
 
 open Vector
 
-def Vector.at {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
+def Vector.coords {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
   fun j jw =>
   match n, v, j, jw with
   | .(zero), Nil, k, lt => nomatch lt
   | m + 1, Cons head tail, zero, lt => head
-  | m + 1, Cons head tail, j + 1, w =>  tail.at j (Nat.le_of_succ_le_succ w)
+  | m + 1, Cons head tail, j + 1, w =>  tail.coords j (Nat.le_of_succ_le_succ w)
 
 def countAux {α : Type}{n : Nat}(v: Vector α n)(pred: α → Bool)(accum : Nat) : Nat :=
   match n, v, accum with
@@ -652,8 +611,7 @@ def seqVecAux {α: Type}{n m l: Nat}: (s : n + m = l) →
           done
       seqVecAux ss (init seq1) ((last seq1) +: seq2)
 
-
-def seqVec {α: Type}{n : Nat} : FinSeq n α → Vector α n :=
+def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := 
     fun seq => seqVecAux (Nat.add_zero n) seq Vector.Nil
 
 theorem prevsum{n m l: Nat}: n + 1 + m = l + 1 → n + m = l := 
@@ -672,7 +630,7 @@ theorem prevsum{n m l: Nat}: n + 1 + m = l + 1 → n + m = l :=
     assumption
     done
 
-theorem seqVecConsAux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 : FinSeq (n + 1) α) 
+theorem seq_vec_cons_aux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 : FinSeq (n + 1) α) 
         (accum : Vector α m) : seqVecAux s seq1 accum =
                 (seq1.head) +: (
                   seqVecAux 
@@ -717,7 +675,7 @@ theorem seqVecConsAux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 : Fi
                           seqVecAux ss (init seq1) ((last seq1) +: accum) := by rfl
                       rw [resolve]
                       let v := init seq1
-                      let base := seqVecConsAux ss (init seq1) (last seq1+:accum)
+                      let base := seq_vec_cons_aux ss (init seq1) (last seq1+:accum)
                       rw [base]
                       have he : FinSeq.head (init seq1)  = seq1.head := by rfl
                       rw [he]
@@ -736,41 +694,38 @@ theorem seqVecConsAux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 : Fi
                       rw [lst]
                       done
 
-theorem seqVecConsEqn {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) : 
-          seqVec seq  = (seq.head) +: (seqVec (seq.tail)) := 
-                  seqVecConsAux _ seq Vector.Nil
+theorem seq_vec_cons_eq {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) : 
+          seq.vec  = (seq.head) +: (seq.tail.vec) := 
+                  seq_vec_cons_aux _ seq Vector.Nil
 
-def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := seqVec
-
-
-def equalCoords{α: Type}{n : Nat}{v1 v2 : Vector α n}: 
-    v1.at = v2.at → v1 = v2 := 
+theorem coords_eq_implies_vec_eq{α: Type}{n : Nat}{v1 v2 : Vector α n}: 
+    v1.coords = v2.coords → v1 = v2 := 
     match n, v1, v2 with
     | zero, Nil, Nil => fun _ => rfl
     | m + 1, Cons head1 tail1, Cons head2 tail2 =>
       by
         intro hyp
-        have h1 : head1 = Vector.at (Cons head1 tail1) zero (Nat.zero_lt_succ m) := by rfl
-        have h2 : head2 = Vector.at (Cons head2 tail2) zero (Nat.zero_lt_succ m) := by rfl
+        have h1 : head1 = Vector.coords (Cons head1 tail1) zero (Nat.zero_lt_succ m) := by rfl
+        have h2 : head2 = Vector.coords (Cons head2 tail2) zero (Nat.zero_lt_succ m) := by rfl
         have hypHead : head1 = head2 :=
           by 
             rw [h1, h2, hyp]            
         rw [hypHead]
         apply congrArg
-        let base := @equalCoords _ _ tail1 tail2
+        let base := @coords_eq_implies_vec_eq _ _ tail1 tail2
         apply base
         apply funext
         intro k
         apply funext
         intro kw
-        have t1 : Vector.at tail1 k kw = 
-          Vector.at (Cons head1 tail1) (k + 1) (Nat.succ_lt_succ kw) := by rfl
-        have t2 : Vector.at tail2 k kw = 
-          Vector.at (Cons head2 tail2) (k + 1) (Nat.succ_lt_succ kw) := by rfl
+        have t1 : Vector.coords tail1 k kw = 
+          Vector.coords (Cons head1 tail1) (k + 1) (Nat.succ_lt_succ kw) := by rfl
+        have t2 : Vector.coords tail2 k kw = 
+          Vector.coords (Cons head2 tail2) (k + 1) (Nat.succ_lt_succ kw) := by rfl
         rw [t1, t2, hyp]
         done
 
-theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq := 
+theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.coords = seq := 
   match n with
   | zero => by
     intro seq
@@ -788,29 +743,29 @@ theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq :=
     | zero =>
       apply funext
       intro kw 
-      have resolve : seq.vec = Cons (seq.head) (FinSeq.vec (seq.tail)) := by apply seqVecConsEqn 
+      have resolve : seq.vec = Cons (seq.head) (FinSeq.vec (seq.tail)) := by apply seq_vec_cons_eq 
       rw [resolve]
-      have res2 : Vector.at (seq.head+:FinSeq.vec (seq.tail)) zero kw = seq.head := by rfl
+      have res2 : Vector.coords (seq.head+:FinSeq.vec (seq.tail)) zero kw = seq.head := by rfl
       rw [res2]
       rfl
       done
     | succ k' => 
       apply funext
       intro kw
-      have tl :Vector.at (FinSeq.vec seq) (succ k') kw = 
-          Vector.at (FinSeq.vec (seq.tail)) k' (Nat.le_of_succ_le_succ kw) := by
-              have dfn : FinSeq.vec seq = seqVec seq := by rfl
+      have tl :Vector.coords (FinSeq.vec seq) (succ k') kw = 
+          Vector.coords (FinSeq.vec (seq.tail)) k' (Nat.le_of_succ_le_succ kw) := by
+              have dfn : FinSeq.vec seq = seq.vec := by rfl
               rw [dfn]
-              rw [(seqVecConsEqn seq)] 
+              rw [(seq_vec_cons_eq seq)] 
               rfl 
-      let base := seqAt (seq.tail)
+      let base := seq_to_vec_coords (seq.tail)
       rw [tl]
       rw [base]
       rfl
       done
 
-theorem consCommutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
-          Vector.at (head +: tail) = head +| (Vector.at tail) := by
+theorem cons_commutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
+          Vector.coords (head +: tail) = head +| (Vector.coords tail) := by
             apply funext
             intro k
             induction k with
@@ -823,8 +778,8 @@ theorem consCommutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
               intro kw
               rfl
 
-theorem tailCommutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
-      FinSeq.tail (Vector.at (x +: ys)) = ys.at := 
+theorem tail_commutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
+      FinSeq.tail (Vector.coords (x +: ys)) = ys.coords := 
         by
         apply funext
         intro kw
@@ -832,13 +787,13 @@ theorem tailCommutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
         done
 
 def Vector.map {α β : Type}{n: Nat}(vec: Vector α n) (f : α → β) : Vector β n :=
-    FinSeq.vec (fun j jw => f (vec.at j jw))
+    FinSeq.vec (fun j jw => f (vec.coords j jw))
 
-theorem mapAt{α β : Type}{n : Nat}(vec: Vector α n) (f : α → β) (j : Nat) (jw : Nat.lt j n) :
-          Vector.at (Vector.map vec f) j jw = f (vec.at j jw) := by
+theorem map_coords_commute{α β : Type}{n : Nat}(vec: Vector α n) (f : α → β) (j : Nat) (jw : Nat.lt j n) :
+          Vector.coords (Vector.map vec f) j jw = f (vec.coords j jw) := by
           have resolve: 
-            Vector.at (map vec f) j jw = 
-                Vector.at (FinSeq.vec (fun j jw => f (vec.at j jw))) j jw := rfl
+            Vector.coords (map vec f) j jw = 
+                Vector.coords (FinSeq.vec (fun j jw => f (vec.coords j jw))) j jw := rfl
           rw [resolve]
-          rw [seqAt]
+          rw [seq_to_vec_coords]
           done

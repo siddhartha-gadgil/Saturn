@@ -61,47 +61,47 @@ structure RestrictionClauses{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : foc
   codom : Nat
   restClauses : Vector  (Clause n) codom
   forwardVec : Vector (Option Nat) dom
-  forwardWit : (k: Nat) → (w: k < dom) → boundOpt codom (forwardVec.at k w)
+  forwardWit : (k: Nat) → (w: k < dom) → boundOpt codom (forwardVec.coords k w)
   reverseVec : Vector Nat codom
-  reverseWit : (k : Nat) → (w : k < codom) → reverseVec.at k w < dom
+  reverseWit : (k : Nat) → (w : k < codom) → reverseVec.coords k w < dom
   
 def RestrictionClauses.forward{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}
       (rc: RestrictionClauses branch focus focusLt clauses) :
-        (j: Nat) → (jw : j < dom) → Option Nat := rc.forwardVec.at
+        (j: Nat) → (jw : j < dom) → Option Nat := rc.forwardVec.coords
 
 def RestrictionClauses.reverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}
       (rc: RestrictionClauses branch focus focusLt clauses) :
-        (j: Nat) → (jw : j < rc.codom) → Nat := rc.reverseVec.at
+        (j: Nat) → (jw : j < rc.codom) → Nat := rc.reverseVec.coords
 
 
 structure DroppedProof{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}(
         rc: RestrictionClauses branch focus focusLt clauses)  where
     dropped : (k : Nat) → (w: k < dom) → rc.forward k w = 
-        none → (Vector.at (clauses.at k w) focus focusLt = some branch)
+        none → (Vector.coords (clauses.coords k w) focus focusLt = some branch)
 
 structure ForwardRelation{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}(
         rc: RestrictionClauses branch focus focusLt clauses)  where
     forwardRelation : (k : Nat) → (w: k < dom) → (j: Nat) →  rc.forward k w = some j →
-    (jw : j < rc.codom) →  delete focus focusLt (Vector.at (clauses.at k w)) = 
-      Vector.at (rc.restClauses.at j jw)
+    (jw : j < rc.codom) →  delete focus focusLt (Vector.coords (clauses.coords k w)) = 
+      Vector.coords (rc.restClauses.coords j jw)
 
 structure ReverseRelation{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}(
         rc: RestrictionClauses branch focus focusLt clauses)  where
     relation : (k : Nat) → (w: k < rc.codom) → 
-      Vector.at (rc.restClauses.at k w) = delete focus focusLt 
-        (Vector.at (clauses.at (rc.reverse k w) (rc.reverseWit k w)))
+      Vector.coords (rc.restClauses.coords k w) = delete focus focusLt 
+        (Vector.coords (clauses.coords (rc.reverse k w) (rc.reverseWit k w)))
 
 structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}(
         rc: RestrictionClauses branch focus focusLt clauses)  where
     nonPosRev : (k : Nat) → (w: k < rc.codom)  → 
       Not (
-        Vector.at (clauses.at (rc.reverse k w) (rc.reverseWit k w)) focus focusLt = some branch)
+        Vector.coords (clauses.coords (rc.reverse k w) (rc.reverseWit k w)) focus focusLt = some branch)
 
 structure RestrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom) where
@@ -116,32 +116,32 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
     (clauses: Vector (Clause (n + 1)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
     (dp : DroppedProof rc) (fr: ForwardRelation rc): 
       (valuation : Valuation n) → 
-        ((j : Nat) → (jw : j < rc.codom) → ClauseSat (rc.restClauses.at j jw) valuation) → 
+        ((j : Nat) → (jw : j < rc.codom) → ClauseSat (rc.restClauses.coords j jw) valuation) → 
         (j : Nat) → (jw : j < dom) →  
-          ClauseSat (clauses.at j jw) (FinSeq.vec (insert branch n focus focusLt valuation.at)) := 
+          ClauseSat (clauses.coords j jw) (FinSeq.vec (insert branch n focus focusLt valuation.coords)) := 
         fun valuation pf =>
           fun k w => 
             let splitter := optCase (rc.forward k w)
             match splitter with
             | OptCase.noneCase eqn => 
-              let lem1 : Vector.at (clauses.at k w) focus focusLt = some branch := dp.dropped k w eqn
-              let lem2 : insert branch n focus focusLt valuation.at focus focusLt = branch := by 
+              let lem1 : Vector.coords (clauses.coords k w) focus focusLt = some branch := dp.dropped k w eqn
+              let lem2 : insert branch n focus focusLt valuation.coords focus focusLt = branch := by 
                 apply insertAtFocus
                 done
-              let lem3 : Vector.at (clauses.at k w) focus focusLt = 
-                some (insert branch n focus focusLt valuation.at focus focusLt) := 
+              let lem3 : Vector.coords (clauses.coords k w) focus focusLt = 
+                some (insert branch n focus focusLt valuation.coords focus focusLt) := 
                 by
                   rw [lem1]
                   apply (congrArg some)
                   exact Eq.symm lem2
                   done
-              let lem4 : (Vector.at (Vector.at clauses k w) focus focusLt) = some (
-                  (Vector.at 
+              let lem4 : (Vector.coords (Vector.coords clauses k w) focus focusLt) = some (
+                  (Vector.coords 
                     (FinSeq.vec (insert branch n focus focusLt 
-                      (Vector.at valuation))) focus focusLt)) := 
+                      (Vector.coords valuation))) focus focusLt)) := 
                       by 
-                        rw [seqAt (insert branch n focus focusLt 
-                      (Vector.at valuation))]
+                        rw [seq_to_vec_coords (insert branch n focus focusLt 
+                      (Vector.coords valuation))]
                         rw [lem3]
                         done
               ⟨focus, focusLt, lem4⟩
@@ -154,62 +154,62 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
               let jWit : j < rc.codom := jWitAux
               let lem1 := fr.forwardRelation k w j eqn jWit
               let ⟨i, iw, vs⟩ := pf j jWit
-              let lem2 : Vector.at (rc.restClauses.at j jWit) i iw = 
-                      some (valuation.at i iw) := vs
-              let lem3 : delete focus focusLt (Vector.at (clauses.at k w)) i iw =
-                  some (valuation.at i iw) := 
+              let lem2 : Vector.coords (rc.restClauses.coords j jWit) i iw = 
+                      some (valuation.coords i iw) := vs
+              let lem3 : delete focus focusLt (Vector.coords (clauses.coords k w)) i iw =
+                  some (valuation.coords i iw) := 
                     by
                     rw [←  lem2]
                     rw [lem1]
                     done
-              let lem4 : delete focus focusLt (Vector.at (clauses.at k w)) i iw =
-                (Vector.at (clauses.at k w)) (skip focus i) (skipPlusOne iw) := by
+              let lem4 : delete focus focusLt (Vector.coords (clauses.coords k w)) i iw =
+                (Vector.coords (clauses.coords k w)) (skip focus i) (skip_le_succ iw) := by
                   rfl
                   done
-              let lem5 : insert branch n focus focusLt valuation.at 
-                              (skip focus i) (skipPlusOne iw) =
-                                  valuation.at i iw := by
+              let lem5 : insert branch n focus focusLt valuation.coords 
+                              (skip focus i) (skip_le_succ iw) =
+                                  valuation.coords i iw := by
                                     apply insertAtImage
                                     done
-              let lem6 : (Vector.at (clauses.at k w)) (skip focus i) (skipPlusOne iw) =
-                          some (insert branch n focus focusLt valuation.at 
-                              (skip focus i) (skipPlusOne iw)) := by
+              let lem6 : (Vector.coords (clauses.coords k w)) (skip focus i) (skip_le_succ iw) =
+                          some (insert branch n focus focusLt valuation.coords 
+                              (skip focus i) (skip_le_succ iw)) := by
                               rw [← lem4]
                               rw [lem3]
                               rw [lem5]
                               done
-              let lem7 : (Vector.at (Vector.at clauses k w) (skip focus i) (skipPlusOne iw)) =
+              let lem7 : (Vector.coords (Vector.coords clauses k w) (skip focus i) (skip_le_succ iw)) =
                 some (
-                  (Vector.at (FinSeq.vec (insert branch n focus focusLt (Vector.at valuation))) 
-                    (skip focus i) (skipPlusOne iw))) := 
+                  (Vector.coords (FinSeq.vec (insert branch n focus focusLt (Vector.coords valuation))) 
+                    (skip focus i) (skip_le_succ iw))) := 
                       by
-                        rw [seqAt (insert branch n focus focusLt (Vector.at valuation))]
+                        rw [seq_to_vec_coords (insert branch n focus focusLt (Vector.coords valuation))]
                         rw [lem6]
                         done
-              ⟨skip focus i, skipPlusOne iw, lem7⟩
+              ⟨skip focus i, skip_le_succ iw, lem7⟩
 
 
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
-  FinSeq.vec (insert (some b) n k w (Vector.at (contradiction n))) 
+  FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) 
 
 theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
-          Vector.at (unitClause n b k w) k w = b := by
+          Vector.coords (unitClause n b k w) k w = b := by
             have resolve  : unitClause n b k w = 
-                FinSeq.vec (insert (some b) n k w (Vector.at (contradiction n))) := rfl
+                FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) := rfl
             rw [resolve]
-            rw [seqAt]
-            apply insertAtFocus (some b) n k w (Vector.at (contradiction n))
+            rw [seq_to_vec_coords]
+            apply insertAtFocus (some b) n k w (Vector.coords (contradiction n))
             done
 
 theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
-          (i: Nat) → (iw : i < n) →  Vector.at (unitClause n b k w) (skip k i) 
-                  (skipPlusOne iw) = none := by 
+          (i: Nat) → (iw : i < n) →  Vector.coords (unitClause n b k w) (skip k i) 
+                  (skip_le_succ iw) = none := by 
                   intros i iw
                   have resolve  : unitClause n b k w = 
-                        FinSeq.vec (insert (some b) n k w (Vector.at (contradiction n))) := rfl
+                        FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) := rfl
                   rw [resolve]
-                  rw [seqAt] 
-                  let ins := insertAtImage (some b) n k w (Vector.at (contradiction n)) i iw
+                  rw [seq_to_vec_coords] 
+                  let ins := insertAtImage (some b) n k w (Vector.coords (contradiction n)) i iw
                   rw [ins]
                   rw [contraAt]
                   done
@@ -223,9 +223,9 @@ structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
 def clauseUnit{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitClause clause) :=
   let f : Fin (n + 1) →   (Option (IsUnitClause clause)) := 
     fun ⟨k, w⟩ =>
-      match deqSeq _ clause.at (Vector.at (unitClause n parity k w)) with 
+      match deqSeq _ clause.coords (Vector.coords (unitClause n parity k w)) with 
       | isTrue pf => 
-        let cl : IsUnitClause clause := IsUnitClause.mk k w parity (equalCoords pf) 
+        let cl : IsUnitClause clause := IsUnitClause.mk k w parity (coords_eq_implies_vec_eq pf) 
         some (cl)
       | isFalse _ => none  
   let seq : FinSeq (n + 1) (Fin (n + 1)) := fun k w => ⟨k, w⟩
@@ -251,8 +251,8 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))
       match optCl with
       | some scl => some scl
       | none => 
-        if (posCount.at m cbBound) + (negCount.at m cbBound) = 1 then
-        let parity := (posCount.at m cbBound) == 1
+        if (posCount.coords m cbBound) + (negCount.coords m cbBound) = 1 then
+        let parity := (posCount.coords m cbBound) == 1
         match clauseUnit (clauses m cbBound) parity with
         | some u => some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩ 
         | none => 
@@ -273,25 +273,25 @@ structure HasPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom) where
   bound : index < n
   parity : Bool
   evidence : (k : Nat) → (lt : k < dom) → 
-          (Vector.at (clauses.at k lt) index bound = none) ∨  
-            (Vector.at (clauses.at k lt) index bound = some parity)
+          (Vector.coords (clauses.coords k lt) index bound = none) ∨  
+            (Vector.coords (clauses.coords k lt) index bound = some parity)
 
 structure IsPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom) 
                       (index: Nat)(bound : index < n)(parity : Bool) where
-  evidence : (k : Nat) → (lt : k < dom) → (Vector.at (clauses.at k lt) index bound = none) ∨ 
-                                (Vector.at (clauses.at k lt) index bound = some parity)
+  evidence : (k : Nat) → (lt : k < dom) → (Vector.coords (clauses.coords k lt) index bound = none) ∨ 
+                                (Vector.coords (clauses.coords k lt) index bound = some parity)
 
 def pureEvidence {dom n : Nat}(clauses : Vector  (Clause n) dom) 
                   (index: Nat)(bound : index < n)(parity : Bool): Prop := 
                   (k : Nat) → (lt : k < dom) → 
-          (Vector.at (clauses.at k lt) index bound = none) ∨  
-          (Vector.at (clauses.at k lt) index bound = some parity)
+          (Vector.coords (clauses.coords k lt) index bound = none) ∨  
+          (Vector.coords (clauses.coords k lt) index bound = some parity)
 
 def pureBeyond{dom n : Nat}(clauses : Vector  (Clause n) dom) 
                   (index: Nat)(bound : index < n)(parity : Bool)(m: Nat): Prop := 
                   (k : Nat) → (lt : k < dom) → (m ≤ k) → 
-          (Vector.at (clauses.at k lt) index bound = none) ∨  
-          (Vector.at (clauses.at k lt) index bound = some parity)
+          (Vector.coords (clauses.coords k lt) index bound = none) ∨  
+          (Vector.coords (clauses.coords k lt) index bound = some parity)
 
 def pureBeyondZero{dom n : Nat}(clauses : Vector  (Clause n) dom)
                 (index: Nat)(bound : index < n)(parity : Bool) : 
@@ -332,7 +332,7 @@ def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
         | none => none
         | some pureBeyondEv => 
           if pw : p < dom then
-            let head := Vector.at (clauses.at p pw) index bound
+            let head := Vector.coords (clauses.coords p pw) index bound
               if pf : (head = none) ∨  (head = some parity) then
                 let evidence : pureBeyond clauses index bound parity p := 
                   by
@@ -341,8 +341,8 @@ def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
                     intro ineq
                     cases Nat.eq_or_lt_of_le ineq with
                     | inl eql =>           
-                      let lem1 : clauses.at p pw = clauses.at k kw := by
-                        apply witnessIndependent
+                      let lem1 : clauses.coords p pw = clauses.coords k kw := by
+                        apply witness_independent
                         exact eql
                         done
                       rw [← lem1]
