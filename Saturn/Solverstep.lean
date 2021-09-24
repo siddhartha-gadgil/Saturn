@@ -220,17 +220,12 @@ structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
   parity: Bool
   equality : clause = unitClause n parity index bound
 
-def clauseUnit{n: Nat}(clause: Clause (n + 1)) : Option (IsUnitClause clause) :=
+def clauseUnit{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitClause clause) :=
   let f : Fin (n + 1) →   (Option (IsUnitClause clause)) := 
     fun ⟨k, w⟩ =>
-      match deqSeq _ clause.at (Vector.at (unitClause n true k w)) with 
+      match deqSeq _ clause.at (Vector.at (unitClause n parity k w)) with 
       | isTrue pf => 
-        let cl : IsUnitClause clause := IsUnitClause.mk k w true (equalCoords pf) 
-        some (cl)
-      | isFalse _ => 
-        match deqSeq _ clause.at (Vector.at (unitClause n false k w)) with 
-      | isTrue pf => 
-        let cl : IsUnitClause clause := IsUnitClause.mk k w false (equalCoords pf) 
+        let cl : IsUnitClause clause := IsUnitClause.mk k w parity (equalCoords pf) 
         some (cl)
       | isFalse _ => none  
   let seq : FinSeq (n + 1) (Fin (n + 1)) := fun k w => ⟨k, w⟩
@@ -257,7 +252,8 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))
       | some scl => some scl
       | none => 
         if (posCount.at m cbBound) + (negCount.at m cbBound) = 1 then
-        match clauseUnit (clauses m cbBound) with
+        let parity := (posCount.at m cbBound) == 1
+        match clauseUnit (clauses m cbBound) parity with
         | some u => some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩ 
         | none => 
           someUnitClauseAux clauses 
