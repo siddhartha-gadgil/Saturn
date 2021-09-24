@@ -1,4 +1,5 @@
 import Saturn.FinSeq
+import Saturn.Vector
 import Saturn.Clause 
 import Saturn.Solverstep
 import Saturn.Resolution
@@ -95,11 +96,11 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
     (clauses: Vector (Clause (n + 1)) dom) →   
         RestrictionData branch focus focusLt clauses := 
         fun clauses =>
-          let rc : RestrictionClauses branch focus focusLt Vector.Nil := 
-              ⟨0, Vector.Nil, Vector.Nil,
+          let rc : RestrictionClauses branch focus focusLt Vector.nil := 
+              ⟨0, Vector.nil, Vector.nil,
                 fun k w => nomatch w, 
-                Vector.Nil, fun k w => nomatch w⟩
-          let rd : RestrictionData branch focus focusLt Vector.Nil := ⟨rc,
+                Vector.nil, fun k w => nomatch w⟩
+          let rd : RestrictionData branch focus focusLt Vector.nil := ⟨rc,
             ⟨fun k w => nomatch w⟩,
             ⟨fun k w => nomatch w⟩,
             ⟨fun k w => nomatch w⟩, 
@@ -110,7 +111,7 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                 have contra := not_lt_zero _ kw
                 exact False.elim contra
             )⟩⟩
-          restrictionDataAux branch focus focusLt clauses Vector.Nil 
+          restrictionDataAux branch focus focusLt clauses Vector.nil 
               (Nat.add_zero dom) rd clauses (concat_empty_seq_id clauses.coords)
 
 def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)

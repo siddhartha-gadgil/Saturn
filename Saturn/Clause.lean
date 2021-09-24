@@ -1,4 +1,5 @@
 import Saturn.FinSeq
+import Saturn.Vector
 open Nat
 open Vector
 
@@ -521,8 +522,8 @@ def simplifiedContainment{dom n : Nat}: (clauses : Vector (Clause n) dom) →
                               Containment clauses := 
                     match dom with
                     |zero => fun _ _ _ => 
-                      ⟨zero, Vector.Nil, Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw,
-                        Vector.Nil, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
+                      ⟨zero, Vector.nil, Vector.nil, fun j jw => nomatch jw, fun j jw => nomatch jw,
+                        Vector.nil, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
                     | m + 1 => fun clauses posCount negCount =>                                                          
                         simplifyNonEmptyContainment (m + 1) clauses
                             posCount negCount (Containment.identity clauses)
