@@ -1,15 +1,6 @@
 import Saturn.Skip
 open Nat
 
-
-class Prover(α: Type) where
-  statement : (x : α) → Prop
-  proof : (x : α) → statement x
-
-def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x 
-
-def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
-
  /- `FinSeq` is an implementation of finite sequences. We define insertion and deletion 
  and prove properties of these operations. We also show equality is decidable for `FinSeq α` 
  if it is for `α`. We also search within finite sequences. -/

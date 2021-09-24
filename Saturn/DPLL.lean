@@ -1,3 +1,4 @@
+import Saturn.Prover
 import Saturn.FinSeq
 import Saturn.Vector
 import Saturn.Clause 
