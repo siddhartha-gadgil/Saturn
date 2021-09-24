@@ -15,7 +15,7 @@ def cl3 : Clause 2 := -- ¬Q
   (none) +: (some false) +: Vector.Nil
 
 def eg1Statement : Vector (Clause 2) 3 := cl2 +: cl1 +: cl3 +: Vector.Nil -- all three clauses
-def eg2Statement := FinSeq.vec (tail eg1Statement.at) -- clauses 1 and 3 only
+def eg2Statement := FinSeq.vec (eg1Statement.at.tail) -- clauses 1 and 3 only
 
 set_option maxHeartbeats 500000
 

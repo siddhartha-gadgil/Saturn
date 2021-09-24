@@ -33,7 +33,7 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                     apply funext
                     intro jw
                     have tl :forwardVecN.at (succ i) jw = 
-                        tail forwardVecN.at i (Nat.le_of_succ_le_succ jw) := by rfl
+                        forwardVecN.at.tail i (Nat.le_of_succ_le_succ jw) := by rfl
                     rw [tl]
                     rw [tailCommutes none rc.forwardVec]
                     have fr : forwardN (succ i) jw = 

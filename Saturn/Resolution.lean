@@ -571,19 +571,19 @@ inductive ResolutionTree{dom n: Nat}
 
 
 def Clause.toString {n: Nat}: Clause n → String :=
-  fun (cls : Clause n) => (list cls.at).toString
+  fun (cls : Clause n) => (cls.at.list).toString
 
 instance {n: Nat} : ToString (Clause n) := 
-  ⟨fun (cls : Clause n) => (list cls.at).toString⟩
+  ⟨fun (cls : Clause n) => (cls.at.list).toString⟩
 
 instance {n: Nat}{α: Type}[ToString α] : ToString (FinSeq n α) := 
-  ⟨fun seq => (list seq).toString⟩
+  ⟨fun seq => (seq.list).toString⟩
 
 def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
       {top : Clause (n + 1)}
         (rt: ResolutionTree clauses top) : String := 
       match rt with
-      | ResolutionTree.assumption i iw _ _  => (list (Vector.at (clauses.at i iw))).toString
+      | ResolutionTree.assumption i iw _ _  => (FinSeq.list (Vector.at (clauses.at i iw))).toString
       | ResolutionTree.resolve left right .(top) leftTree rightTree triple => 
                 top.toString ++ " from " ++ left.toString ++ " & " ++ right.toString  ++ 
                 "; using: {" ++ 
@@ -647,7 +647,7 @@ def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
       fun sol =>
       match sol with
       | unsat tree => "unsat: " ++ tree.toString 
-      | sat valuation _ => "sat: " ++ (list valuation.at).toString
+      | sat valuation _ => "sat: " ++ (valuation.at.list).toString
 
 def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
                   (sol : SatSolution clauses) : Prop :=

@@ -35,8 +35,11 @@ def rowClause(r n: Nat) : Clause (n * n) :=
 def rowClauses (n: Nat) : List (Clause (n * n)) :=
   (List.range n).map (fun r => rowClause r n) 
 
+def finSeq{α : Type}(l : List α) : FinSeq (l.length) α := 
+  fun j jw => l.get j jw
+
 def queensClauses(n: Nat) :=
   FinSeq.vec 
-  ((seq (rowClauses n)) ++| (seq (forbidPairClauses n)))
+  ((finSeq (rowClauses n)) ++| (finSeq (forbidPairClauses n)))
 
 #check queensClauses 8

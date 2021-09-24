@@ -2,8 +2,6 @@ import Saturn.FinSeq
 open Nat
 open Vector
 
-set_option maxHeartbeats 500000
-
 def Clause(n : Nat) : Type := Vector (Option Bool) n
 
 def Valuation(n: Nat) : Type := Vector Bool n
@@ -19,7 +17,8 @@ structure ClauseSat{n: Nat}(clause : Clause n)(valuation: Valuation n) where
 def clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) := 
   ∃ (k : Nat), ∃ (b : k < n), varSat (clause.at k b) (valuation.at k b)
 
-instance {n: Nat}(clause : Clause n)(valuation: Valuation n): Prover (ClauseSat clause valuation) where 
+instance {n: Nat}(clause : Clause n)(valuation: Valuation n): 
+    Prover (ClauseSat clause valuation) where 
   statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause.at k b) (valuation.at k b)
   proof := fun cs => ⟨cs.coord, ⟨cs.bound, cs.witness⟩⟩
 
@@ -29,7 +28,8 @@ def contradiction(n: Nat) : Clause n :=
 theorem contraAt(n: Nat) : Vector.at (contradiction n) = (fun _ _ => none) := by apply seqAt
 
 
-theorem contradictionFalse (n: Nat) : ∀ valuation : Valuation n, Not (clauseSat (contradiction n) valuation) :=
+theorem contradictionFalse (n: Nat) : ∀ valuation : Valuation n, 
+          Not (clauseSat (contradiction n) valuation) :=
   fun valuation => fun ⟨k, ⟨b, p⟩⟩ => 
     let lem1 : Vector.at (contradiction n) k b = none := by rw [contraAt n]
     let lem2 : varSat (Vector.at (contradiction n) k b) = varSat none := congrArg varSat lem1

@@ -27,20 +27,17 @@ def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n +
 def FinSeq.empty {α: Type} : FinSeq zero α := 
   fun j jw => nomatch jw
 
-def seq{α : Type}(l : List α) : FinSeq (l.length) α := 
-  fun j jw => l.get j jw
-
 infixr:66 "+|" => FinSeq.cons
 
-def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
+def FinSeq.tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
   fun k w =>
       seq (k + 1) (succ_lt_succ w)
 
-def head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
+def FinSeq.head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq zero (zero_lt_succ _)
 
 theorem headTail{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): 
-      (head seq) +| (tail seq) = seq := 
+      (seq.head) +| (seq.tail) = seq := 
         funext (
           fun k => 
             match k with
@@ -220,10 +217,10 @@ theorem concatEmptySeq{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (FinSe
             exact lem
             done
 
-def list{α : Type}{n : Nat}: FinSeq n α → List α :=
+def FinSeq.list{α : Type}{n : Nat}: FinSeq n α → List α :=
   match n with
   | zero => fun _ => []
-  | l + 1 => fun s => (head s) :: (list (tail s))
+  | l + 1 => fun s => (s.head) :: (list (s.tail))
 
 
 def delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α := 
@@ -485,9 +482,9 @@ def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}:
           if pf0 : fn zero (zero_lt_succ m) =  x then
             ExistsElem.exsts zero (zero_lt_succ m) pf0
           else
-            match searchElem (tail fn) x with
+            match searchElem (fn.tail) x with
             | ExistsElem.exsts j jw eql => 
-              let l1 : fn (j + 1) (succ_lt_succ jw) = (tail fn) j jw := by rfl 
+              let l1 : fn (j + 1) (succ_lt_succ jw) = (fn.tail) j jw := by rfl 
               let l2 : fn (j + 1) (succ_lt_succ jw) = x := by 
                     rw [l1]
                     exact eql
@@ -575,14 +572,6 @@ structure ProvedDepUpdate{α :Type}[DecidableEq α]{β : α → Type}(fn : (x :�
             exact neq
             done)  (fn x)
 
-
-def enumOptBool : (n : Nat) → n < 2 → Option Bool :=
-  fun n =>
-  match n with
-  | zero => fun _ => some true
-  | 1 => fun _ => some false
-  | 2 => fun _ => none
-  | l + 2 => fun w => nomatch w
 
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
     match n with
@@ -760,10 +749,10 @@ theorem prevsum{n m l: Nat}: n + 1 + m = l + 1 → n + m = l :=
 
 theorem seqVecConsAux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 : FinSeq (n + 1) α) 
         (accum : Vector α m) : seqVecAux s seq1 accum =
-                (head seq1) +: (
+                (seq1.head) +: (
                   seqVecAux 
                   (prevsum s)
-                  (tail seq1)  accum) := 
+                  (seq1.tail)  accum) := 
                     match n, l, s, seq1 with
                     |  zero, l, s'', seq1  => 
                       by
@@ -783,10 +772,10 @@ theorem seqVecConsAux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 : Fi
                           seqVecAux ss (init seq1) (last seq1+:accum) =
                             (last seq1+:accum) := by rfl
                         rw [res2]
-                        have res3 : seqVecAux (prevsum s') (tail seq1) accum =  accum
+                        have res3 : seqVecAux (prevsum s') (seq1.tail) accum =  accum
                             := by rfl
                         rw [res3]
-                        have hh : head seq1 = seq1 0 (zero_lt_succ _) := by rfl
+                        have hh : seq1.head = seq1 0 (zero_lt_succ _) := by rfl
                         have hl: last seq1 = seq1 0 (zero_lt_succ _) := by rfl
                         rw [hh, hl]
                         done 
@@ -805,25 +794,25 @@ theorem seqVecConsAux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 : Fi
                       let v := init seq1
                       let base := seqVecConsAux ss (init seq1) (last seq1+:accum)
                       rw [base]
-                      have he : head (init seq1) = head seq1 := by rfl
+                      have he : FinSeq.head (init seq1)  = seq1.head := by rfl
                       rw [he]
-                      apply congrArg (Cons (head seq1))
+                      apply congrArg (Cons (seq1.head))
                       have sss : n' + (m + 1) = l := by
                         rw [← (prevsum ss)]
                         done
                       have resolve2 :
-                        seqVecAux (prevsum s'') (tail seq1) accum =
-                          seqVecAux sss (init (tail seq1)) 
-                            (last (tail seq1 ) +: accum) := by rfl
+                        seqVecAux (prevsum s'') (seq1.tail) accum =
+                          seqVecAux sss (init (seq1.tail)) 
+                            (last (seq1.tail ) +: accum) := by rfl
                       rw [resolve2]
-                      have intl:  init (tail seq1) = tail (init seq1) := by rfl
+                      have intl:  init (seq1.tail) = FinSeq.tail (init seq1) := by rfl
                       rw [intl]
-                      have lst : last (tail seq1) = last seq1 := by rfl
+                      have lst : last (seq1.tail) = last seq1 := by rfl
                       rw [lst]
                       done
 
 theorem seqVecConsEqn {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) : 
-          seqVec seq  = (head seq) +: (seqVec (tail seq)) := 
+          seqVec seq  = (seq.head) +: (seqVec (seq.tail)) := 
                   seqVecConsAux _ seq Vector.Nil
 
 def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := seqVec
@@ -874,9 +863,9 @@ theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq :=
     | zero =>
       apply funext
       intro kw 
-      have resolve : seq.vec = Cons (head seq) (FinSeq.vec (tail seq)) := by apply seqVecConsEqn 
+      have resolve : seq.vec = Cons (seq.head) (FinSeq.vec (seq.tail)) := by apply seqVecConsEqn 
       rw [resolve]
-      have res2 : Vector.at (head seq+:FinSeq.vec (tail seq)) zero kw = head seq := by rfl
+      have res2 : Vector.at (seq.head+:FinSeq.vec (seq.tail)) zero kw = seq.head := by rfl
       rw [res2]
       rfl
       done
@@ -884,12 +873,12 @@ theorem seqAt{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.at = seq :=
       apply funext
       intro kw
       have tl :Vector.at (FinSeq.vec seq) (succ k') kw = 
-          Vector.at (FinSeq.vec (tail seq)) k' (Nat.le_of_succ_le_succ kw) := by
+          Vector.at (FinSeq.vec (seq.tail)) k' (Nat.le_of_succ_le_succ kw) := by
               have dfn : FinSeq.vec seq = seqVec seq := by rfl
               rw [dfn]
               rw [(seqVecConsEqn seq)] 
               rfl 
-      let base := seqAt (tail seq)
+      let base := seqAt (seq.tail)
       rw [tl]
       rw [base]
       rfl
@@ -910,7 +899,7 @@ theorem consCommutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
               rfl
 
 theorem tailCommutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
-      tail (Vector.at (x +: ys)) = ys.at := 
+      FinSeq.tail (Vector.at (x +: ys)) = ys.at := 
         by
         apply funext
         intro kw
