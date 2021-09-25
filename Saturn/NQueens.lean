@@ -10,8 +10,6 @@ def pairs(n: Nat) : List (Nat × Nat) :=
     (fun x => 
       (List.range n).map (fun y => (x, y)))
 
-#eval pairs 3
-
 def row (index n: Nat) : Nat := index / n
 def col (index n: Nat) : Nat := index % n
 
@@ -36,11 +34,11 @@ def rowClause(r n: Nat) : Clause (n * n) :=
 def rowClauses (n: Nat) : List (Clause (n * n)) :=
   (List.range n).map (fun r => rowClause r n) 
 
-def finSeq{α : Type}(l : List α) : FinSeq (l.length) α := 
+def listToFinSeq{α : Type}(l : List α) : FinSeq (l.length) α := 
   fun j jw => l.get j jw
 
 def queensClauses(n: Nat) :=
   FinSeq.vec 
-  ((finSeq (rowClauses n)) ++| (finSeq (forbidPairClauses n)))
+  ((listToFinSeq (rowClauses n)) ++| (listToFinSeq (forbidPairClauses n)))
 
 #check queensClauses 8

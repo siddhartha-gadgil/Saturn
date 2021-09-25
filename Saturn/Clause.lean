@@ -28,13 +28,13 @@ instance {n: Nat}(clause : Clause n)(valuation: Valuation n):
 def contradiction(n: Nat) : Clause n :=
   FinSeq.vec (fun _ _ => none)
 
-theorem contraAt(n: Nat) : Vector.coords (contradiction n) = (fun _ _ => none) := by apply seq_to_vec_coords
+theorem contra_at_none(n: Nat) : Vector.coords (contradiction n) = (fun _ _ => none) := by apply seq_to_vec_coords
 
 
-theorem contradictionFalse (n: Nat) : ∀ valuation : Valuation n, 
+theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n, 
           Not (clauseSat (contradiction n) valuation) :=
   fun valuation => fun ⟨k, ⟨b, p⟩⟩ => 
-    let lem1 : Vector.coords (contradiction n) k b = none := by rw [contraAt n]
+    let lem1 : Vector.coords (contradiction n) k b = none := by rw [contra_at_none n]
     let lem2 : varSat (Vector.coords (contradiction n) k b) = varSat none := congrArg varSat lem1
     let lem3 : varSat (Vector.coords (contradiction n) k b) (valuation.coords k b) = 
                 varSat none (valuation.coords k b) := congr lem2 rfl
@@ -46,7 +46,7 @@ theorem contradictionFalse (n: Nat) : ∀ valuation : Valuation n,
       done 
     Option.noConfusion lem5
 
-theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
+theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
       insert none n focus focusLt (Vector.coords (contradiction n)) =
                           Vector.coords (contradiction (n + 1)) :=
       let lem0 : (j: Nat) → (jw : j < n + 1) →  
@@ -54,13 +54,13 @@ theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
                       Vector.coords (contradiction (n + 1)) j jw := 
                       fun j jw =>
                       let lem0 : Vector.coords (contradiction (n + 1)) j jw = none := 
-                          by rw [contraAt]
+                          by rw [contra_at_none]
                       if c : j= focus then 
                         match focus, c, focusLt with
                         | .(j), rfl, .(jw) =>
                           by
                             rw [insert_at_focus] 
-                            rw [contraAt]
+                            rw [contra_at_none]
                             done                                
                       else  
                         let i := skipInverse focus j c 
@@ -73,7 +73,7 @@ theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
                             rw [insert_at_image 
                                none n focus focusLt (Vector.coords (contradiction n))
                                i iw]
-                            rw [contraAt]
+                            rw [contra_at_none]
                             done                               
                  by
                     apply funext
@@ -125,20 +125,50 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
                   c (lem2) 
             )
 
-
+-- containment of clauses and properties
 
 def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2.coords k kw = some b → cl1.coords k kw = some b
 
-def contains.self{n: Nat} (cl : Clause n) : contains cl cl :=
-  fun k kw b hyp => hyp
-
 infix:65 " ⊇  " => contains
+
+theorem contains_refl{n: Nat} (cl : Clause n) :   
+  cl ⊇ cl :=
+    fun k w b => 
+      fun hyp =>
+        hyp
+
+theorem contains_trans{n: Nat} (cl1 cl2 cl3 : Clause n) :
+        cl1 ⊇  cl2 → cl2 ⊇ cl3 →  cl1 ⊇ cl3 :=
+        fun hyp1 hyp2 => 
+          fun k w b =>
+            fun dHyp =>
+              by
+                apply hyp1
+                apply hyp2
+                apply dHyp
+                done
+
+theorem contains_prepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
+          v1 ≥  v2 → cl1 ⊇  cl2 → 
+                (v1 +: cl1) ⊇ (v2 +: cl2) := 
+           fun hyp1 hyp2 =>
+            fun k =>
+            match k with
+            | zero => fun w b =>
+              fun hb => 
+                hyp1 b hb
+            | j + 1  =>  
+              fun  kw b =>
+                fun hb =>
+                  hyp2 j  (le_of_succ_le_succ kw) b hb
+
+-- Implementation of checking for containment; tail-call optimized
 
 def containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, m ≤ k →  ∀ b : Bool, cl2.coords k kw = some b → cl1.coords k kw = some b
 
-theorem containsImpliesContainsBeyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
+theorem contains_implies_contains_beyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
   contains cl1 cl2 → containsBeyond cl1 cl2 m := by
     intro h
     intro k
@@ -148,7 +178,7 @@ theorem containsImpliesContainsBeyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
     exact h k kw b
     done
   
-theorem containsBeyondZero {n: Nat} (cl1 cl2 : Clause n) :
+theorem contains_beyond_zero_implies_contains {n: Nat} (cl1 cl2 : Clause n) :
   containsBeyond cl1 cl2 zero → contains cl1 cl2 := by
     intro h
     intro k
@@ -165,41 +195,8 @@ def containsSat{n: Nat} (cl1 cl2 : Clause n) :
         let lem1 := dom j jw (valuation.coords j jw) lem0
         ⟨j, jw, lem1⟩
 
-def containsPrepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
-          v1 ≥  v2 → cl1 ⊇  cl2 → 
-                (v1 +: cl1) ⊇ (v2 +: cl2) := 
-           fun hyp1 hyp2 =>
-            fun k =>
-            match k with
-            | zero => fun w b =>
-              fun hb => 
-                hyp1 b hb
-            | j + 1  =>  
-              fun  kw b =>
-                fun hb =>
-                  hyp2 j  (le_of_succ_le_succ kw) b hb
 
-def containsRefl{n: Nat} (cl : Clause n) :   
-  cl ⊇ cl :=
-    fun k w b => 
-      fun hyp =>
-        hyp
-
-def containsTrans{n: Nat} (cl1 cl2 cl3 : Clause n) :
-        cl1 ⊇  cl2 → cl2 ⊇ cl3 →  cl1 ⊇ cl3 :=
-        fun hyp1 hyp2 => 
-          fun k w b =>
-            fun dHyp =>
-              by
-                apply hyp1
-                apply hyp2
-                apply dHyp
-                done
-
-#check Nat.eq_or_lt_of_le
-#check Nat.lt_irrefl
-
-def containsBeyondVacuous{n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
+theorem contains_beyond_vacuously{n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
     (n ≤ m) → containsBeyond cl1 cl2 m := by
       intro h
       intro k
@@ -217,10 +214,10 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
           | m, isFalse contra => isFalse (
               by
                 intro hyp
-                let h := containsImpliesContainsBeyond cl1 cl2 m hyp
+                let h := contains_implies_contains_beyond cl1 cl2 m hyp
                 exact contra h
                 done)
-          | zero, isTrue pf => isTrue (containsBeyondZero cl1 cl2 pf)
+          | zero, isTrue pf => isTrue (contains_beyond_zero_implies_contains cl1 cl2 pf)
           | l + 1, isTrue pf => 
             let accum: Decidable (containsBeyond cl1 cl2 l) := 
               if lw : l < n then
@@ -261,21 +258,17 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                   cases Nat.lt_or_ge l n with
                   | inl l1 => exact absurd l1 lw
                   | inr l2 => exact l2
-                isTrue (containsBeyondVacuous cl1 cl2 l overshoot)
+                isTrue (contains_beyond_vacuously cl1 cl2 l overshoot)
         decideContainsRec cl1 cl2 l accum
 
 
 def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) → 
                                           Decidable (cl1 ⊇   cl2) :=
     fun cl1 cl2 => decideContainsRec cl1 cl2 n 
-        (isTrue (containsBeyondVacuous cl1 cl2 n (Nat.le_refl _)))
+        (isTrue (contains_beyond_vacuously cl1 cl2 n (Nat.le_refl _)))
 
 instance {n: Nat}{cl: Clause n} : DecidablePred (contains cl) :=
   decideContains n cl
-
-def subClause?{l n: Nat}(cl : Clause n)(seq : FinSeq l (Clause n)) :
-                    Option (ElemSeqPred seq (contains cl)) := 
-              find? (contains cl) seq
 
 def parityCount{n: Nat}  (b: Bool) (cl : Clause n) : Nat :=
     let p : Option Bool →  Bool :=
@@ -287,6 +280,8 @@ def parityCount{n: Nat}  (b: Bool) (cl : Clause n) : Nat :=
 
 def countBelow (p1 n1 p2 n2 : Nat) : Bool :=
   (p1 ≤ p2) ∧ (n1 ≤ n2) ∧ ((p1 < p2) ∨ (n1 < n2)) 
+
+-- Simplification removing clauses that contain other clauses.
 
 structure Containment{dom n : Nat}(base: Vector (Clause n) dom) where
     codom: Nat
@@ -302,20 +297,21 @@ structure Containment{dom n : Nat}(base: Vector (Clause n) dom) where
     -- forward : (j : Nat) → (jw : j < dom) → ElemSeqPred imageSeq.coords (contains (base.coords j jw))
     -- reverse : (j : Nat) → (jw : j < codom) → ElemInSeq base.coords (imageSeq.coords j jw) 
 
-def Containment.forward {dom n : Nat}{base: Vector (Clause n) dom}
+namespace Containment
+def forward {dom n : Nat}{base: Vector (Clause n) dom}
       (cntn : Containment base) (j : Nat) (jw : j < dom) : 
                   ElemSeqPred cntn.imageSeq.coords (contains (base.coords j jw)) :=
                 ⟨cntn.forwardVec.coords j jw, cntn.forwardBound j jw, 
                     cntn.forwardEq j jw⟩
                 
 
-def Containment.reverse {dom n : Nat}{base: Vector (Clause n) dom}
+def reverse {dom n : Nat}{base: Vector (Clause n) dom}
       (cntn : Containment base) (j : Nat) (jw : j < cntn.codom) :
                   ElemInSeq base.coords (cntn.imageSeq.coords j jw) :=
                 ⟨cntn.reverseVec.coords j jw, cntn.reverseBound j jw,
                     cntn.reverseEq j jw⟩
 
-def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment base :=
+def identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment base :=
     let idVec : Vector Nat dom := FinSeq.vec (fun j jw => j)
     let idAt : (j : Nat) → (jw : j < dom) → idVec.coords j jw = j := by
       intro j
@@ -349,7 +345,7 @@ def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment
           intro j
           intro jw
           rw [baseEqn]
-          exact contains.self (base.coords j jw)
+          exact contains_refl (base.coords j jw)
           done
     ⟨dom, base, idVec, idBound, baseContains, idVec, idBound, 
       by 
@@ -358,7 +354,7 @@ def Containment.identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment
       apply witness_independent
       rw [idAt]
       done⟩
-
+end Containment
 
 def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →  
       (base : Vector (Clause n) (d + 1)) → Vector Nat (d + 1) → Vector Nat (d + 1) → 
@@ -414,7 +410,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                                 rw [lem1] 
                                 exact zc
                                 done    
-                          ⟨zi, zb, containsTrans _ _ _ ict lem2⟩
+                          ⟨zi, zb, contains_trans _ _ _ ict lem2⟩
                       else 
                         let ii := skipInverse k i c 
                         let eqn := skip_inverse_eq k i c

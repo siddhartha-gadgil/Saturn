@@ -235,7 +235,7 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
                 | some false, l1, l2, l3 => False.elim (l3 rfl)
                 | none, l1, l2, l3 => False.elim (l1 rfl)
 
-def pureNot(b: Bool): (x : Option Bool) → x = none ∨  x = some b  → Not (x = some (not b)) :=
+theorem notpure_cases(b: Bool): (x : Option Bool) → x = none ∨  x = some b  → Not (x = some (not b)) :=
   fun x eqn  =>
      match b, eqn  with
      | true, Or.inr pf => 
@@ -326,9 +326,9 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                           let base : (j : Nat) → (lt : j < cntn.codom) → 
                               Not (Vector.coords (cls.coords j lt) index bd = some (not par)) := 
                                 fun j jw => 
-                                  pureNot par (Vector.coords (cls.coords j jw) index bd) (evid j jw)
+                                  notpure_cases par (Vector.coords (cls.coords j jw) index bd) (evid j jw)
                           let pure :=
-                            proofsPreverveNonPos (not par) index bd base
+                            proofs_preserve_notsomebranch (not par) index bd base
                                    (unitClause (m + 1) (!par) index bd)
                                    rpf
                           let impure := unitDiag (m + 1) (not par) index bd 
@@ -385,9 +385,6 @@ instance {dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
 
 def proveOrDisprove{n dom : Nat}(clauses : Vector (Clause (n + 1)) dom) :=
             getProof (solveSAT clauses)
-
-#check proveOrDisprove
-
 
 def sat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
           ∃ valuation : Valuation (n + 1),  

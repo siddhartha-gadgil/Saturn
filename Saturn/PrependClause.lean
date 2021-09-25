@@ -107,10 +107,10 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     (reverseNEq ▸ reverseWitN)
 
 
-theorem mapNoneIsNone{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none 
+theorem none_mapsto_none{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none 
   | none, rfl => by rfl
 
-theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some zero) :=
+theorem map_plusone_not_somezero{n: Option Nat} : Not (n.map (. + 1) = some zero) :=
   match n with
   | none => fun hyp => 
     Option.noConfusion hyp
@@ -121,7 +121,7 @@ theorem mapPlusOneZero{n: Option Nat} : Not (n.map (. + 1) = some zero) :=
       assumption
     Nat.noConfusion lem
 
-theorem mapPlusOneShift{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1) → 
+theorem map_plusone_pred{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1) → 
   n = some m :=
     match n with
   | none => fun hyp => 
@@ -185,7 +185,7 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                             rw [map_coords_commute]
                             done
                       let lem2 := Eq.trans (Eq.symm lem1) nw
-                      let lem3 := mapNoneIsNone _ _ lem2
+                      let lem3 := none_mapsto_none _ _ lem2
                       let lem4 := drc.dropped l (le_of_succ_le_succ w) lem3
                       lem4
             ⟨droppedN⟩
@@ -296,7 +296,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                                 (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))]
                             rw [map_coords_commute]
                             done
-                         let lem2  : False := mapPlusOneZero lem2
+                         let lem2  : False := map_plusone_not_somezero lem2
                          absurd lem2 (fun x => x)
                       | i + 1 =>
                         by
@@ -327,7 +327,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                             rw [map_coords_commute]
                             done
                           let lem3 : rc.forward l (le_of_succ_le_succ w) = some i 
-                            := mapPlusOneShift lem2
+                            := map_plusone_pred lem2
                           let lem4 := 
                             frc.forwardRelation l (le_of_succ_le_succ w) i lem3 (le_of_succ_le_succ jw)
                           have ll1 : 

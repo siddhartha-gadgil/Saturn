@@ -2,11 +2,11 @@ open Nat
 
 
 /-
-The function `skip n` function skips the natural number `n`, with numbers `n` this mapped
-to themselves and those above mapped to the next number. The image is the complement of `n` 
-among natural numbers. 
+The function `skip n` function maps `Nat` to `Nat` skipping the natural number `n`, 
+with numbers less than `n` mapped to themselves and those above mapped to the next number. 
+The image is the complement of `n` among natural numbers. 
 
-We need various properties of `skip`, so we define it as a function with associated identities,
+We need various properties of `skip`, so we define first a function with associated identities,
 and project to the value and the desired properties. The structure `ProvedSkip` consists of the
 result of `skip` and the associated identities.
 -/

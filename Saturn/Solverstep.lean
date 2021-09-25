@@ -145,6 +145,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
                         done
               ⟨skip focus i, skip_le_succ iw, lem7⟩
 
+-- Unit clauses and pure clauses
 
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
   FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) 
@@ -168,7 +169,7 @@ theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
                   rw [seq_to_vec_coords] 
                   let ins := insert_at_image (some b) n k w (Vector.coords (contradiction n)) i iw
                   rw [ins]
-                  rw [contraAt]
+                  rw [contra_at_none]
                   done
 
 structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where

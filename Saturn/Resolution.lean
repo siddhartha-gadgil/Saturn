@@ -11,7 +11,7 @@ inductive Join (left right top : Option Bool) where
   | someNone : (b : Bool) → (left = some b) → (right = none) → (top = some b)→ Join left right top
   | someSome : (b : Bool) → (left = some b) → (right = some b) → (top = some b)→ Join left right top
 
-theorem notNot(bf b bb : Bool) : Not (b = bf) → Not (bb = bf) → b = bb :=
+theorem not_not_eq(bf b bb : Bool) : Not (b = bf) → Not (bb = bf) → b = bb :=
   match bf with
   | true => fun w ww => 
     Eq.trans (eq_false_of_ne_true w) (Eq.symm (eq_false_of_ne_true ww))
@@ -44,7 +44,7 @@ def getJoin (bf : Bool)(left right : Option Bool) :
                   intro hyp
                   exact (wr (congrArg some hyp))
                   done
-                have lem2 : bb = b := notNot bf bb b lem1 c
+                have lem2 : bb = b := not_not_eq bf bb b lem1 c
                 ⟨some b, Join.someSome b rfl (congrArg some lem2) rfl⟩
 
 def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top →
@@ -137,12 +137,12 @@ def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
             unitDiag n false k lt , 
             unitDiag n true k lt, 
             by
-              rw [contraAt] 
+              rw [contra_at_none] 
               done, 
             fun j jw => Join.noneNone 
                       (unitSkip n false k lt j jw) 
                       (unitSkip n true k lt j jw) 
-                      (by rw [contraAt])
+                      (by rw [contra_at_none])
                       ⟩
 
 theorem triple_step_proof{n: Nat}(left right top : Clause (n + 1))
@@ -678,7 +678,7 @@ def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
             fun hyp : ∀ p : Nat, ∀ pw : p < dom, clauseSat (clauses.coords p pw) valuation =>
               let lem := resolutionToProof clauses (contradiction (n + 1))
                             tree valuation hyp
-              contradictionFalse _ valuation lem
+              contradiction_is_false _ valuation lem
   | SatSolution.sat valuation evidence =>
           ⟨valuation, fun k kw => getProof (evidence k kw)⟩
 
@@ -731,7 +731,7 @@ inductive LiftedResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  
     | unit : ResolutionTree clauses (unitClause (n + 1) (not branch) focus focusLt) → 
                   LiftedResPf branch focus focusLt clauses
 
-theorem notNot2(b: Bool){x : Bool} : Not (x = b) → x = (not b) :=
+theorem not_eq_implies_eq_not(b: Bool){x : Bool} : Not (x = b) → x = (not b) :=
   match b with
   | true => fun w => eq_false_of_ne_true w
   | false => fun w => eq_true_of_ne_false w
@@ -803,7 +803,7 @@ def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n +
                 have lem :
                   FinSeq.vec (insert none (Nat.add n 1) focus focusLt (Vector.coords (contradiction (n + 1)))) =
                     contradiction (n + 2) := by
-                      rw [contradictionInsNone focus focusLt]
+                      rw [contradiction_insert_none focus focusLt]
                       apply coords_eq_implies_vec_eq
                       apply seq_to_vec_coords
                       done            
@@ -814,7 +814,7 @@ def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n +
                 LiftedResPf.contra t
             | some b, ineq, tree =>
                 have lemPar : Not (b = branch) := fun hyp => ineq (congrArg some hyp)
-                let par : b = not branch := notNot2 branch lemPar
+                let par : b = not branch := not_eq_implies_eq_not branch lemPar
                 let t : ResolutionTree clauses (unitClause (n + 1) (not branch) focus focusLt) := 
                           by
                             rw [← par]
@@ -846,7 +846,7 @@ def transportResPf{l1 l2 n : Nat}(clauses1 : Vector (Clause (n + 1)) l1)
 
                           tree
 
-theorem proofsPreverveNonPos{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
+theorem proofs_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
                 (bf: Bool)(k : Nat)(kw : k < n + 1)
                 (base : (j : Nat) → (lt : j < dom) → 
                   Not (Vector.coords (clauses.coords j lt) k kw = some bf)) : 
@@ -865,9 +865,9 @@ theorem proofsPreverveNonPos{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
                   | ResolutionTree.resolve left right .(top) leftTree rightTree triple =>
                     fun hyp => 
                       let leftLem :=
-                        proofsPreverveNonPos bf k kw base left leftTree 
+                        proofs_preserve_notsomebranch bf k kw base left leftTree 
                       let rightLem :=
-                        proofsPreverveNonPos bf k kw base right rightTree 
+                        proofs_preserve_notsomebranch bf k kw base right rightTree 
                       if c : k = triple.pivot then 
                           match bf, k, c, kw, leftLem, rightLem with
                           | false, .(triple.pivot), rfl, .(triple.pivotLt), lL, rL => 
