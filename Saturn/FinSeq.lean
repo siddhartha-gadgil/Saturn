@@ -1,9 +1,24 @@
 import Saturn.Skip
 open Nat
 
- /- `FinSeq` is an implementation of finite sequences. We define insertion and deletion 
- and prove properties of these operations. We also show equality is decidable for `FinSeq α` 
- if it is for `α`. We also search within finite sequences. -/
+ /- An implementation of finite sequences as `FinSeq α`   and operations and relations on these, 
+    with proofs of correctness. Specifically, we implement:
+    * definition and elementary operations
+    * concatenation of sequences
+      - including a proof that the concatenation function is as required.
+    * deletion and insertion of elements
+      - we define deletion (properties are easy to prove)
+      - we define insertion, and prove that the sequence after insertion has correct values.
+      - we prove the relation between deletion and insertion.
+    * Searching for elements
+      - we implement functions to search for elements equal to given ones or satisfying a predicate.
+      - these functions return an index and a proof of correctness.
+      - another function either finds an element with proof or shows it is not in the sequence
+    * Equality of sequences
+      - if `α` is a type with decidable equality, we implement decidable equality of `FinSeq α`.
+ -/
+
+-- Part 1: `FinSeq` definition and elementary operations
 def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 
 def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α :=
@@ -34,6 +49,20 @@ def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α :=
 def last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq n (Nat.le_refl _)
 
+theorem witness_independent{α : Type}{n : Nat}(seq: FinSeq n α) :
+    (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
+        (i = j) → seq i iw = seq j jw :=
+        fun i j iw jw eqn =>
+          match j, eqn, jw with 
+          | .(i), rfl, ijw =>
+               rfl
+
+def FinSeq.list{α : Type}{n : Nat}: FinSeq n α → List α :=
+  match n with
+  | zero => fun _ => []
+  | l + 1 => fun s => (s.head) :: (list (s.tail))
+
+-- Part 2: concatenation
 def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →   
     (seq1 : FinSeq n α) → (seq2 : FinSeq m α) →  
        FinSeq l α := 
@@ -60,13 +89,6 @@ def concatSeq {α: Type}{n m: Nat}(seq1 : FinSeq n α)(seq2 : FinSeq m α):
   FinSeq (n + m) α := 
     concatSeqAux rfl seq1 seq2
 
-theorem witness_independent{α : Type}{n : Nat}(seq: FinSeq n α) :
-    (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
-        (i = j) → seq i iw = seq j jw :=
-        fun i j iw jw eqn =>
-          match j, eqn, jw with 
-          | .(i), rfl, ijw =>
-               rfl
 
 theorem concat_aux_eqs{α: Type}{n m l: Nat}: (s : n + m = l) →   
     (seq1 : FinSeq n α) → (seq2 : FinSeq m α) → (k: Nat) → 
@@ -199,10 +221,7 @@ theorem concat_empty_seq_id{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (
             exact lem
             done
 
-def FinSeq.list{α : Type}{n : Nat}: FinSeq n α → List α :=
-  match n with
-  | zero => fun _ => []
-  | l + 1 => fun s => (s.head) :: (list (s.tail))
+-- Part 3 : insertion and deletion
 
 
 def delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α := 
@@ -318,6 +337,8 @@ theorem insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSe
                 done
         )
     )
+
+-- Part 4 : searching
 
 structure ElemInSeq{α: Type}{n : Nat} (seq : FinSeq n α) (elem : α) where
   index: Nat
@@ -457,6 +478,8 @@ def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → O
           findSome? f (fun t : Nat => fun w : t < m => seq (t + 1) 
                 (Nat.succ_lt_succ w) )
         ) 
+
+-- Part 5 : equality
 
 def equalBeyond{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α)(m: Nat): Prop :=
   ∀ k: Nat, ∀ kw : k <n, ∀ mw : m ≤ k, seq1 k kw = seq2 k kw
