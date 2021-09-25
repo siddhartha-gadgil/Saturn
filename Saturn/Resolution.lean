@@ -403,21 +403,21 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
           let topN := insert topFoc (n + 1) k lt top.coords
           let leftPivotN : leftN pivotN pivotNLt = some false := 
             have lem1 : leftN pivotN pivotNLt = left.coords rt.pivot rt.pivotLt := 
-              insertAtImage leftFoc (n + 1) k lt left.coords rt.pivot rt.pivotLt
+              insert_at_image leftFoc (n + 1) k lt left.coords rt.pivot rt.pivotLt
             by
               rw [lem1]
               exact rt.leftPivot
               done
           let rightPivotN : rightN pivotN pivotNLt = some true := 
             have lem1 : rightN pivotN pivotNLt = right.coords rt.pivot rt.pivotLt := 
-              insertAtImage rightFoc (n + 1) k lt right.coords rt.pivot rt.pivotLt
+              insert_at_image rightFoc (n + 1) k lt right.coords rt.pivot rt.pivotLt
             by
               rw [lem1]
               exact rt.rightPivot
               done
           let topPivotN : topN pivotN pivotNLt = none := 
             have lem1 : topN pivotN pivotNLt = top.coords rt.pivot rt.pivotLt := 
-              insertAtImage topFoc (n + 1) k lt top.coords rt.pivot rt.pivotLt
+              insert_at_image topFoc (n + 1) k lt top.coords rt.pivot rt.pivotLt
             by
               rw [lem1]
               exact rt.topPivot
@@ -434,11 +434,11 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                   if w : jj = k then  
                     let lem0 := focJoin
                     let eqL : leftN k lt = leftFoc := 
-                      insertAtFocus leftFoc (n + 1) k lt left.coords 
+                      insert_at_focus leftFoc (n + 1) k lt left.coords 
                     let eqR : rightN k lt = rightFoc := 
-                      insertAtFocus rightFoc (n + 1) k lt right.coords
+                      insert_at_focus rightFoc (n + 1) k lt right.coords
                     let eqT : topN k lt = topFoc := 
-                      insertAtFocus topFoc (n + 1) k lt top.coords
+                      insert_at_focus topFoc (n + 1) k lt top.coords
                     let leftLem : leftN jj jjw = leftN k lt := by
                       apply witness_independent
                       exact w
@@ -475,15 +475,15 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                       let eqL : 
                         leftN (skip k i) (skip_le_succ iw) = 
                           left.coords i iw := 
-                          insertAtImage leftFoc (n + 1) k lt left.coords i iw
+                          insert_at_image leftFoc (n + 1) k lt left.coords i iw
                       let eqR : 
                         rightN (skip k i) (skip_le_succ iw) = 
                           right.coords i iw := 
-                          insertAtImage rightFoc (n + 1) k lt right.coords i iw              
+                          insert_at_image rightFoc (n + 1) k lt right.coords i iw              
                       let eqT :
                         topN (skip k i) (skip_le_succ iw) = 
                           top.coords i iw := 
-                          insertAtImage topFoc (n + 1) k lt top.coords i iw
+                          insert_at_image topFoc (n + 1) k lt top.coords i iw
                       let leftLem :
                         leftN jj jjw = leftN (skip k i) (skip_le_succ iw) := 
                           witness_independent leftN jj (skip k i) jjw (skip_le_succ iw) (Eq.symm w)
@@ -757,7 +757,7 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
                        done
             have lem3 : insert (cl.coords focus focusLt) (n + 1) focus focusLt 
                           (delete focus focusLt cl.coords) = cl.coords 
-                          := insertDelete focus focusLt cl.coords
+                          := insert_delete_id focus focusLt cl.coords
             have lem : insert topFocus (n + 1) focus focusLt top.coords = cl.coords := by
                       rw [← ttp]
                       rw [lem1]

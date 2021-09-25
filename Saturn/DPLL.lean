@@ -8,6 +8,7 @@ import Saturn.PosRestClause
 import Saturn.PrependClause
 
 open Nat
+open FinSeq
 
 instance {n: Nat} : DecidableEq (Clause n) := 
   fun c1 c2 =>
@@ -79,7 +80,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
           rw [(Nat.add_assoc k 1 domAccum)]
           done
       let resolve : concatSeqAux s clausesHead.coords clausesAccum.coords = 
-        concatSeqAux ss (init clausesHead.coords) ((last clausesHead.coords) +| clausesAccum.coords) := rfl
+        concatSeqAux ss (clausesHead.coords.init) ((clausesHead.coords.last) +| clausesAccum.coords) := rfl
       let recRestAccum := 
         prependResData branch focus focusLt clausesAccum restAccum (last clausesHead.coords)
       restrictionDataAux branch focus focusLt (FinSeq.vec (init clausesHead.coords)) 

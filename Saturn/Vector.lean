@@ -47,7 +47,7 @@ def seqVecAux {α: Type}{n m l: Nat}: (s : n + m = l) →
           rw [(Nat.add_comm m 1)]
           rw [(Nat.add_assoc k 1 m)]
           done
-      seqVecAux ss (init seq1) ((last seq1) +: seq2)
+      seqVecAux ss (seq1.init) ((seq1.last) +: seq2)
 
 def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n := 
     fun seq => seqVecAux (Nat.add_zero n) seq Vector.nil
@@ -87,17 +87,17 @@ theorem seq_vec_cons_aux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 :
                           rw [Nat.zero_add]
                         have resolve :
                           seqVecAux s' seq1 accum =
-                            seqVecAux ss (init seq1) ((last seq1) +: accum) := by rfl
+                            seqVecAux ss (seq1.init) ((seq1.last) +: accum) := by rfl
                         rw [resolve]
                         have res2 : 
-                          seqVecAux ss (init seq1) (last seq1+:accum) =
-                            (last seq1+:accum) := by rfl
+                          seqVecAux ss (seq1.init) (seq1.last+:accum) =
+                            (seq1.last+:accum) := by rfl
                         rw [res2]
                         have res3 : seqVecAux (prevsum s') (seq1.tail) accum =  accum
                             := by rfl
                         rw [res3]
                         have hh : seq1.head = seq1 0 (zero_lt_succ _) := by rfl
-                        have hl: last seq1 = seq1 0 (zero_lt_succ _) := by rfl
+                        have hl: seq1.last = seq1 0 (zero_lt_succ _) := by rfl
                         rw [hh, hl]
                         done 
                     | succ n', l, s'', seq1  =>
@@ -110,12 +110,12 @@ theorem seq_vec_cons_aux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 :
                           done
                       have resolve :
                         seqVecAux s'' seq1 accum =
-                          seqVecAux ss (init seq1) ((last seq1) +: accum) := by rfl
+                          seqVecAux ss (seq1.init) ((seq1.last) +: accum) := by rfl
                       rw [resolve]
-                      let v := init seq1
-                      let base := seq_vec_cons_aux ss (init seq1) (last seq1+:accum)
+                      let v := seq1.init
+                      let base := seq_vec_cons_aux ss (seq1.init) (seq1.last+:accum)
                       rw [base]
-                      have he : FinSeq.head (init seq1)  = seq1.head := by rfl
+                      have he : FinSeq.head (seq1.init)  = seq1.head := by rfl
                       rw [he]
                       apply congrArg (cons (seq1.head))
                       have sss : n' + (m + 1) = l := by
@@ -123,12 +123,12 @@ theorem seq_vec_cons_aux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 :
                         done
                       have resolve2 :
                         seqVecAux (prevsum s'') (seq1.tail) accum =
-                          seqVecAux sss (init (seq1.tail)) 
-                            (last (seq1.tail ) +: accum) := by rfl
+                          seqVecAux sss (seq1.tail.init) 
+                            (seq1.tail.last  +: accum) := by rfl
                       rw [resolve2]
-                      have intl:  init (seq1.tail) = FinSeq.tail (init seq1) := by rfl
+                      have intl:  seq1.tail.init = FinSeq.tail (seq1.init) := by rfl
                       rw [intl]
-                      have lst : last (seq1.tail) = last seq1 := by rfl
+                      have lst : seq1.tail.last = seq1.last := by rfl
                       rw [lst]
                       done
 

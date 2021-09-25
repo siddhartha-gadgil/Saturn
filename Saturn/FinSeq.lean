@@ -42,12 +42,17 @@ def FinSeq.head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq zero (zero_lt_succ _)
 
 
-def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
+def FinSeq.init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
   fun k w =>
       seq k (Nat.le_step w)
 
-def last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
+def FinSeq.last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq n (Nat.le_refl _)
+
+def FinSeq.list{α : Type}{n : Nat}: FinSeq n α → List α :=
+  match n with
+  | zero => fun _ => []
+  | l + 1 => fun s => (s.head) :: (list (s.tail))
 
 theorem witness_independent{α : Type}{n : Nat}(seq: FinSeq n α) :
     (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
@@ -56,11 +61,6 @@ theorem witness_independent{α : Type}{n : Nat}(seq: FinSeq n α) :
           match j, eqn, jw with 
           | .(i), rfl, ijw =>
                rfl
-
-def FinSeq.list{α : Type}{n : Nat}: FinSeq n α → List α :=
-  match n with
-  | zero => fun _ => []
-  | l + 1 => fun s => (s.head) :: (list (s.tail))
 
 -- Part 2: concatenation
 def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →   
@@ -83,7 +83,7 @@ def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →
           rw [(Nat.add_comm m 1)]
           rw [(Nat.add_assoc k 1 m)]
           done
-      concatSeqAux ss (init seq1) ((last seq1) +| seq2)
+      concatSeqAux ss (seq1.init) ((seq1.last) +| seq2)
 
 def concatSeq {α: Type}{n m: Nat}(seq1 : FinSeq n α)(seq2 : FinSeq m α): 
   FinSeq (n + m) α := 
@@ -136,14 +136,14 @@ theorem concat_aux_eqs{α: Type}{n m l: Nat}: (s : n + m = l) →
               rw [(Nat.add_assoc p 1 m)]
               done
           let resolve : concatSeqAux s seq1 seq2=
-              concatSeqAux ss (init seq1) ((last seq1) +| seq2) := rfl
-          let hyp := concat_aux_eqs ss (init seq1) ((last seq1) +| seq2)
+              concatSeqAux ss (seq1.init) ((seq1.last) +| seq2) := rfl
+          let hyp := concat_aux_eqs ss (seq1.init) ((seq1.last) +| seq2)
           by
             rw [resolve]
             intro k
             let hyp1 := (hyp k).left
             let lem1 : (∀ (kw : k < p + 1) (w : k < l), 
-                concatSeqAux ss (init seq1) (last seq1+|seq2) k w = seq1 k kw) := 
+                concatSeqAux ss (seq1.init) (seq1.last+|seq2) k w = seq1 k kw) := 
                 fun kw w => 
                   if kww : k < p then 
                     hyp1 kww w 
@@ -165,8 +165,8 @@ theorem concat_aux_eqs{α: Type}{n m l: Nat}: (s : n + m = l) →
                         rw [(Nat.add_zero p)]
                         assumption 
                       let hyp2 := (hyp zero).right (Nat.zero_lt_succ _) ww
-                      let lem2 : concatSeqAux ss (init seq1) (last seq1+|seq2) (p + zero) ww =
-                            concatSeqAux ss (init seq1) (last seq1+|seq2) p w := 
+                      let lem2 : concatSeqAux ss (seq1.init) (seq1.last+|seq2) (p + zero) ww =
+                            concatSeqAux ss (seq1.init) (seq1.last+|seq2) p w := 
                             match (p + zero), Nat.add_zero p, ww with
                             | .(p), rfl, ww => rfl
                       by
@@ -177,7 +177,7 @@ theorem concat_aux_eqs{α: Type}{n m l: Nat}: (s : n + m = l) →
             let ass := Nat.add_assoc p 1 k
             let comm := Nat.add_comm 1 k
             let lem2 : ∀ (kw : k < m) (w : p + 1 + k < l), 
-                concatSeqAux ss (init seq1) (last seq1+|seq2) (p + 1 + k) w = 
+                concatSeqAux ss (seq1.init) (seq1.last+|seq2) (p + 1 + k) w = 
                     seq2 k kw := fun kw w =>
                     match p + 1 + k, ass, w with
                     | .(p + (1 + k)), rfl, ww => 
@@ -190,8 +190,8 @@ theorem concat_aux_eqs{α: Type}{n m l: Nat}: (s : n + m = l) →
                         done 
                       let lm := hypw kww ww
                       rw [lm]
-                      let lmc : FinSeq.cons (last seq1) seq2 (1 + k) kww = 
-                                  FinSeq.cons (last seq1) seq2 (k + 1) 
+                      let lmc : FinSeq.cons (seq1.last) seq2 (1 + k) kww = 
+                                  FinSeq.cons (seq1.last) seq2 (k + 1) 
                                   (succ_lt_succ kw) := 
                               match 1 + k, comm, kww with 
                               | .(k + 1), rfl, kwww => by rfl
@@ -284,19 +284,19 @@ def insert{α : Type}(value: α) : (n : Nat) →  (k: Nat) →
   fun n k lt seq j w =>  
     (provedInsert n value seq k lt j w).result
 
-theorem insertAtFocus{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+theorem insert_at_focus{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (seq :FinSeq n   α) →  
       insert value n k lt seq k lt = value :=
     fun n k lt seq  =>   
       (provedInsert n value seq k lt k lt).checkFocus rfl
 
-theorem insertAtImage(value: α) : (n : Nat) →  (k: Nat) → 
+theorem insert_at_image(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (seq :FinSeq n   α) → (i : Nat) → (iw : i < n) → 
       insert value n k lt seq (skip k i) (skip_le_succ iw) = seq i iw :=
       fun n k lt seq i iw => 
        (provedInsert n value seq k lt (skip k i) (skip_le_succ iw)).checkImage i iw rfl 
 
-theorem insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α) :
+theorem insert_delete_id{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α) :
   insert (seq k kw) n k kw (delete k kw seq) = seq := 
     let delSeq := delete k kw seq
     funext (
@@ -312,7 +312,7 @@ theorem insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSe
                   apply c
                   done 
               rw [lem1]
-              rw [(insertAtFocus (seq k kw) n k kw (delete k kw seq))]
+              rw [(insert_at_focus (seq k kw) n k kw (delete k kw seq))]
               apply witness_independent
               rw [← c]
               done  
@@ -326,7 +326,7 @@ theorem insertDelete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSe
                     apply witness_independent
                     rw [← eqn]
                     done
-              let lem2 := insertAtImage (seq k kw) n k kw (delete k kw seq) i iw
+              let lem2 := insert_at_image (seq k kw) n k kw (delete k kw seq) i iw
               let lem3 : delete k kw seq i iw = seq (skip k i) (skip_le_succ iw) := by rfl
               by
                 rw [lem1]
@@ -484,7 +484,7 @@ def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → O
 def equalBeyond{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α)(m: Nat): Prop :=
   ∀ k: Nat, ∀ kw : k <n, ∀ mw : m ≤ k, seq1 k kw = seq2 k kw
 
-theorem equalBeyondZero{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α):
+theorem equal_beyond_zero{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α):
     equalBeyond seq1 seq2 zero → seq1 = seq2 := by
       intro hyp
       apply funext
@@ -495,7 +495,7 @@ theorem equalBeyondZero{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α):
       done
 
 
-def equalBeyondVacuous{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α)(m: Nat):
+theorem equal_beyond_vacuously{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α)(m: Nat):
     (n ≤ m) → equalBeyond seq1 seq2 m := by
       intro hyp
       intro k
@@ -524,7 +524,7 @@ def deqSeqRec{α: Type}[DecidableEq α]{n : Nat}(seq1 seq2 : FinSeq n α): (m: N
             exact contra restr
             done)
       | zero, isTrue pf => 
-        isTrue (equalBeyondZero seq1 seq2 pf)
+        isTrue (equal_beyond_zero seq1 seq2 pf)
       | l + 1, isTrue pf  => 
         if lw : l < n then
           match decEq (seq1 l lw) (seq2 l lw) with
@@ -567,13 +567,13 @@ def deqSeqRec{α: Type}[DecidableEq α]{n : Nat}(seq1 seq2 : FinSeq n α): (m: N
             | inl l1 => exact absurd l1 lw
             | inr l2 => exact l2
           let accum: Decidable (equalBeyond seq1 seq2 l) := 
-            isTrue (equalBeyondVacuous seq1 seq2 l overshoot)
+            isTrue (equal_beyond_vacuously seq1 seq2 l overshoot)
           deqSeqRec seq1 seq2 l accum
       
 
 def deqSeq {α : Type}[DecidableEq α] (n: Nat) : (c1 : FinSeq n  α) → 
                               (c2: FinSeq n  α) → Decidable (c1 = c2) := 
               fun seq1 seq2 => 
-                deqSeqRec seq1 seq2 n (isTrue (equalBeyondVacuous seq1 seq2 n (Nat.le_refl n)))
+                deqSeqRec seq1 seq2 n (isTrue (equal_beyond_vacuously seq1 seq2 n (Nat.le_refl n)))
 
 instance {n: Nat}[DecidableEq α] : DecidableEq (FinSeq n  α) := fun c1 c2 => deqSeq _ c1 c2

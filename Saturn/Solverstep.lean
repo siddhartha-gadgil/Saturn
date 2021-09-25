@@ -82,7 +82,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             | none => 
               let lem1 : Vector.coords (clauses.coords k w) focus focusLt = some branch := dp.dropped k w eq
               let lem2 : insert branch n focus focusLt valuation.coords focus focusLt = branch := by 
-                apply insertAtFocus
+                apply insert_at_focus
                 done
               let lem3 : Vector.coords (clauses.coords k w) focus focusLt = 
                 some (insert branch n focus focusLt valuation.coords focus focusLt) := 
@@ -125,7 +125,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
               let lem5 : insert branch n focus focusLt valuation.coords 
                               (skip focus i) (skip_le_succ iw) =
                                   valuation.coords i iw := by
-                                    apply insertAtImage
+                                    apply insert_at_image
                                     done
               let lem6 : (Vector.coords (clauses.coords k w)) (skip focus i) (skip_le_succ iw) =
                           some (insert branch n focus focusLt valuation.coords 
@@ -154,7 +154,7 @@ theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
                 FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) := rfl
             rw [resolve]
             rw [seq_to_vec_coords]
-            apply insertAtFocus (some b) n k w (Vector.coords (contradiction n))
+            apply insert_at_focus (some b) n k w (Vector.coords (contradiction n))
             done
 
 theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
@@ -165,7 +165,7 @@ theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
                         FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) := rfl
                   rw [resolve]
                   rw [seq_to_vec_coords] 
-                  let ins := insertAtImage (some b) n k w (Vector.coords (contradiction n)) i iw
+                  let ins := insert_at_image (some b) n k w (Vector.coords (contradiction n)) i iw
                   rw [ins]
                   rw [contraAt]
                   done

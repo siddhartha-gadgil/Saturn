@@ -58,7 +58,7 @@ theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
                         match focus, c, focusLt with
                         | .(j), rfl, .(jw) =>
                           by
-                            rw [insertAtFocus] 
+                            rw [insert_at_focus] 
                             rw [contraAt]
                             done                                
                       else  
@@ -69,7 +69,7 @@ theorem contradictionInsNone{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
                         | .(skip focus i), rfl, .(skip_le_succ iw), lem1 =>  
                           by
                             rw [lem1]
-                            rw [insertAtImage 
+                            rw [insert_at_image 
                                none n focus focusLt (Vector.coords (contradiction n))
                                i iw]
                             rw [contraAt]
