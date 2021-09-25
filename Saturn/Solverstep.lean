@@ -5,6 +5,15 @@ open Nat
 open Vector
 open FinSeq
 
+/-
+We define structures that correspond to restricting a SAT problem to a branch as in the 
+DPLL algorithm. We show that solutions in a branch can be pulled back to solutions to the
+original problem.
+
+We also define unit clauses, which are clauses that have only one literal, and pure clauses.
+We define functions that find unit clauses and pure variables in a finite sequence of clauses,
+with proofs.
+-/
 def boundOpt(n: Nat) : Option (Nat) → Prop
   | none => True
   | some b => b < n
@@ -145,7 +154,9 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
                         done
               ⟨skip focus i, skip_le_succ iw, lem7⟩
 
--- Unit clauses and pure clauses
+/-
+Unit clauses: definitions and finding with proofs
+-/
 
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
   FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) 
@@ -225,6 +236,10 @@ def someUnitClause {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))) �
   Option (SomeUnitClause clauses)  := 
     fun clauses posCount negCount =>
      someUnitClauseAux clauses posCount negCount l (Nat.le_refl l) none
+
+/-
+Pure variables: definitions and finding with proofs
+-/
 
 structure HasPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom) where
   index : Nat
@@ -331,7 +346,7 @@ def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Vector  (Clause (n +1)) do
            ((varIsPure zero lt true dom clauses).map (
             fun ⟨evidence⟩ =>
               HasPureVar.mk zero lt true evidence
-              )).orElse (
+              )).orElse (fun _ =>
                 (varIsPure zero lt false dom clauses).map (
             fun ⟨evidence⟩ =>
               HasPureVar.mk zero lt false evidence
@@ -344,7 +359,7 @@ def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Vector  (Clause (n +1)) do
               fun ⟨evidence⟩ =>
                 HasPureVar.mk l (le_step (le_of_succ_le_succ lt)) true evidence
                 )
-                ).orElse (              
+                ).orElse (   fun _ =>           
                 (varIsPure l (le_step (le_of_succ_le_succ lt)) false dom clauses).map (
               fun ⟨evidence⟩ =>
                 HasPureVar.mk l (le_step (le_of_succ_le_succ lt)) false evidence

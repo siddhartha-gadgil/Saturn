@@ -2,6 +2,7 @@ import Saturn.FinSeq
 import Saturn.Vector
 import Saturn.Clause 
 import Saturn.Solverstep
+import Lean.Meta
 open Nat
 open FinSeq
 
@@ -651,21 +652,27 @@ def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
       | unsat tree => "unsat: " ++ tree.toString 
       | sat valuation _ => "sat: " ++ (valuation.coords.list).toString
 
-def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
-                  (sol : SatSolution clauses) : Prop :=
-  match sol with
-  | SatSolution.unsat tree  => 
+def satProp{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
+          ∃ valuation : Valuation (n + 1),  
+           ∀ (p : Nat),
+            ∀ pw : p < dom, 
+              ∃ (k : Nat), ∃ (kw : k < n + 1), 
+                (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw)
+
+def unsatProp{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
           ∀ valuation : Valuation (n + 1),  
            Not (∀ (p : Nat),
             ∀ pw : p < dom,   
               ∃ (k : Nat), ∃ (kw : k < n + 1), 
                 (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw))
-  | SatSolution.sat _ _ =>
-          ∃ valuation : Valuation (n + 1),  
-           ∀ (p : Nat),
-            ∀ pw : p < dom, 
-              ∃ (k : Nat), ∃ (kw : k < n + 1), 
-                (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw) 
+
+
+
+def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
+                  (sol : SatSolution clauses) : Prop :=
+  match sol with
+  | SatSolution.unsat tree  => unsatProp clauses
+  | SatSolution.sat _ _ => satProp clauses
 
 
 
@@ -681,6 +688,7 @@ def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
               contradiction_is_false _ valuation lem
   | SatSolution.sat valuation evidence =>
           ⟨valuation, fun k kw => getProof (evidence k kw)⟩
+
 
 def treeToUnsat{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom} :
                 (rpf : ResolutionTree clauses (contradiction _)) → 

@@ -9,9 +9,9 @@ class Prover(α: Type) where
   statement : (x : α) → Prop
   proof : (x : α) → statement x
 
-def getProof{α : Type}[pr : Prover α](x: α) := pr.proof x 
-
 def getProp{α : Type}[pr : Prover α](x: α) : Prop := pr.statement x 
+
+def getProof{α : Type}[pr : Prover α](x: α) : getProp x := pr.proof x 
 
 -- Product as an example
 instance {α β : Type} [pr : Prover α] [pr' : Prover β] : Prover (α × β) :=

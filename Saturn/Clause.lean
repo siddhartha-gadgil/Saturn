@@ -5,6 +5,20 @@ open Nat
 open Vector
 open FinSeq
 
+/- A SAT problem is a set of clauses. Here we define structures corresponding to clauses, 
+and prove their basic properties. 
+
+Variables are assumed to correspond to integers. Literals correspond to associating to each variable
+a term of type `Option Bool`, with `none` meaning absence of the variable in the clause, and 
+`some b` meaning its presence with `b` a boolean indicating whether the variable or its negation 
+is part of the clause. Thus, clauses correspond to `FinSeq n (Option Bool)`, with `n` the number
+of variables. Similarly a valuation (assignment of `true` or `false` to each variable) is a
+term of type `FinSeq n Bool`.
+ -/
+
+/- 
+Definitions of clauses and valuations and basic properties 
+-/
 def Clause(n : Nat) : Type := Vector (Option Bool) n
 
 def Valuation(n: Nat) : Type := Vector Bool n
@@ -22,13 +36,18 @@ def clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) :=
 
 instance {n: Nat}(clause : Clause n)(valuation: Valuation n): 
     Prover (ClauseSat clause valuation) where 
-  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), varSat (clause.coords k b) (valuation.coords k b)
+  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), 
+                            varSat (clause.coords k b) (valuation.coords k b)
   proof := fun cs => ⟨cs.coord, ⟨cs.bound, cs.witness⟩⟩
 
+/-
+Contradictions and basic properties
+-/
 def contradiction(n: Nat) : Clause n :=
   FinSeq.vec (fun _ _ => none)
 
-theorem contra_at_none(n: Nat) : Vector.coords (contradiction n) = (fun _ _ => none) := by apply seq_to_vec_coords
+theorem contra_at_none(n: Nat) : Vector.coords (contradiction n) = (fun _ _ => none) := 
+              by apply seq_to_vec_coords
 
 
 theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n, 
@@ -83,7 +102,9 @@ theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1)
                     apply lem0
                     done
 
-
+/-
+Containment of clauses and basic properties
+-/
 
 def varContains (v1 v2 : Option Bool) : Prop :=
   ∀ b : Bool, v2 = some b → v1  = some b
@@ -125,8 +146,6 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
                   c (lem2) 
             )
 
--- containment of clauses and properties
-
 def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2.coords k kw = some b → cl1.coords k kw = some b
 
@@ -163,7 +182,9 @@ theorem contains_prepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
                 fun hb =>
                   hyp2 j  (le_of_succ_le_succ kw) b hb
 
--- Implementation of checking for containment; tail-call optimized
+/-
+Implementation of checking for containment; tail-call optimized
+-/
 
 def containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, m ≤ k →  ∀ b : Bool, cl2.coords k kw = some b → cl1.coords k kw = some b
@@ -294,8 +315,6 @@ structure Containment{dom n : Nat}(base: Vector (Clause n) dom) where
     reverseBound : (j : Nat) →  (jw : j < codom) → reverseVec.coords j jw < dom
     reverseEq : (j : Nat) →  (jw : j < codom) →
              base.coords (reverseVec.coords j jw) (reverseBound j jw) = imageSeq.coords j jw
-    -- forward : (j : Nat) → (jw : j < dom) → ElemSeqPred imageSeq.coords (contains (base.coords j jw))
-    -- reverse : (j : Nat) → (jw : j < codom) → ElemInSeq base.coords (imageSeq.coords j jw) 
 
 namespace Containment
 def forward {dom n : Nat}{base: Vector (Clause n) dom}

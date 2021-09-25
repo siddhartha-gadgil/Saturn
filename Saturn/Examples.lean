@@ -31,8 +31,9 @@ def eg2Soln := solveSAT (eg2Statement)
 -- theorems: can directly use `proveOrDisprove`; we are avoiding computing twice
 -- note that a refined type is specified, the opposite will give an error
 
-def eg1 : unsat eg1Statement := getProof eg1Soln -- should be unsat, sat gives a compiler error
-def eg2 : sat eg2Statement := getProof eg2Soln -- should be sat, unsat gives a compiler error
+def eg1  := getProof eg1Soln -- should be unsat, sat gives a compiler error
+def eg2  := getProof eg2Soln -- should be sat, unsat gives a compiler error
 
 #check eg1
 #check eg2
+

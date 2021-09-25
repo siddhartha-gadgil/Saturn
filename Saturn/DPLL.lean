@@ -386,15 +386,3 @@ instance {dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
 def proveOrDisprove{n dom : Nat}(clauses : Vector (Clause (n + 1)) dom) :=
             getProof (solveSAT clauses)
 
-def sat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
-          ∃ valuation : Valuation (n + 1),  
-           ∀ (p : Nat),
-            ∀ pw : p < dom, 
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw)
-
-def unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
-          ∀ valuation : Valuation (n + 1),  
-           Not (∀ (p : Nat),
-            ∀ pw : p < dom,   
-              ∃ (k : Nat), ∃ (kw : k < n + 1), (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw))
-

@@ -479,7 +479,7 @@ def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → O
     | zero => fun _ => none
     | m + 1 => 
       fun seq => 
-        (f (seq zero (zero_lt_succ m))).orElse (
+        (f (seq zero (zero_lt_succ m))).orElse (fun _ =>
           findSome? f (fun t : Nat => fun w : t < m => seq (t + 1) 
                 (Nat.succ_lt_succ w) )
         ) 
