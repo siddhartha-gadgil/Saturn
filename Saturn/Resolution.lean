@@ -3,7 +3,7 @@ import Saturn.Vector
 import Saturn.Clause 
 import Saturn.Solverstep
 open Nat
-
+open FinSeq
 
 inductive Join (left right top : Option Bool) where
   | noneNone : (left = none) → (right = none) → (top = none)→ Join left right top 

@@ -3,6 +3,7 @@ import Saturn.Vector
 import Saturn.Clause 
 open Nat
 open Vector
+open FinSeq
 
 def boundOpt(n: Nat) : Option (Nat) → Prop
   | none => True

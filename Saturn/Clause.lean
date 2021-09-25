@@ -3,6 +3,7 @@ import Saturn.Vector
 import Saturn.Prover
 open Nat
 open Vector
+open FinSeq
 
 def Clause(n : Nat) : Type := Vector (Option Bool) n
 

@@ -4,7 +4,7 @@ import Saturn.Clause
 import Saturn.Solverstep
 open Nat
 open Vector
-
+open FinSeq
 
 
 def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)

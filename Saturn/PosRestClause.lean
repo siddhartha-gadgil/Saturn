@@ -3,7 +3,7 @@ import Saturn.Vector
 import Saturn.Clause 
 import Saturn.Solverstep
 open Nat
-
+open FinSeq
  
 
 def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)

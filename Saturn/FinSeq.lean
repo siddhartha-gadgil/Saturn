@@ -21,7 +21,8 @@ open Nat
 -- Part 1: `FinSeq` definition and elementary operations
 def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 
-def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α :=
+namespace FinSeq
+def cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α :=
   fun k =>
   match k with
   | zero => fun _ => head
@@ -29,30 +30,32 @@ def FinSeq.cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n +
     fun w =>
       tail j (le_of_succ_le_succ w)
 
-def FinSeq.empty {α: Type} : FinSeq zero α := 
+def empty {α: Type} : FinSeq zero α := 
   fun j jw => nomatch jw
 
-infixr:66 "+|" => FinSeq.cons
+infixr:66 "+|" => cons
 
-def FinSeq.tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
+def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
   fun k w =>
       seq (k + 1) (succ_lt_succ w)
 
-def FinSeq.head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
+def head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq zero (zero_lt_succ _)
 
 
-def FinSeq.init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
+def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
   fun k w =>
       seq k (Nat.le_step w)
 
-def FinSeq.last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
+def last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq n (Nat.le_refl _)
 
-def FinSeq.list{α : Type}{n : Nat}: FinSeq n α → List α :=
+def list{α : Type}{n : Nat}: FinSeq n α → List α :=
   match n with
   | zero => fun _ => []
   | l + 1 => fun s => (s.head) :: (list (s.tail))
+end FinSeq
+
 
 theorem witness_independent{α : Type}{n : Nat}(seq: FinSeq n α) :
     (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
@@ -224,7 +227,7 @@ theorem concat_empty_seq_id{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (
 -- Part 3 : insertion and deletion
 
 
-def delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α := 
+def FinSeq.delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α := 
   fun j w =>
     seq (skip k j) (skip_le_succ w)
 
@@ -279,10 +282,12 @@ def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
                   nomatch contra 
             ⟨result, checkImage, checkFocus⟩
 
-def insert{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
+def FinSeq.insert{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (FinSeq n   α) →  (FinSeq (Nat.succ n)  α) := 
   fun n k lt seq j w =>  
     (provedInsert n value seq k lt j w).result
+
+open FinSeq
 
 theorem insert_at_focus{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (seq :FinSeq n   α) →  
