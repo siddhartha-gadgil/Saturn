@@ -357,27 +357,29 @@ def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Vector  (Clause (n +1)) do
         match ub with
         | zero =>
           fun lt =>
-           ((varIsPure zero lt true dom clauses).map (
+           match (varIsPure zero lt true dom clauses).map (
             fun ⟨evidence⟩ =>
               HasPureVar.mk zero lt true evidence
-              )).orElse (fun _ =>
+              ) with 
+              | none => 
                 (varIsPure zero lt false dom clauses).map (
-            fun ⟨evidence⟩ =>
-              HasPureVar.mk zero lt false evidence
-              )
-              )
+                  fun ⟨evidence⟩ =>
+                    HasPureVar.mk zero lt false evidence
+                    )
+              | some pv => some pv
         | l + 1 =>
           fun lt =>
             let atCursor := 
-                ((varIsPure l (le_step  (le_of_succ_le_succ lt)) true dom clauses).map (
+                match (varIsPure l (le_step  (le_of_succ_le_succ lt)) true dom clauses).map (
               fun ⟨evidence⟩ =>
                 HasPureVar.mk l (le_step (le_of_succ_le_succ lt)) true evidence
-                )
-                ).orElse (   fun _ =>           
+                ) with 
+                | none =>            
                 (varIsPure l (le_step (le_of_succ_le_succ lt)) false dom clauses).map (
               fun ⟨evidence⟩ =>
                 HasPureVar.mk l (le_step (le_of_succ_le_succ lt)) false evidence
-                ))
+                )
+                | some pv => some pv
             match atCursor with
             | some res => some res
             |none =>
