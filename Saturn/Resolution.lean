@@ -652,27 +652,39 @@ def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
       | unsat tree => "unsat: " ++ tree.toString 
       | sat valuation _ => "sat: " ++ (valuation.coords.list).toString
 
-def satProp{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
+def isSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
           ∃ valuation : Valuation (n + 1),  
            ∀ (p : Nat),
             ∀ pw : p < dom, 
               ∃ (k : Nat), ∃ (kw : k < n + 1), 
                 (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw)
 
-def unsatProp{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
+def isUnSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
           ∀ valuation : Valuation (n + 1),  
            Not (∀ (p : Nat),
             ∀ pw : p < dom,   
               ∃ (k : Nat), ∃ (kw : k < n + 1), 
                 (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw))
 
+theorem not_sat_and_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
+    isSat clauses → isUnSat clauses → False := by
+      intro ⟨v, p⟩ h2
+      exact h2 v p
 
+theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
+      ResolutionTree clauses (contradiction (n + 1)) → isUnSat clauses := 
+        fun tree => 
+          fun valuation =>
+            fun hyp : ∀ p : Nat, ∀ pw : p < dom, clauseSat (clauses.coords p pw) valuation =>
+              let lem := resolutionToProof clauses (contradiction (n + 1))
+                            tree valuation hyp
+              contradiction_is_false _ valuation lem
 
 def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
                   (sol : SatSolution clauses) : Prop :=
   match sol with
-  | SatSolution.unsat tree  => unsatProp clauses
-  | SatSolution.sat _ _ => satProp clauses
+  | SatSolution.unsat tree  => isUnSat clauses
+  | SatSolution.sat _ _ => isSat clauses
 
 
 
@@ -681,11 +693,7 @@ def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
                     solutionProp sol :=
   match sol with
   | SatSolution.unsat tree   => 
-          fun valuation =>
-            fun hyp : ∀ p : Nat, ∀ pw : p < dom, clauseSat (clauses.coords p pw) valuation =>
-              let lem := resolutionToProof clauses (contradiction (n + 1))
-                            tree valuation hyp
-              contradiction_is_false _ valuation lem
+          tree_unsat clauses tree
   | SatSolution.sat valuation evidence =>
           ⟨valuation, fun k kw => getProof (evidence k kw)⟩
 

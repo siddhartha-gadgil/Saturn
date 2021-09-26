@@ -28,12 +28,12 @@ def eg2Soln := solveSAT (eg2Statement)
 #eval eg1Soln.toString
 #eval eg2Soln.toString
 
--- theorems: can directly use `proveOrDisprove`; we are avoiding computing twice
--- note that a refined type is specified, the opposite will give an error
+def eg1  := getProof eg1Soln 
+def eg2 := getProof eg2Soln 
 
-def eg1  := getProof eg1Soln -- should be unsat, sat gives a compiler error
-def eg2  := getProof eg2Soln -- should be sat, unsat gives a compiler error
+#eval Decidable.decide (isSat eg2Statement)
 
 #check eg1
 #check eg2
 
+example : Not (cl1 ⊇  cl2) := by decide
