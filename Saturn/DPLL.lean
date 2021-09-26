@@ -423,3 +423,4 @@ instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
 
 instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
     Decidable (isUnSat clauses) := decideUnSat clauses
+    

@@ -6,11 +6,15 @@ import Lean.Meta
 open Nat
 open FinSeq
 
-inductive Join (left right top : Option Bool) where
-  | noneNone : (left = none) → (right = none) → (top = none)→ Join left right top 
-  | noneSome : (b : Bool) → (left = none) → (right = some b) → (top = some b)→ Join left right top
-  | someNone : (b : Bool) → (left = some b) → (right = none) → (top = some b)→ Join left right top
-  | someSome : (b : Bool) → (left = some b) → (right = some b) → (top = some b)→ Join left right top
+/-
+If a SAT problem is not satisfiable, then there is a resolution tree that proves it. 
+Here we define the resolution tree as a structure, building up from resolution triples, 
+which are proofs of a clause by resolution from other clauses. The apex of the tree is the
+empty clause, which is a contradiction.
+
+We also construct lifts of a resolution tree from a branch. The lift is either a contradiction
+or the proof of a unit clause associated to a branch.
+-/
 
 theorem not_not_eq(bf b bb : Bool) : Not (b = bf) → Not (bb = bf) → b = bb :=
   match bf with
@@ -19,6 +23,18 @@ theorem not_not_eq(bf b bb : Bool) : Not (b = bf) → Not (bb = bf) → b = bb :
   | false => fun w ww => 
     Eq.trans (eq_true_of_ne_false w) (Eq.symm (eq_true_of_ne_false ww))
 
+/-
+The structure `Join` corresponds to the values of a literal in the three clauses in a proof
+by resolution, with the literal not the literal being resolved, i.e., the one that appears
+with opposite signs.
+-/
+inductive Join (left right top : Option Bool) where
+  | noneNone : (left = none) → (right = none) → (top = none)→ Join left right top 
+  | noneSome : (b : Bool) → (left = none) → (right = some b) → (top = some b)→ Join left right top
+  | someNone : (b : Bool) → (left = some b) → (right = none) → (top = some b)→ Join left right top
+  | someSome : (b : Bool) → (left = some b) → (right = some b) → (top = some b)→ Join left right top
+
+-- Join given the bottom literals and consistency
 def getJoin (bf : Bool)(left right : Option Bool) :
   Not (left = some bf) → Not (right = some bf) → 
     Σ (top : Option Bool),  Join left right top :=
@@ -48,6 +64,7 @@ def getJoin (bf : Bool)(left right : Option Bool) :
                 have lem2 : bb = b := not_not_eq bf bb b lem1 c
                 ⟨some b, Join.someSome b rfl (congrArg some lem2) rfl⟩
 
+-- deduction that the top of the join is not `some bf` if the bottom ones are not
 def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top →
     Not (left = some bf) → Not (right = some bf) → 
        Not (top = some bf) := 
@@ -81,9 +98,10 @@ def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top �
                 done
               nwl lem
 
-
-theorem var_resolution_step {left right top : Option Bool}(join: Join left right top)(valuationVal : Bool) :
-  Or (varSat left valuationVal) (varSat right valuationVal) → (varSat top valuationVal)  :=
+-- valuations at a literal satisy the top of a join if they satisfy the bottom literals
+theorem var_resolution_step {left right top : Option Bool}(join: Join left right top)
+      (valuationVal : Bool) : Or (varSat left valuationVal) (varSat right valuationVal) → 
+          (varSat top valuationVal)  :=
   fun hyp  =>
     match join with
     | Join.noneNone pl pr pt => 
@@ -120,7 +138,9 @@ theorem var_resolution_step {left right top : Option Bool}(join: Join left right
         Eq.trans lem heq
 
  
-
+/- the resolution triple. the `pivot` is where we have `¬ P` on the left and `P` on the right.
+ at the rest of the literals we have joins.
+-/
 structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
   pivot : Nat
   pivotLt : pivot < n + 1
@@ -132,6 +152,7 @@ structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
           (right.coords (skip pivot k) (skip_le_succ w)) 
           (top.coords (skip pivot k) (skip_le_succ w))
 
+-- opposite units resolve to a contradiction
 def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
         ResolutionTriple (unitClause n false  k lt) (unitClause n true k lt) (contradiction (n + 1)) :=
           ⟨k, lt, 
@@ -146,6 +167,7 @@ def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
                       (by rw [contra_at_none])
                       ⟩
 
+-- if a valuation satisfies the bottom two clauses, it satisfies the top clause as a proposition
 theorem triple_step_proof{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
         (valuation: Valuation (n + 1))  → (clauseSat left valuation) → 
@@ -262,6 +284,7 @@ theorem triple_step_proof{n: Nat}(left right top : Clause (n + 1))
                         done 
                       ⟨kr, ⟨rlt, var_resolution_step join (valuation.coords kr rlt) (Or.inr (wr))⟩⟩
 
+-- if a valuation satisfies the bottom clauses, it satisfies the top clause with structured proofs
 def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
         (valuation: Valuation (n + 1))  → (ClauseSat left valuation) → 
@@ -378,6 +401,7 @@ def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
                         done 
                       ⟨kr, rlt, var_resolution_step join (valuation.coords kr rlt) (Or.inr (wr))⟩
 
+-- lift of a resolution triple from a branch: definition and implementation
 structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
   (left right top : Clause (n + 1))(k: Nat)(lt : k < succ (n + 1)) where
     topFoc : Option Bool
@@ -559,7 +583,10 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                           done
                           )⟩, topNonPos⟩
       
-
+/-
+A resolution tree, with leaves given clauses assumed to be satisfied and nodes resolution steps.
+We show that the apex is satisfied by a valuation if the given clauses are satisfied.
+-/
 inductive ResolutionTree{dom n: Nat}
       (clauses : Vector   (Clause (n + 1)) dom) : (Clause (n + 1)) → Type  where
   | assumption : (index : Nat) → (indexBound : index < dom ) → (top : Clause (n + 1)) → 
@@ -591,7 +618,7 @@ def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
                 "; using: {" ++ 
                 leftTree.toString ++ "} and {" ++ rightTree.toString ++ "}"
 
-
+-- proof of the apex from the assumptions as propositions
 theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):
   (tree : ResolutionTree clauses top) →  (valuation :Valuation (n + 1))→ 
     ((j : Nat) → (jw : j < dom) → clauseSat (clauses.coords j jw) valuation) → 
@@ -616,6 +643,7 @@ theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top
               exact lemStep
               done
 
+-- proof of the apex from the assumptions as structured proofs
 def resolutionToSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):
   (tree : ResolutionTree clauses top)  → (valuation :Valuation (n + 1))→ 
     ((j : Nat) → (jw : j < dom) → ClauseSat (clauses.coords j jw) valuation)
@@ -638,7 +666,10 @@ def resolutionToSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Cla
             by
               exact lemStep
               done
-
+/-
+Structured solution to a SAT problem. Either a valuation with evidence that it is satisfied
+by all the given clauses, or a resolution tree starting with the given clauses.
+-/
 inductive SatSolution{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) where
   | unsat : (tree : ResolutionTree clauses (contradiction (n + 1))) → 
           SatSolution clauses
@@ -652,6 +683,7 @@ def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
       | unsat tree => "unsat: " ++ tree.toString 
       | sat valuation _ => "sat: " ++ (valuation.coords.list).toString
 
+-- sat as a proposition
 def isSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
           ∃ valuation : Valuation (n + 1),  
            ∀ (p : Nat),
@@ -659,6 +691,7 @@ def isSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
               ∃ (k : Nat), ∃ (kw : k < n + 1), 
                 (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw)
 
+-- unsat as a proposition
 def isUnSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
           ∀ valuation : Valuation (n + 1),  
            Not (∀ (p : Nat),
@@ -671,6 +704,7 @@ theorem not_sat_and_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
       intro ⟨v, p⟩ h2
       exact h2 v p
 
+-- unsat from a resolution tree
 theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
       ResolutionTree clauses (contradiction (n + 1)) → isUnSat clauses := 
         fun tree => 
@@ -697,11 +731,20 @@ def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
   | SatSolution.sat valuation evidence =>
           ⟨valuation, fun k kw => getProof (evidence k kw)⟩
 
+def SatSolution.isSat{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
+                  (sol : SatSolution clauses) →  Bool 
+  | SatSolution.unsat tree  => false
+  | SatSolution.sat _ _ => true
+
 
 def treeToUnsat{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom} :
                 (rpf : ResolutionTree clauses (contradiction _)) → 
                         SatSolution clauses := fun rpf =>
           SatSolution.unsat rpf 
+
+/-
+Pieces for building trees.
+-/
 
 def mergeUnitTrees{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
                 (focus : Nat)(focusLt : focus < n + 1)
@@ -732,14 +775,18 @@ def unitProof{dom n: Nat}{branch : Bool}{clauses : Vector (Clause (n + 1)) dom}
                 ResolutionTree clauses (unitClause n branch focus focusLt) :=
                   ResolutionTree.assumption j jw (unitClause n branch focus focusLt) eqn
                   
-
-
+-- Lift of a resolution tree with apex `top` from the branch corresponding to `focus` and `topFocus` 
 structure BranchResolutionProof{dom n: Nat}(bf: Bool)(focus : Nat)(focusLt : focus < n + 1)
   (clauses : Vector (Clause (n + 1)) dom)(top : Clause (n))  where
     topFocus : Option Bool
     nonPos : Not (topFocus = some bf)
     provedTree : ResolutionTree clauses (FinSeq.vec (insert topFocus n focus focusLt top.coords))
 
+/-
+Lift of a resolution tree with apex a contradiction, i.e., a resolution proof of unsat,
+ from the branch corresponding to `focus` and `topFocus`. The lift could be either a contradiction
+ or the proof of a unit clause.
+-/
 inductive LiftedResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
     (clauses: Vector (Clause (n + 2)) dom) where
     | contra : ResolutionTree clauses (contradiction (n + 2)) → 
@@ -752,6 +799,7 @@ theorem not_eq_implies_eq_not(b: Bool){x : Bool} : Not (x = b) → x = (not b) :
   | true => fun w => eq_false_of_ne_true w
   | false => fun w => eq_true_of_ne_false w
 
+-- pulling back a tree
 def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
     (clauses: Vector (Clause (n + 2)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
     (np : NonPosReverse rc) (rr: ReverseRelation rc): (top : Clause (n + 1)) → 
@@ -807,6 +855,7 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
                               leftLiftTree rightLiftTree liftTriple
               ⟨topFoc, topNonPos, tree⟩
 
+-- pulling back a proof of unsat by resolution to a contradiction or a proof of a unit clause.
 def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
     (clauses: Vector (Clause (n + 2)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
     (np : NonPosReverse rc) (rr: ReverseRelation rc) : 
@@ -838,6 +887,7 @@ def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n +
                             done
                 LiftedResPf.unit t
 
+-- transporting proof from a subset of clauses to a larger set of clauses
 def transportResPf{l1 l2 n : Nat}(clauses1 : Vector (Clause (n + 1)) l1)
                   (clauses2: Vector (Clause (n + 1)) l2)
                   (embed: (j : Nat) → (jw : j < l1) → ElemInSeq clauses2.coords (clauses1.coords j jw))
@@ -862,6 +912,7 @@ def transportResPf{l1 l2 n : Nat}(clauses1 : Vector (Clause (n + 1)) l1)
 
                           tree
 
+-- if none of the assumption clauses are `some bf` at a literal, the apex is not
 theorem proofs_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
                 (bf: Bool)(k : Nat)(kw : k < n + 1)
                 (base : (j : Nat) → (lt : j < dom) → 

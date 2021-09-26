@@ -3,6 +3,7 @@ import Saturn.Vector
 import Saturn.Clause 
 import Saturn.Solverstep
 import Saturn.DPLL
+import Lean.Meta
 
 open Nat
 
@@ -25,10 +26,15 @@ set_option maxHeartbeats 500000
 def eg1Soln := solveSAT (eg1Statement)
 def eg2Soln := solveSAT (eg2Statement)
 
+
+def eg1IsFalse : Bool := eg1Soln.isSat
+#eval eg1IsFalse
+-- example : eg1IsFalse = false := by  rfl
+
 #eval eg1Soln.toString
 #eval eg2Soln.toString
 
-def eg1  := getProof eg1Soln 
+def eg1 := getProof eg1Soln
 def eg2 := getProof eg2Soln 
 
 #eval Decidable.decide (isSat eg2Statement)
