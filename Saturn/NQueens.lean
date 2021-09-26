@@ -4,6 +4,10 @@ import Saturn.Clause
 import Saturn.Solverstep
 import Saturn.DPLL
 
+/-
+The N-Queens problem as a SAT problem. 
+-/
+
 def pairs(n: Nat) : List (Nat × Nat) := 
   List.bind 
     (List.range n) 

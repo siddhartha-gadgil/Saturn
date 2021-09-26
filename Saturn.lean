@@ -3,6 +3,10 @@ import Saturn.DPLL
 import Saturn.NQueens
 open Nat
 
+/-
+Running the elementary examples as well as the N-Queens problem for `N` a command line
+argument.
+-/
 def printSolution {n dom : Nat}: (clauses : Vector (Clause n) dom) → Nat →  IO Unit :=
   match n with
   | zero => fun _ _ => pure ()

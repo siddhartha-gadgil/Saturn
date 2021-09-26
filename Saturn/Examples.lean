@@ -4,8 +4,11 @@ import Saturn.Clause
 import Saturn.Solverstep
 import Saturn.DPLL
 import Lean.Meta
-
 open Nat
+
+/-
+Simple examples of solving SAT problems with proofs to be run in the interpreter.
+-/
 
 def cl1 : Clause 2 :=   -- P ∨ Q
   (some true) +: (some true) +: Vector.nil
@@ -26,10 +29,36 @@ set_option maxHeartbeats 500000
 def eg1Soln := solveSAT (eg1Statement)
 def eg2Soln := solveSAT (eg2Statement)
 
-
 def eg1IsFalse : Bool := eg1Soln.isSat
 #eval eg1IsFalse
+#reduce eg1IsFalse
 -- example : eg1IsFalse = false := by  rfl
+
+open Lean.Core
+open Lean.Meta
+open Lean.Elab.Term
+open Lean
+
+syntax (name:= normalform)"whnf!" term : term
+@[termElab normalform] def normalformImpl : TermElab :=
+  fun stx expectedType? =>
+  match stx with
+  | `(whnf! $s) => 
+      do
+        let t ← elabTerm s none 
+        let e ← whnf t
+        return e
+  | _ => Lean.Elab.throwIllFormedSyntax
+
+def egIsFalse2 := whnf! eg1IsFalse
+#eval egIsFalse2
+#print egIsFalse2
+#print eg1Soln
+
+-- def eg1SolnNorm := whnf! eg1Soln
+
+-- example : egIsFalse2 = false := by  rfl
+
 
 #eval eg1Soln.toString
 #eval eg2Soln.toString
