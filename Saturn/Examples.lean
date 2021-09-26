@@ -50,14 +50,15 @@ syntax (name:= normalform)"whnf!" term : term
         return e
   | _ => Lean.Elab.throwIllFormedSyntax
 
-def egIsFalse2 := whnf! eg1IsFalse
-#eval egIsFalse2
-#print egIsFalse2
+def eg1isFalseNormal := whnf! eg1IsFalse
+#eval eg1isFalseNormal
+#print eg1IsFalse
+#print eg1isFalseNormal
 #print eg1Soln
 
 def eg1SolnNorm := whnf! eg1Soln
 
-example : egIsFalse2 = false := by  rfl
+example : eg1IsFalse = false := by  rfl
 
 
 #eval eg1Soln.toString
