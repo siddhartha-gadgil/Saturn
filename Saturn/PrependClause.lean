@@ -6,7 +6,11 @@ open Nat
 open Vector
 open FinSeq
 
-
+/-
+The inductive step for adding a new clause when it is not dropped. The new clauses and maps 
+are defined. All the witnesses for the relations between the old and new clauses are also
+constructed.
+-/
 def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
       (rc: RestrictionClauses branch focus focusLt clauses) → 
