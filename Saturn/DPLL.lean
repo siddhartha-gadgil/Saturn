@@ -6,9 +6,16 @@ import Saturn.Solverstep
 import Saturn.Resolution
 import Saturn.PosRestClause
 import Saturn.PrependClause
-
 open Nat
 open FinSeq
+
+/-
+The DPLL algorithm with proofs. Here we implement:
+  - restricting to a branch.
+  - the simple cases of having contradictions or no clauses.
+  - the base case: length one clauses in our implementation
+  - lifting of proofs from branches and combining them if necessary
+-/
 
 instance {n: Nat} : DecidableEq (Clause n) := 
   fun c1 c2 =>
@@ -19,6 +26,9 @@ instance {n: Nat} : DecidableEq (Clause n) :=
         contra (congrArg Vector.coords hyp)
   )
 
+/-
+We map to branches inductively. The main work is done earlier.
+-/
 def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom): 
         (rd : RestrictionData branch focus focusLt clauses) → 
@@ -116,25 +126,20 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           restrictionDataAux branch focus focusLt clauses Vector.nil 
               (Nat.add_zero dom) rd clauses (concat_empty_seq_id clauses.coords)
 
-def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
-    (cntn : Containment clauses):
-          SatSolution (cntn.imageSeq) → SatSolution clauses := 
-          fun sol =>
-          match sol with
-          | SatSolution.sat val pf => 
-              SatSolution.sat val (
-                fun k kw => 
-                        let ⟨ind, bd, w⟩ := cntn.forward k kw
-                        let ev := pf ind bd
-                        let lem := containsSat (clauses.coords k kw) (cntn.imageSeq.coords ind bd) w val
-                        lem ev)
-              
-          | SatSolution.unsat tree => 
-                let rpf := 
-                  transportResPf cntn.imageSeq clauses cntn.reverse (contradiction (n + 1))
-                    tree 
-                SatSolution.unsat rpf 
+/-
+The simple cases: having a contradiction or having no clauses.
+-/
 
+def contraSol{n dom: Nat}{clauses : Vector (Clause (n + 1)) dom}{j : Nat}{jw : j < dom}
+                (eqn : clauses.coords j jw = contradiction (n + 1)): SatSolution clauses :=
+                  SatSolution.unsat (ResolutionTree.assumption j jw _ eqn) 
+                
+def emptySol{n: Nat}(clauses : Vector (Clause (n + 1)) zero) : SatSolution clauses :=
+        SatSolution.sat (FinSeq.vec (fun k kw => true))  (fun k kw => nomatch kw)
+
+/-
+Solution for length one clauses
+-/
 def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.coords zero (zero_lt_succ zero) = cl2.coords zero (zero_lt_succ zero)) : 
                           cl1 = cl2 :=
                             coords_eq_implies_vec_eq 
@@ -163,13 +168,6 @@ def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.coords zero (zero_lt_succ zer
 
 def lengthOneContra{cl: Clause 1}(eql : cl.coords zero (zero_lt_succ zero) = none):
                               cl = contradiction 1 := lengthOneEqual eql
-
-def contraSol{n dom: Nat}{clauses : Vector (Clause (n + 1)) dom}{j : Nat}{jw : j < dom}
-                (eqn : clauses.coords j jw = contradiction (n + 1)): SatSolution clauses :=
-                  SatSolution.unsat (ResolutionTree.assumption j jw _ eqn) 
-                
-def emptySol{n: Nat}(clauses : Vector (Clause (n + 1)) zero) : SatSolution clauses :=
-        SatSolution.sat (FinSeq.vec (fun k kw => true))  (fun k kw => nomatch kw)
 
 def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolution clauses :=
     match dom with
@@ -235,7 +233,9 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
                 | some false, l1, l2, l3 => False.elim (l3 rfl)
                 | none, l1, l2, l3 => False.elim (l1 rfl)
 
-theorem notpure_cases(b: Bool): (x : Option Bool) → x = none ∨  x = some b  → Not (x = some (not b)) :=
+-- a helper
+theorem notpure_cases(b: Bool): (x : Option Bool) → x = none ∨  x = some b  → 
+        Not (x = some (not b)) :=
   fun x eqn  =>
      match b, eqn  with
      | true, Or.inr pf => 
@@ -263,6 +263,29 @@ theorem notpure_cases(b: Bool): (x : Option Bool) → x = none ∨  x = some b  
      | _ , Or.inl pf => fun hyp =>
         let w := Eq.trans (Eq.symm pf) hyp
         Option.noConfusion w
+
+/-
+Lifting under containment and from branches and putting together lifts
+-/
+def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
+    (cntn : Containment clauses):
+          SatSolution (cntn.imageSeq) → SatSolution clauses := 
+          fun sol =>
+          match sol with
+          | SatSolution.sat val pf => 
+              SatSolution.sat val (
+                fun k kw => 
+                        let ⟨ind, bd, w⟩ := cntn.forward k kw
+                        let ev := pf ind bd
+                        let lem := containsSat (clauses.coords k kw) (cntn.imageSeq.coords ind bd) w val
+                        lem ev)
+              
+          | SatSolution.unsat tree => 
+                let rpf := 
+                  transportResPf cntn.imageSeq clauses cntn.reverse (contradiction (n + 1))
+                    tree 
+                SatSolution.unsat rpf 
+
 
 def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolution clauses :=
       match n with
@@ -378,6 +401,9 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                                   treeToUnsat merged
         containmentLift clauses cntn solution
 
+/-
+Decidability and convenience functions.
+-/
 instance {dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
                  : Prover (SatSolution clauses) where
       statement := fun sol => solutionProp sol 
@@ -423,4 +449,3 @@ instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
 
 instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
     Decidable (isUnSat clauses) := decideUnSat clauses
-    
