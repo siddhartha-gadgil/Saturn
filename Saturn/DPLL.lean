@@ -292,114 +292,51 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
       | zero => fun clauses => lengthOneSolution clauses
       | m + 1 =>
         fun clauses =>
-        let posCount  := clauses.map (parityCount true)
-        let negCount  := clauses.map (parityCount false)
-        match findElem? clauses.coords (contradiction (m + 2)) with
-        | some z => contraSol z.equation 
-        | none =>     
-          let cntn := simplifiedContainment clauses posCount negCount
-          let cls := cntn.imageSeq
-          let posCount  := cls.map (parityCount true)
-          let negCount  := cls.map (parityCount false)
-          let solution : SatSolution cls :=
-              match someUnitClause cls.coords posCount negCount with
-              | some ⟨i, iw, index, bd, par, eql⟩ => 
-                  let rd := restrictionData par index bd cls
+        let cls := clauses 
+        let solution : SatSolution cls :=
+          let index := zero
+          let bd := zero_lt_succ (m + 1)
+          let rd : RestrictionData false zero bd cls := 
+              restrictionData false index bd cls
+          let subCls := rd.restrictionClauses.restClauses
+          let subSol: SatSolution subCls := solveSAT subCls
+          match subSol with
+          | SatSolution.sat valuation pf => 
+            let pb :=  pullBackSolution false index bd cls 
+                rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
+            let valuationN := insert false _ index bd valuation.coords
+            SatSolution.sat valuationN.vec pb
+          | SatSolution.unsat tree => 
+              let liftedProof : LiftedResPf false zero bd cls :=
+                pullBackResPf  false index bd cls 
+                    rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
+                    tree
+              match liftedProof with
+              | LiftedResPf.contra pf => 
+                  treeToUnsat pf
+              | LiftedResPf.unit rpf1 => 
+                  let rd : RestrictionData true zero bd cls 
+                      := restrictionData true index bd cls
                   let subCls := rd.restrictionClauses.restClauses
                   let subSol := solveSAT subCls
                   match subSol with
                   | SatSolution.sat valuation pf => 
-                    let pb :=  pullBackSolution par index bd cls 
+                    let pb :=  pullBackSolution true index bd cls 
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
-                    let valuationN := insert par _ index bd valuation.coords
+                    let valuationN := insert true _ index bd valuation.coords
                     SatSolution.sat valuationN.vec pb
                   | SatSolution.unsat tree  => 
                       let liftedProof :=
-                        pullBackResPf  par index bd cls 
+                        pullBackResPf  true index bd cls 
                             rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
                             tree
                       match liftedProof with
                       | LiftedResPf.contra pf => 
                           treeToUnsat pf
-                      | LiftedResPf.unit rpf => 
-                          let tree1 := unitProof eql
-                          let merged := mergeAlignUnitTrees tree1 rpf
-                          treeToUnsat merged 
-              | none => 
-                match hasPure cls with 
-                | some ⟨index, bd, par, evid⟩=> 
-                  let rd := restrictionData par index bd cls
-                  let subCls := rd.restrictionClauses.restClauses
-                  let subSol := solveSAT subCls
-                  match subSol with
-                  | SatSolution.sat valuation pf => 
-                    let pb :=  pullBackSolution par index bd cls 
-                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
-                    let valuationN := insert par _ index bd valuation.coords
-                    SatSolution.sat valuationN.vec pb
-                  | SatSolution.unsat tree => 
-                      let liftedProof :=
-                        pullBackResPf  par index bd cls 
-                            rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
-                            tree
-                      match liftedProof with
-                      | LiftedResPf.contra pf => 
-                          treeToUnsat pf
-                      | LiftedResPf.unit rpf => 
-                          let base : (j : Nat) → (lt : j < cntn.codom) → 
-                              Not (Vector.coords (cls.coords j lt) index bd = some (not par)) := 
-                                fun j jw => 
-                                  notpure_cases par (Vector.coords (cls.coords j jw) index bd) (evid j jw)
-                          let pure :=
-                            proofs_preserve_notsomebranch (not par) index bd base
-                                   (unitClause (m + 1) (!par) index bd)
-                                   rpf
-                          let impure := unitDiag (m + 1) (not par) index bd 
-                          absurd impure pure
-                | none =>  
-                  let index := zero
-                  let bd := zero_lt_succ (m + 1)
-                  let rd : RestrictionData false zero bd cls := 
-                      restrictionData false index bd cls
-                  let subCls := rd.restrictionClauses.restClauses
-                  let subSol: SatSolution subCls := solveSAT subCls
-                  match subSol with
-                  | SatSolution.sat valuation pf => 
-                    let pb :=  pullBackSolution false index bd cls 
-                        rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
-                    let valuationN := insert false _ index bd valuation.coords
-                    SatSolution.sat valuationN.vec pb
-                  | SatSolution.unsat tree => 
-                      let liftedProof : LiftedResPf false zero bd cls :=
-                        pullBackResPf  false index bd cls 
-                            rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
-                            tree
-                      match liftedProof with
-                      | LiftedResPf.contra pf => 
-                          treeToUnsat pf
-                      | LiftedResPf.unit rpf1 => 
-                          let rd : RestrictionData true zero bd cls 
-                              := restrictionData true index bd cls
-                          let subCls := rd.restrictionClauses.restClauses
-                          let subSol := solveSAT subCls
-                          match subSol with
-                          | SatSolution.sat valuation pf => 
-                            let pb :=  pullBackSolution true index bd cls 
-                                rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
-                            let valuationN := insert true _ index bd valuation.coords
-                            SatSolution.sat valuationN.vec pb
-                          | SatSolution.unsat tree  => 
-                              let liftedProof :=
-                                pullBackResPf  true index bd cls 
-                                    rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
-                                    tree
-                              match liftedProof with
-                              | LiftedResPf.contra pf => 
-                                  treeToUnsat pf
-                              | LiftedResPf.unit rpf2 => 
-                                  let merged := mergeUnitTrees index bd rpf2 rpf1
-                                  treeToUnsat merged
-        containmentLift clauses cntn solution
+                      | LiftedResPf.unit rpf2 => 
+                          let merged := mergeUnitTrees index bd rpf2 rpf1
+                          treeToUnsat merged
+        solution
 
 /-
 Decidability and convenience functions.
@@ -449,3 +386,10 @@ instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
 
 instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
     Decidable (isUnSat clauses) := decideUnSat clauses
+
+def SatSolution.tree? {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom}
+              (soln: SatSolution clauses) : 
+                        Option (ResolutionTree clauses (contradiction (n + 1))) := 
+              match soln with
+              | SatSolution.unsat tree => some tree
+              | _ => none

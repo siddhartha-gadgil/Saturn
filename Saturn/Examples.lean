@@ -10,6 +10,9 @@ open Nat
 Simple examples of solving SAT problems with proofs to be run in the interpreter.
 -/
 
+def cl0 : Clause 1 := (some true) +: Vector.nil
+def cl00 : Clause 1 := (some false) +: Vector.nil
+
 def cl1 : Clause 2 :=   -- P ∨ Q
   (some true) +: (some true) +: Vector.nil
 
@@ -19,15 +22,19 @@ def cl2 : Clause 2 := -- ¬P
 def cl3 : Clause 2 := -- ¬Q
   (none) +: (some false) +: Vector.nil
 
+def eg0Statement := cl0 +: cl00 +: Vector.nil
 def eg1Statement : Vector (Clause 2) 3 := cl2 +: cl1 +: cl3 +: Vector.nil -- all three clauses
-def eg2Statement := FinSeq.vec (eg1Statement.coords.tail) -- clauses 1 and 3 only
+def eg2Statement := cl1 +: cl3  +: Vector.nil -- clauses 1 and 3 only
+def eg3Statement : Vector (Clause 2) 0 :=  Vector.nil
 
 set_option maxHeartbeats 500000
 
 -- structured solutions
 
+def eg0Soln := solveSAT (eg0Statement)
 def eg1Soln := solveSAT (eg1Statement)
 def eg2Soln := solveSAT (eg2Statement)
+def eg3Soln := solveSAT (eg3Statement)
 
 def eg1IsFalse : Bool := eg1Soln.isSat
 def eg2IsTrue : Bool := eg2Soln.isSat
@@ -56,11 +63,20 @@ def eg1isFalseNormal := whnf! eg1IsFalse
 #print eg1IsFalse
 #print eg1isFalseNormal
 #print eg1Soln
+#print eg2IsTrue
 
+def eg3SolnNorm := whnf! eg3Soln
 def eg2SolnNorm := whnf! eg2Soln
-def eg1SolnNorm := whnf! eg1Soln
+
+def eg1 : isUnSat eg1Statement := getProof eg1Soln
+def eg2 : isSat eg2Statement := getProof eg2Soln 
+def eg3 : isSat eg3Statement := getProof eg3Soln 
+
 
 /-
+def eg1SolnNorm := whnf! eg1Soln
+
+
 example : eg1IsFalse = false := by  rfl
 
 
