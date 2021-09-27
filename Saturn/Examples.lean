@@ -30,9 +30,10 @@ def eg1Soln := solveSAT (eg1Statement)
 def eg2Soln := solveSAT (eg2Statement)
 
 def eg1IsFalse : Bool := eg1Soln.isSat
+def eg2IsTrue : Bool := eg2Soln.isSat
 #eval eg1IsFalse
 #reduce eg1IsFalse
-example : eg1IsFalse = false := by  rfl
+#eval eg2IsTrue
 
 open Lean.Core
 open Lean.Meta
@@ -56,8 +57,10 @@ def eg1isFalseNormal := whnf! eg1IsFalse
 #print eg1isFalseNormal
 #print eg1Soln
 
+def eg2SolnNorm := whnf! eg2Soln
 def eg1SolnNorm := whnf! eg1Soln
 
+/-
 example : eg1IsFalse = false := by  rfl
 
 
@@ -73,3 +76,4 @@ def eg2 : isSat eg2Statement := getProof eg2Soln
 #check eg2
 
 example : Not (cl1 ⊇  cl2) := by decide
+-/
