@@ -9,8 +9,8 @@ open Nat
 open Lean.Meta
 open Lean.Elab.Term
 
-syntax (name:= normalform)"whnf!" term : term
-@[termElab normalform] def normalformImpl : TermElab :=
+syntax (name:= nrmlform)"whnf!" term : term
+@[termElab nrmlform] def normalformImpl : TermElab :=
   fun stx expectedType? =>
   match stx with
   | `(whnf! $s) => 
@@ -23,12 +23,12 @@ syntax (name:= normalform)"whnf!" term : term
 open Nat
 open FinSeq
 
-def cl2 : Clause 2 := -- ¬P
+def cls1 : Clause 2 := -- ¬P
   (some false) +: (none) +: Vector.nil
 
-def cl4 : Clause 2 := (some true) +: none +: Vector.nil  -- P
+def cls2 : Clause 2 := (some true) +: none +: Vector.nil  -- P
 
-def eg4Statement := cl2 +: cl4 +: Vector.nil
+def egStatement := cls1 +: cls2 +: Vector.nil
 
 def solveSATOuter{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolution clauses :=
       match n with
@@ -79,10 +79,10 @@ def solveSATOuter{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  Sat
                         let merged := mergeUnitTrees index bd rpf2 rpf1
                         treeToUnsat merged
 
-def eg4CallSoln := solveSATOuter eg4Statement
+def egCallSoln := solveSATOuter egStatement
 
-def eg4Soln :=  
-    let clauses := eg4Statement
+def egSoln :=  
+    let clauses := egStatement
     let cls :  Vector (Clause 2) 2 := clauses 
     let index := zero
     let bd := zero_lt_succ 1
@@ -130,17 +130,17 @@ def eg4Soln :=
 
 
 
-def eg4SolnNorm := whnf! eg4Soln
+def egSolnNorm := whnf! egSoln
 
-#print eg4SolnNorm
+#print egSolnNorm
 
-def eg4CallSolnNorm := whnf! eg4CallSoln
+def egCallSolnNorm := whnf! egCallSoln
 
-#print eg4CallSolnNorm
+#print egCallSolnNorm
 
-def eg4SolnVal := eg4Soln.isSat
+def egSolnVal := egSoln.isSat
 
-#eval eg4Soln.isSat
+#eval egSoln.isSat
 
-def eg4 : isUnSat eg4Statement := getProof eg4Soln
-def eg4Call : isUnSat eg4Statement := getProof eg4CallSoln
+def eg : isUnSat egStatement := getProof egSoln
+def egCall : isUnSat egStatement := getProof egCallSoln
