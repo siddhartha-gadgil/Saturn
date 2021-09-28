@@ -65,11 +65,12 @@ def eg1isFalseNormal := whnf! eg1IsFalse
 #print eg1Soln
 #print eg2IsTrue
 
-def eg3SolnNorm := whnf! eg3Soln
-def eg2SolnNorm := whnf! eg2Soln
 
-def eg1 : isUnSat eg1Statement := getProof eg1Soln
-def eg2 : isSat eg2Statement := getProof eg2Soln 
+-- def eg3SolnNorm := whnf! eg3Soln
+-- def eg2SolnNorm := whnf! eg2Soln
+
+-- def eg1 : isUnSat eg1Statement := getProof eg1Soln
+-- def eg2 : isSat eg2Statement := getProof eg2Soln 
 def eg3 : isSat eg3Statement := getProof eg3Soln 
 
 
