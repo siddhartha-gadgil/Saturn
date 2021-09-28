@@ -144,3 +144,66 @@ def egSolnVal := egSoln.isSat
 
 def eg : isUnSat egStatement := getProof egSoln
 def egCall : isUnSat egStatement := getProof egCallSoln
+
+inductive SatAnswer{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) where
+  | unsat : SatAnswer clauses
+  | sat : (valuation : Valuation (n + 1)) → SatAnswer clauses 
+
+structure SimpleRestrictionClauses{dom n: Nat}
+    (clauses: Vector (Clause (n + 1)) dom) where
+  codom : Nat
+  restClauses : Vector  (Clause n) codom
+
+def prependRes{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) dom): 
+        (rd : SimpleRestrictionClauses clauses) → 
+           (head : Clause (n + 1)) → 
+        SimpleRestrictionClauses (head +: clauses) := 
+        fun rd  head => 
+          if c : head.coords focus focusLt = some branch then
+            ⟨rd.codom, rd.restClauses⟩
+          else
+            ⟨rd.codom + 1, (FinSeq.vec (delete focus focusLt head.coords)) +: rd.restClauses⟩
+
+def restClauses{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)  
+        (clauses: Vector (Clause (n + 1)) dom) :
+         SimpleRestrictionClauses clauses :=
+            match dom, clauses with
+            | 0, _ =>  ⟨0, Vector.nil⟩
+            | m + 1, Vector.cons head clauses =>
+                prependRes branch focus focusLt clauses 
+                            (restClauses branch focus focusLt clauses) head           
+
+def answerSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatAnswer clauses :=
+      match n with
+      | zero => fun clauses => 
+           match lengthOneSolution clauses with
+           | SatSolution.sat valuation pf => SatAnswer.sat valuation
+           | SatSolution.unsat tree => SatAnswer.unsat         
+      | m + 1 =>
+        fun clauses =>
+        let cls := clauses 
+        let bd := zero_lt_succ (m + 1)
+        let rd  := 
+            restClauses false zero bd clauses
+        let subCls := rd.restClauses
+        let subSol: SatAnswer subCls := answerSAT subCls
+        match subSol with
+        | SatAnswer.sat valuation  => 
+          let valuationN := insert false (m + 1) zero bd valuation.coords
+          SatAnswer.sat valuationN.vec 
+        | SatAnswer.unsat  => 
+            let rd 
+                := restClauses true zero bd cls
+            let subCls := rd.restClauses
+            let subSol : SatAnswer subCls := answerSAT subCls
+            match subSol with
+            | SatAnswer.sat valuation  => 
+                let valuationN := insert true _ zero bd valuation.coords
+                SatAnswer.sat valuationN.vec 
+            | SatAnswer.unsat   => 
+                SatAnswer.unsat
+
+def egAnswer : SatAnswer egStatement := answerSAT egStatement
+
+def egAnswerNorm : SatAnswer egStatement := whnf! egAnswer
