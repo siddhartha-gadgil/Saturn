@@ -288,7 +288,7 @@ def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
 
 
 def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolution clauses :=
-      match c:n with
+      match n with
       | zero => fun clauses => lengthOneSolution clauses
       | m + 1 =>
         fun clauses =>

@@ -94,9 +94,55 @@ def directSolnBranched:  SatSolution clauses :=
                         treeToUnsat merged
 
 
-def egSolnNorm := whnf! egSoln
+-- def egSolnNorm := whnf! egSoln
 def directSolnNorm := whnf! directSoln
 def directSolnBranchedNorm := whnf! directSolnBranched
 
 #print directSoln 
 #print egSoln
+
+def solveSATOpt{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  
+        Option (SatSolution clauses) :=
+      match c:n with
+      | zero => fun clauses => some (lengthOneSolution clauses)
+      | m + 1 =>
+        fun clauses =>
+        let cls := clauses 
+        let index := zero
+        let bd := zero_lt_succ (m + 1)
+        let rd : RestrictionData false zero bd cls := 
+            restrictionData false index bd cls
+        let subCls := rd.restrictionClauses.restClauses
+        let subSol: SatSolution subCls := solveSAT subCls
+        match subSol with
+        | SatSolution.sat valuation pf => 
+          let pb :=  pullBackSolution false index bd cls 
+              rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
+          let valuationN := insert false (m + 1) index bd valuation.coords
+          some (SatSolution.sat valuationN.vec pb)
+        | SatSolution.unsat tree => 
+            let liftedProof : LiftedResPf false zero bd cls :=
+              pullBackResPf  false index bd cls 
+                  rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
+                  tree
+            match liftedProof with
+            | LiftedResPf.contra pf => 
+                none
+            | LiftedResPf.unit rpf1 => 
+                let rd : RestrictionData true zero bd cls 
+                    := restrictionData true index bd cls
+                let subCls := rd.restrictionClauses.restClauses
+                let subSol := solveSAT subCls
+                match subSol with
+                | SatSolution.sat valuation pf => 
+                  let pb :=  pullBackSolution true index bd cls 
+                      rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
+                  let valuationN := insert true _ index bd valuation.coords
+                  SatSolution.sat valuationN.vec pb
+                | SatSolution.unsat tree  => 
+                  none
+
+def egSolnOpt := solveSATOpt clauses
+def egSolnNormOpt := whnf! egSolnOpt
+#print egSolnNormOpt
+#print egSolnOpt
