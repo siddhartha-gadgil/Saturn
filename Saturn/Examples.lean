@@ -29,38 +29,6 @@ set_option maxHeartbeats 500000
 def eg1Soln := solveSAT (eg1Statement)
 def eg2Soln := solveSAT (eg2Statement)
 
-def eg1IsFalse : Bool := eg1Soln.isSat
-#eval eg1IsFalse
-#reduce eg1IsFalse
-example : eg1IsFalse = false := by  rfl
-
-open Lean.Core
-open Lean.Meta
-open Lean.Elab.Term
-open Lean
-
-syntax (name:= normalform)"whnf!" term : term
-@[termElab normalform] def normalformImpl : TermElab :=
-  fun stx expectedType? =>
-  match stx with
-  | `(whnf! $s) => 
-      do
-        let t ← elabTerm s none 
-        let e ← whnf t
-        return e
-  | _ => Lean.Elab.throwIllFormedSyntax
-
-def eg1isFalseNormal := whnf! eg1IsFalse
-#eval eg1isFalseNormal
-#print eg1IsFalse
-#print eg1isFalseNormal
-#print eg1Soln
-
-def eg1SolnNorm := whnf! eg1Soln
-
-example : eg1IsFalse = false := by  rfl
-
-
 #eval eg1Soln.toString
 #eval eg2Soln.toString
 
