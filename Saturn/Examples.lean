@@ -70,8 +70,8 @@ def eg1isFalseNormal := whnf! eg1IsFalse
 #print eg1Soln
 #print eg2IsTrue
 
-/-
--- def eg3SolnNorm := whnf! eg3Soln
+
+def eg3SolnNorm := whnf! eg3Soln
 def eg2SolnNorm := whnf! eg2Soln
 def eg4SolnNorm := whnf! eg4Soln
 #print eg4SolnNorm
@@ -104,7 +104,7 @@ def eg2 : isSat eg2Statement := getProof eg2Soln
 def eg3 : isSat eg3Statement := getProof eg3Soln 
 
 
-/-
+
 def eg1SolnNorm := whnf! eg1Soln
 
 
@@ -115,7 +115,7 @@ example : eg1IsFalse = false := by  rfl
 #eval eg2Soln.toString
 
 def eg1 : isUnSat eg1Statement := getProof eg1Soln
-def eg2 : isSat eg2Statement := getProof eg2Soln 
+-- def eg2 : isSat eg2Statement := getProof eg2Soln 
 
 #eval Decidable.decide (isSat eg2Statement)
 
@@ -123,5 +123,4 @@ def eg2 : isSat eg2Statement := getProof eg2Soln
 #check eg2
 
 example : Not (cl1 ⊇  cl2) := by decide
--/
--/
+

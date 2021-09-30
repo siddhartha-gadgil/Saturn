@@ -201,3 +201,4 @@ def egStatement := cls1 +: cls2 +: Vector.nil
 def egAnswer : SatAnswer egStatement := answerSAT egStatement
 
 def egAnswerNorm : SatAnswer egStatement := whnf! egAnswer
+#print egAnswerNorm

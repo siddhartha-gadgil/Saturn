@@ -194,7 +194,7 @@ def answerSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatAnsw
           SatAnswer.sat valuationN.vec 
         | SatAnswer.unsat  => 
             let rd 
-                := restClauses true zero bd cls
+                := restClauses true zero bd clauses
             let subCls := rd.restClauses
             let subSol : SatAnswer subCls := answerSAT subCls
             match subSol with
@@ -207,3 +207,4 @@ def answerSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatAnsw
 def egAnswer : SatAnswer egStatement := answerSAT egStatement
 
 def egAnswerNorm : SatAnswer egStatement := whnf! egAnswer
+#print egAnswerNorm
