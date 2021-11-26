@@ -34,12 +34,10 @@ def eg2Soln := solveSAT (eg2Statement)
 #eval eg2Soln.toString
 
 
-def eg1  := getProof eg1Soln
+def eg1Untyped  := getProof eg1Soln
 def eg2 : isSat eg2Statement := getProof eg2Soln 
 
 #eval Decidable.decide (isSat eg2Statement)
-
-def eg1Type := isUnSat eg1Statement
 
 syntax (name:= normalform)"whnf!" term : term
 @[termElab normalform] def normalformImpl : TermElab :=
@@ -52,13 +50,17 @@ syntax (name:= normalform)"whnf!" term : term
         return e
   | _ => Lean.Elab.throwIllFormedSyntax
 
-#check whnf! eg1
+-- #check whnf! eg1Soln
 
+#check @rfl
 
---  def eg1Typed : eg1Type := eg1
+#eval eg1Soln.isSat 
 
-
--- #check eg1
+def eg1 : isUnSat eg1Statement := by
+  apply SatSolution.contradict eg1Soln
+  nativeDecide
+  
+#check eg1
 #check eg2
 
 example : Not (cl1 ⊇  cl2) := by decide

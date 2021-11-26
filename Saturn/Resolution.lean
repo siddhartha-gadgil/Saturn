@@ -720,13 +720,6 @@ def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
   | SatSolution.unsat _  => isUnSat clauses
   | SatSolution.sat _ _ => isSat clauses
 
-def solutionBool{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
-                  (sol : SatSolution clauses) : Bool :=
-  match sol with
-  | SatSolution.unsat _  => false
-  | SatSolution.sat _ _ => true
-
-
 def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
                   (sol : SatSolution clauses) :
                     solutionProp sol :=
@@ -738,8 +731,25 @@ def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
 
 def SatSolution.isSat{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
                   (sol : SatSolution clauses) →  Bool 
-  | SatSolution.unsat tree  => false
+  | SatSolution.unsat _  => false
   | SatSolution.sat _ _ => true
+
+def SatSolution.contradict{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
+                  (sol : SatSolution clauses) →
+                  sol.isSat = false → isUnSat clauses :=
+  fun sol => fun h =>
+    match c:sol with
+    | SatSolution.unsat tree  => 
+          tree_unsat clauses tree
+    | SatSolution.sat valuation evidence =>
+          have cs : sol.isSat = true := by
+            rw [c]
+            rfl
+          have absrd : true = false := by
+            rw [← h]
+            rw [← cs]
+            rw [c]
+          Bool.noConfusion absrd
 
 
 def treeToUnsat{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom} :
