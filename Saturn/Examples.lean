@@ -54,7 +54,7 @@ syntax (name:= normalform)"whnf!" term : term
 
 #check @rfl
 
-#eval eg1Soln.isSat 
+#eval eg1Soln.exists
 
 def eg1 : isUnSat eg1Statement := by
   apply SatSolution.contradict eg1Soln
