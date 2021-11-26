@@ -717,9 +717,14 @@ theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
 def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
                   (sol : SatSolution clauses) : Prop :=
   match sol with
-  | SatSolution.unsat tree  => isUnSat clauses
+  | SatSolution.unsat _  => isUnSat clauses
   | SatSolution.sat _ _ => isSat clauses
 
+def solutionBool{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
+                  (sol : SatSolution clauses) : Bool :=
+  match sol with
+  | SatSolution.unsat _  => false
+  | SatSolution.sat _ _ => true
 
 
 def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
