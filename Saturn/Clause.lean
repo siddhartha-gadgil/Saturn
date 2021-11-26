@@ -106,7 +106,7 @@ theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1)
 Containment of clauses and basic properties
 -/
 
-def varContains (v1 v2 : Option Bool) : Prop :=
+abbrev varContains (v1 v2 : Option Bool) : Prop :=
   ∀ b : Bool, v2 = some b → v1  = some b
 
 infix:65 "≥" => varContains
@@ -146,7 +146,7 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
                   c (lem2) 
             )
 
-def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
+abbrev contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2.coords k kw = some b → cl1.coords k kw = some b
 
 infix:65 " ⊇  " => contains
@@ -186,7 +186,7 @@ theorem contains_prepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
 Implementation of checking for containment; tail-call optimized
 -/
 
-def containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
+abbrev containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, m ≤ k →  ∀ b : Bool, cl2.coords k kw = some b → cl1.coords k kw = some b
 
 theorem contains_implies_contains_beyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
@@ -299,7 +299,7 @@ def parityCount{n: Nat}  (b: Bool) (cl : Clause n) : Nat :=
         | none => false
     cl.count p
 
-def countBelow (p1 n1 p2 n2 : Nat) : Bool :=
+abbrev countBelow (p1 n1 p2 n2 : Nat) : Bool :=
   (p1 ≤ p2) ∧ (n1 ≤ n2) ∧ ((p1 < p2) ∨ (n1 < n2)) 
 
 -- Simplification removing clauses that contain other clauses.
@@ -317,14 +317,14 @@ structure Containment{dom n : Nat}(base: Vector (Clause n) dom) where
              base.coords (reverseVec.coords j jw) (reverseBound j jw) = imageSeq.coords j jw
 
 namespace Containment
-def forward {dom n : Nat}{base: Vector (Clause n) dom}
+abbrev forward {dom n : Nat}{base: Vector (Clause n) dom}
       (cntn : Containment base) (j : Nat) (jw : j < dom) : 
                   ElemSeqPred cntn.imageSeq.coords (contains (base.coords j jw)) :=
                 ⟨cntn.forwardVec.coords j jw, cntn.forwardBound j jw, 
                     cntn.forwardEq j jw⟩
                 
 
-def reverse {dom n : Nat}{base: Vector (Clause n) dom}
+abbrev reverse {dom n : Nat}{base: Vector (Clause n) dom}
       (cntn : Containment base) (j : Nat) (jw : j < cntn.codom) :
                   ElemInSeq base.coords (cntn.imageSeq.coords j jw) :=
                 ⟨cntn.reverseVec.coords j jw, cntn.reverseBound j jw,
