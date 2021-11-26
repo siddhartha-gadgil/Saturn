@@ -19,11 +19,11 @@ term of type `FinSeq n Bool`.
 /- 
 Definitions of clauses and valuations and basic properties 
 -/
-def Clause(n : Nat) : Type := Vector (Option Bool) n
+abbrev Clause(n : Nat) : Type := Vector (Option Bool) n
 
-def Valuation(n: Nat) : Type := Vector Bool n
+abbrev Valuation(n: Nat) : Type := Vector Bool n
 
-def varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
+abbrev varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
 
 
 structure ClauseSat{n: Nat}(clause : Clause n)(valuation: Valuation n) where
@@ -31,7 +31,7 @@ structure ClauseSat{n: Nat}(clause : Clause n)(valuation: Valuation n) where
   bound : coord < n  
   witness: varSat (clause.coords coord bound) (valuation.coords coord bound)
 
-def clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) := 
+abbrev clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) := 
   ∃ (k : Nat), ∃ (b : k < n), varSat (clause.coords k b) (valuation.coords k b)
 
 instance {n: Nat}(clause : Clause n)(valuation: Valuation n): 
@@ -43,7 +43,7 @@ instance {n: Nat}(clause : Clause n)(valuation: Valuation n):
 /-
 Contradictions and basic properties
 -/
-def contradiction(n: Nat) : Clause n :=
+abbrev contradiction(n: Nat) : Clause n :=
   FinSeq.vec (fun _ _ => none)
 
 theorem contra_at_none(n: Nat) : Vector.coords (contradiction n) = (fun _ _ => none) := 
