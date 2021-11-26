@@ -720,6 +720,11 @@ def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
   | SatSolution.unsat _  => isUnSat clauses
   | SatSolution.sat _ _ => isSat clauses
 
+def solutionBool{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
+                  (sol : SatSolution clauses) : Bool :=
+  match sol with
+  | SatSolution.unsat _  => false
+  | SatSolution.sat _ _ => true
 
 
 def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
