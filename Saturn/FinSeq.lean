@@ -89,8 +89,7 @@ def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →
       concatSeqAux ss (seq1.init) ((seq1.last) +| seq2)
 
 def concatSeq {α: Type}{n m: Nat}(seq1 : FinSeq n α)(seq2 : FinSeq m α): 
-  FinSeq (n + m) α := 
-    concatSeqAux rfl seq1 seq2
+  FinSeq (n + m) α := concatSeqAux rfl seq1 seq2
 
 
 theorem concat_aux_eqs{α: Type}{n m l: Nat}: (s : n + m = l) →   
@@ -227,9 +226,8 @@ theorem concat_empty_seq_id{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (
 -- Part 3 : insertion and deletion
 
 
-def FinSeq.delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α := 
-  fun j w =>
-    seq (skip k j) (skip_le_succ w)
+def FinSeq.delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α 
+  | j, w => seq (skip k j) (skip_le_succ w)
 
 structure ProvedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
                 (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) where
@@ -283,22 +281,19 @@ def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
             ⟨result, checkImage, checkFocus⟩
 
 def FinSeq.insert{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
-    (lt : k < succ n) → (FinSeq n   α) →  (FinSeq (Nat.succ n)  α) := 
-  fun n k lt seq j w =>  
-    (provedInsert n value seq k lt j w).result
+    (lt : k < succ n) → (FinSeq n   α) →  (FinSeq (Nat.succ n)  α) 
+  | n, k, lt, seq, j, w => (provedInsert n value seq k lt j w).result
 
 open FinSeq
 
 theorem insert_at_focus{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
-    (lt : k < succ n) → (seq :FinSeq n   α) →  
-      insert value n k lt seq k lt = value :=
-    fun n k lt seq  =>   
-      (provedInsert n value seq k lt k lt).checkFocus rfl
+    (lt : k < succ n) → (seq :FinSeq n   α) →  insert value n k lt seq k lt = value 
+  | n, k, lt, seq =>   (provedInsert n value seq k lt k lt).checkFocus rfl
 
 theorem insert_at_image(value: α) : (n : Nat) →  (k: Nat) → 
     (lt : k < succ n) → (seq :FinSeq n   α) → (i : Nat) → (iw : i < n) → 
-      insert value n k lt seq (skip k i) (skip_le_succ iw) = seq i iw :=
-      fun n k lt seq i iw => 
+      insert value n k lt seq (skip k i) (skip_le_succ iw) = seq i iw 
+     | n, k, lt, seq, i, iw => 
        (provedInsert n value seq k lt (skip k i) (skip_le_succ iw)).checkImage i iw rfl 
 
 theorem insert_delete_id{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α) :
@@ -355,8 +350,6 @@ inductive ExistsElem{α: Type}{n : Nat} (seq : FinSeq n α) (elem : α) where
             (equation : seq index bound = elem) → ExistsElem seq elem
   | notExst : ((index: Nat) →  (bound : index < n) → 
                  Not (seq index bound = elem)) → ExistsElem seq elem 
-
-
 
 structure ElemSeqPred{α: Type}{n : Nat} (seq : FinSeq n α) (pred : α → Prop) where
   index: Nat

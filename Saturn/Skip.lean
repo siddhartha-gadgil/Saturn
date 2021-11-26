@@ -22,19 +22,19 @@ def provedSkip (n m : Nat) : ProvedSkip n m :=
     ⟨m + 1, fun hyp => absurd hyp c, fun _ => rfl⟩
 
 -- the `skip` function
-def skip: Nat → Nat → Nat :=
-  fun n m => (provedSkip n m).result
+def skip: Nat → Nat → Nat 
+  | n, m => (provedSkip n m).result
 
 -- equations for `skip` below and above the skipped value
 
-theorem skip_below_eq(n m : Nat) : m < n → (skip n m = m) :=
-  fun hyp => (provedSkip n m).lt hyp 
+theorem skip_below_eq(n m : Nat) : m < n → (skip n m = m)
+  | hyp => (provedSkip n m).lt hyp 
 
-theorem skip_above_eq(n m : Nat) : n ≤ m → (skip n m = m + 1) :=
-  fun hyp => (provedSkip n m).ge hyp
+theorem skip_above_eq(n m : Nat) : n ≤ m → (skip n m = m + 1)
+  | hyp => (provedSkip n m).ge hyp
 
-theorem skip_not_below_eq(n m : Nat) : Not (m < n) → (skip n m = m + 1) :=
-  fun hyp =>
+theorem skip_not_below_eq(n m : Nat) : Not (m < n) → (skip n m = m + 1) 
+  | hyp =>
     let lem : n ≤ m :=
       match Nat.lt_or_ge m n with
       | Or.inl lt => absurd lt hyp

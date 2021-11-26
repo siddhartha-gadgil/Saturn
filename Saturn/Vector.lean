@@ -5,6 +5,7 @@ open Nat
 inductive Vector (α : Type) : Nat → Type where 
   | nil : Vector α zero
   | cons{n: Nat}(head: α) (tail: Vector  α n) : Vector α  (n + 1) 
+  deriving Repr
 
 infixr:66 "+:" => Vector.cons
 
