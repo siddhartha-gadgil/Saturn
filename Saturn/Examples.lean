@@ -38,21 +38,7 @@ def eg1Untyped  := getProof eg1Soln
 def eg2 : isSat eg2Statement := getProof eg2Soln 
 
 #eval Decidable.decide (isSat eg2Statement)
-
-syntax (name:= normalform)"whnf!" term : term
-@[termElab normalform] def normalformImpl : TermElab :=
-  fun stx expectedType? =>
-  match stx with
-  | `(whnf! $s) => 
-      do
-        let t ← elabTerm s none 
-        let e ← whnf t
-        return e
-  | _ => Lean.Elab.throwIllFormedSyntax
-
--- #check whnf! eg1Soln
-
-#check @rfl
+#eval Decidable.decide (isSat eg1Statement)
 
 #eval eg1Soln.exists
 
