@@ -573,7 +573,7 @@ def isSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
            ∀ (p : Nat),
             ∀ pw : p < dom, 
               ∃ (k : Nat), ∃ (kw : k < n + 1), 
-                (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw)
+                ((clauses.coords p pw).coords k kw) = some (valuation.coords k kw)
 
 -- unsat as a proposition
 def isUnSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
@@ -581,7 +581,7 @@ def isUnSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
            Not (∀ (p : Nat),
             ∀ pw : p < dom,   
               ∃ (k : Nat), ∃ (kw : k < n + 1), 
-                (Vector.coords (clauses.coords p pw) k kw) = some (valuation.coords k kw))
+                ((clauses.coords p pw).coords k kw) = some (valuation.coords k kw))
 
 theorem not_sat_and_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
     isSat clauses → isUnSat clauses → False := by
