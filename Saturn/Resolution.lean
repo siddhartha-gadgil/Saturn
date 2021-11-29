@@ -1,3 +1,4 @@
+import Saturn.Core
 import Saturn.FinSeq
 import Saturn.Vector
 import Saturn.Clause 
@@ -567,21 +568,7 @@ def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
       | unsat tree => "unsat: " ++ tree.toString 
       | sat valuation _ => "sat: " ++ (valuation.coords.list).toString
 
--- sat as a proposition
-def isSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
-          ∃ valuation : Valuation (n + 1),  
-           ∀ (p : Nat),
-            ∀ pw : p < dom, 
-              ∃ (k : Nat), ∃ (kw : k < n + 1), 
-                ((clauses.coords p pw).coords k kw) = some (valuation.coords k kw)
 
--- unsat as a proposition
-def isUnSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
-          ∀ valuation : Valuation (n + 1),  
-           Not (∀ (p : Nat),
-            ∀ pw : p < dom,   
-              ∃ (k : Nat), ∃ (kw : k < n + 1), 
-                ((clauses.coords p pw).coords k kw) = some (valuation.coords k kw))
 
 theorem not_sat_and_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
     isSat clauses → isUnSat clauses → False := by

@@ -20,8 +20,8 @@ def cl2 : Clause 2 := -- ¬P
 def cl3 : Clause 2 := -- ¬Q
   (none) +: (some false) +: Vector.nil
 
-def eg1Statement : Vector (Clause 2) 3 := cl2 +: cl1 +: cl3 +: Vector.nil -- all three clauses
-def eg2Statement := FinSeq.vec (eg1Statement.coords.tail) -- clauses 1 and 3 only
+def eg1Statement : Vector (Clause 2) 3 := cl1 +: cl2 +: cl3 +: Vector.nil -- all three clauses
+def eg2Statement := cl1 +: cl3 +: Vector.nil -- clauses 1 and 3 only
 
 set_option maxHeartbeats 500000
 
@@ -37,8 +37,8 @@ def eg2Soln := solveSAT (eg2Statement)
 def eg1Untyped  := getProof eg1Soln
 def eg2 : isSat eg2Statement := getProof eg2Soln 
 
-#eval Decidable.decide (isSat eg2Statement)
-#eval Decidable.decide (isSat eg1Statement)
+#eval decide (isSat eg2Statement)
+#eval decide (isSat eg1Statement)
 
 #eval eg1Soln.exists
 

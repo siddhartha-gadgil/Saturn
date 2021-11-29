@@ -1,3 +1,4 @@
+import Saturn.Core
 import Saturn.FinSeq
 import Saturn.Vector
 import Saturn.Prover
@@ -16,18 +17,6 @@ of variables. Similarly a valuation (assignment of `true` or `false` to each var
 term of type `FinSeq n Bool`.
  -/
 
-/- 
-Definitions of clauses and valuations and basic properties 
--/
-abbrev Clause(n : Nat) : Type := Vector (Option Bool) n
-
-abbrev Valuation(n: Nat) : Type := Vector Bool n
-
-abbrev varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
-
-
-abbrev clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) := 
-  ∃ (k : Nat), ∃ (b : k < n), varSat (clause.coords k b) (valuation.coords k b)
 
 /-
 Contradictions and basic properties

@@ -1,4 +1,5 @@
 import Saturn.Skip
+import Saturn.Core
 open Nat
 
  /- An implementation of finite sequences as `FinSeq α`   and operations and relations on these, 
@@ -19,7 +20,6 @@ open Nat
  -/
 
 -- Part 1: `FinSeq` definition and elementary operations
-def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 
 namespace FinSeq
 def cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α :=
