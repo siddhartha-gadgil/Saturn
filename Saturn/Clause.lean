@@ -26,19 +26,8 @@ abbrev Valuation(n: Nat) : Type := Vector Bool n
 abbrev varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
 
 
-structure ClauseSat{n: Nat}(clause : Clause n)(valuation: Valuation n) where
-  coord : Nat
-  bound : coord < n  
-  witness: varSat (clause.coords coord bound) (valuation.coords coord bound)
-
 abbrev clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) := 
   ∃ (k : Nat), ∃ (b : k < n), varSat (clause.coords k b) (valuation.coords k b)
-
-instance {n: Nat}(clause : Clause n)(valuation: Valuation n): 
-    Prover (ClauseSat clause valuation) where 
-  statement := fun cs => ∃ (k : Nat), ∃ (b : k < n), 
-                            varSat (clause.coords k b) (valuation.coords k b)
-  proof := fun cs => ⟨cs.coord, ⟨cs.bound, cs.witness⟩⟩
 
 /-
 Contradictions and basic properties
@@ -209,7 +198,7 @@ theorem contains_beyond_zero_implies_contains {n: Nat} (cl1 cl2 : Clause n) :
     done
 
 def containsSat{n: Nat} (cl1 cl2 : Clause n) :
-  cl1 ⊇  cl2 → (valuation : Valuation n) → ClauseSat cl2 valuation → ClauseSat cl1 valuation :=
+  cl1 ⊇  cl2 → (valuation : Valuation n) → clauseSat cl2 valuation → clauseSat cl1 valuation :=
     fun dom valuation  =>
       fun ⟨j, jw, vs⟩ =>
         let lem0 :  cl2.coords j jw = some (valuation.coords j jw) := vs 

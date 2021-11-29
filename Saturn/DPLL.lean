@@ -418,7 +418,7 @@ def decideSat{n dom : Nat}(clauses : Vector (Clause (n + 1)) dom) :
     Decidable (isSat clauses) := 
       match solveSAT clauses with
       | SatSolution.sat valuation evidence =>
-          isTrue ⟨valuation, fun k kw => getProof (evidence k kw)⟩
+          isTrue ⟨valuation, fun k kw => (evidence k kw)⟩
       | SatSolution.unsat tree =>
           by
            have us := tree_unsat clauses tree 
@@ -436,7 +436,7 @@ def decideUnSat{n dom : Nat}(clauses : Vector (Clause (n + 1)) dom) :
             apply isFalse
             intro hyp
             apply not_sat_and_unsat
-            exact ⟨valuation, fun k kw => getProof (evidence k kw)⟩
+            exact ⟨valuation, fun k kw => (evidence k kw)⟩
             exact hyp        
       | SatSolution.unsat tree =>
           by

@@ -96,9 +96,9 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
     (clauses: Vector (Clause (n + 1)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
     (dp : DroppedProof rc) (fr: ForwardRelation rc): 
       (valuation : Valuation n) → 
-        ((j : Nat) → (jw : j < rc.codom) → ClauseSat (rc.restClauses.coords j jw) valuation) → 
+        ((j : Nat) → (jw : j < rc.codom) → clauseSat (rc.restClauses.coords j jw) valuation) → 
         (j : Nat) → (jw : j < dom) →  
-          ClauseSat (clauses.coords j jw) (FinSeq.vec (insert branch n focus focusLt valuation.coords)) := 
+          clauseSat (clauses.coords j jw) (FinSeq.vec (insert branch n focus focusLt valuation.coords)) := 
         fun valuation pf =>
           fun k w => 
             let splitter := (rc.forward k w)

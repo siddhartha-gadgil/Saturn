@@ -284,122 +284,6 @@ theorem triple_step_proof{n: Nat}(left right top : Clause (n + 1))
                         done 
                       ⟨kr, ⟨rlt, var_resolution_step join (valuation.coords kr rlt) (Or.inr (wr))⟩⟩
 
--- if a valuation satisfies the bottom clauses, it satisfies the top clause with structured proofs
-def tripleStepSat{n: Nat}(left right top : Clause (n + 1))
-  (triple : ResolutionTriple left right top) :
-        (valuation: Valuation (n + 1))  → (ClauseSat left valuation) → 
-        (ClauseSat right valuation) → (ClauseSat top valuation) := 
-          fun valuation =>
-            fun ⟨kl, llt, wl⟩ =>
-              fun ⟨kr, rlt, wr⟩ =>
-                 if c : valuation.coords (triple.pivot) (triple.pivotLt)  then 
-                    -- the left branch survives
-                    if cc : kl = triple.pivot then 
-                      have lem1 : left.coords kl llt = 
-                            left.coords triple.pivot triple.pivotLt := by
-                            apply witness_independent
-                            apply cc
-                            done 
-                      have lem2 : valuation.coords kl llt = 
-                            valuation.coords triple.pivot triple.pivotLt := by
-                            apply witness_independent
-                            apply cc
-                            done 
-                      have lem3 : left.coords kl llt = some true := by
-                        rw [wl]
-                        rw [lem2]
-                        rw [c]
-                        done
-                      have lem4 : left.coords kl llt = some false := by
-                        rw [lem1]
-                        exact triple.leftPivot
-                        done 
-                      have lem5 : some true = some false := 
-                        Eq.trans (Eq.symm lem3) lem4
-                      have lem6 : true = false := by 
-                        injection lem5
-                        assumption
-                        done
-                      Bool.noConfusion lem6
-                    else  
-                      let i := skipInverse triple.pivot kl cc 
-                      let eql := skip_inverse_eq triple.pivot kl cc
-                      let iw : i < n := skip_preimage_lt triple.pivotLt llt eql 
-                      let jj := triple.joinRest i iw
-                      let leftLem : 
-                        left.coords kl llt = left.coords (skip triple.pivot i) (skip_le_succ iw) := by
-                          apply witness_independent
-                          rw [← eql]
-                          done
-                      let rightLem : 
-                        right.coords kl llt = right.coords (skip triple.pivot i) (skip_le_succ iw) := by
-                          apply witness_independent
-                          rw [← eql]
-                          done
-                      let topLem : 
-                        top.coords kl llt = top.coords (skip triple.pivot i) (skip_le_succ iw) := by
-                          apply witness_independent
-                          rw [← eql]
-                          done
-                      let join : Join (left.coords kl llt) (right.coords kl llt) (top.coords kl llt)  := by
-                        rw [leftLem, rightLem, topLem]
-                        exact triple.joinRest i iw
-                        done 
-                      ⟨kl, llt, var_resolution_step join (valuation.coords kl llt) (Or.inl (wl))⟩
-                  else
-                    let cc := eq_false_of_ne_true c  
-                    if ccc : kr = triple.pivot then  
-                      have lem1 : right.coords kr rlt = 
-                            right.coords triple.pivot triple.pivotLt := by
-                            apply witness_independent
-                            apply ccc
-                            done 
-                      have lem2 : valuation.coords kr rlt = 
-                            valuation.coords triple.pivot triple.pivotLt := by
-                            apply witness_independent
-                            apply ccc
-                            done 
-                      have lem3 : right.coords kr rlt = some false := by
-                        rw [wr]
-                        rw [lem2]
-                        rw [cc]
-                        done
-                      have lem4 : right.coords kr rlt = some true := by
-                        rw [lem1]
-                        exact triple.rightPivot
-                        done 
-                      have lem5 : some false = some true := 
-                        Eq.trans (Eq.symm lem3) lem4
-                      have lem6 : false = true := by 
-                        injection lem5
-                        assumption
-                        done
-                      Bool.noConfusion lem6
-                    else  
-                      let i := skipInverse triple.pivot kr ccc 
-                      let eql := skip_inverse_eq triple.pivot kr ccc
-                      let iw : i < n := skip_preimage_lt triple.pivotLt rlt eql 
-                      let jj := triple.joinRest i iw
-                      let leftLem : 
-                        left.coords kr rlt = left.coords (skip triple.pivot i) (skip_le_succ iw) := by
-                          apply witness_independent
-                          rw [← eql]
-                          done
-                      let rightLem : 
-                        right.coords kr rlt = right.coords (skip triple.pivot i) (skip_le_succ iw) := by
-                          apply witness_independent
-                          rw [← eql]
-                          done
-                      let topLem : 
-                        top.coords kr rlt = top.coords (skip triple.pivot i) (skip_le_succ iw) := by
-                          apply witness_independent
-                          rw [← eql]
-                          done
-                      let join : Join (left.coords kr rlt) (right.coords kr rlt) (top.coords kr rlt)  := by
-                        rw [leftLem, rightLem, topLem]
-                        exact triple.joinRest i iw
-                        done 
-                      ⟨kr, rlt, var_resolution_step join (valuation.coords kr rlt) (Or.inr (wr))⟩
 
 -- lift of a resolution triple from a branch: definition and implementation
 structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
@@ -646,23 +530,23 @@ theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top
 -- proof of the apex from the assumptions as structured proofs
 def resolutionToSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):
   (tree : ResolutionTree clauses top)  → (valuation :Valuation (n + 1))→ 
-    ((j : Nat) → (jw : j < dom) → ClauseSat (clauses.coords j jw) valuation)
-           → ClauseSat top valuation := 
+    ((j : Nat) → (jw : j < dom) → clauseSat (clauses.coords j jw) valuation)
+           → clauseSat top valuation := 
       fun tree  => 
         match tree with
         | ResolutionTree.assumption j jw .(top) eqn => 
           fun valuation base  => 
-            have lem1 : ClauseSat (clauses.coords j jw) valuation := base j jw
+            have lem1 : clauseSat (clauses.coords j jw) valuation := base j jw
           by
             rw [← eqn]
             exact lem1
         | ResolutionTree.resolve left right  .(top) leftTree rightTree triple  => 
           fun valuation base => 
-              let leftBase : ClauseSat left valuation := 
+              let leftBase : clauseSat left valuation := 
                 resolutionToSat clauses left leftTree valuation base 
-              let rightBase : ClauseSat right valuation := 
+              let rightBase : clauseSat right valuation := 
                 resolutionToSat clauses right rightTree valuation base 
-              let lemStep := tripleStepSat left right top triple valuation leftBase rightBase
+              let lemStep := triple_step_proof left right top triple valuation leftBase rightBase
             by
               exact lemStep
               done
@@ -674,7 +558,7 @@ inductive SatSolution{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) where
   | unsat : (tree : ResolutionTree clauses (contradiction (n + 1))) → 
           SatSolution clauses
   | sat : (valuation : Valuation (n + 1)) → ((k : Nat) → (kw : k < dom) 
-        → ClauseSat (clauses.coords k kw) valuation) → SatSolution clauses 
+        → clauseSat (clauses.coords k kw) valuation) → SatSolution clauses 
 
 def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
         (sol: SatSolution clauses) →  String := 
@@ -727,7 +611,7 @@ def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
   | SatSolution.unsat tree   => 
           tree_unsat clauses tree
   | SatSolution.sat valuation evidence =>
-          ⟨valuation, fun k kw => getProof (evidence k kw)⟩
+          ⟨valuation, fun k kw => (evidence k kw)⟩
 
 def SatSolution.exists{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
                   (sol : SatSolution clauses) →  Bool 
@@ -766,7 +650,7 @@ def SatSolution.prove{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
             rw [c]
           Bool.noConfusion absrd
     | SatSolution.sat valuation evidence =>
-        ⟨valuation, fun k kw => getProof (evidence k kw)⟩
+        ⟨valuation, fun k kw => (evidence k kw)⟩
 
 def treeToUnsat{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom} :
                 (rpf : ResolutionTree clauses (contradiction _)) → 
