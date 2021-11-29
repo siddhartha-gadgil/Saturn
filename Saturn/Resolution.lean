@@ -600,44 +600,6 @@ def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
   | SatSolution.sat valuation evidence =>
           ⟨valuation, fun k kw => (evidence k kw)⟩
 
-def SatSolution.exists{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
-                  (sol : SatSolution clauses) →  Bool 
-  | SatSolution.unsat _  => false
-  | SatSolution.sat _ _ => true
-
-def SatSolution.contradict{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
-                  (sol : SatSolution clauses) →
-                  sol.exists = false → isUnSat clauses :=
-  fun sol => fun h =>
-    match c:sol with
-    | SatSolution.unsat tree  => 
-          tree_unsat clauses tree
-    | SatSolution.sat valuation evidence =>
-          have cs : sol.exists = true := by
-            rw [c]
-            rfl
-          have absrd : true = false := by
-            rw [← h]
-            rw [← cs]
-            rw [c]
-          Bool.noConfusion absrd
-
-def SatSolution.prove{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
-                  (sol : SatSolution clauses) →
-                  sol.exists = true → isSat clauses :=
-  fun sol => fun h =>
-    match c:sol with
-    | SatSolution.unsat tree  => 
-          have cs : sol.exists = false := by
-            rw [c]
-            rfl
-          have absrd : true = false := by
-            rw [← h]
-            rw [← cs]
-            rw [c]
-          Bool.noConfusion absrd
-    | SatSolution.sat valuation evidence =>
-        ⟨valuation, fun k kw => (evidence k kw)⟩
 
 def treeToUnsat{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom} :
                 (rpf : ResolutionTree clauses (contradiction _)) → 

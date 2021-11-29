@@ -39,12 +39,13 @@ def eg2 : isSat eg2Statement := getProof eg2Soln
 
 #eval decide (isSat eg2Statement)
 #eval decide (isSat eg1Statement)
+#eval decide (isUnSat eg1Statement)
 
 #eval eg1Soln.exists
 
 def eg1 : isUnSat eg1Statement := by
-  apply SatSolution.contradict eg1Soln
-  nativeDecide
+  have lem : decide (isUnSat eg1Statement) = true := by nativeDecide
+  exact of_decide_eq_true lem 
   
 #check eg1
 #check eg2
