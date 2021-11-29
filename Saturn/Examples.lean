@@ -23,7 +23,11 @@ def cl3 : Clause 2 := -- ¬Q
 def eg1Statement : Vector (Clause 2) 3 := cl1 +: cl2 +: cl3 +: Vector.nil -- all three clauses
 def eg2Statement := cl1 +: cl3 +: Vector.nil -- clauses 1 and 3 only
 
-set_option maxHeartbeats 500000
+#eval decide (isSat eg2Statement)
+#eval decide (isSat eg1Statement)
+#eval decide (isUnSat eg1Statement)
+
+
 
 -- structured solutions
 
@@ -35,19 +39,14 @@ def eg2Soln := solveSAT (eg2Statement)
 
 
 def eg1Untyped  := getProof eg1Soln
-def eg2 : isSat eg2Statement := getProof eg2Soln 
 
-#eval decide (isSat eg2Statement)
-#eval decide (isSat eg1Statement)
-#eval decide (isUnSat eg1Statement)
-
-#eval eg1Soln.exists
+set_option maxHeartbeats 500000
 
 def eg1 : isUnSat eg1Statement := by
   have lem : decide (isUnSat eg1Statement) = true := by nativeDecide
   exact of_decide_eq_true lem 
-  
+
+def eg2 : isSat eg2Statement := getProof eg2Soln 
+
 #check eg1
 #check eg2
-
-example : Not (cl1 ⊇  cl2) := by decide
