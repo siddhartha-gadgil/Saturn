@@ -2,10 +2,12 @@ import Saturn.Prover
 import Saturn.FinSeq
 import Saturn.Vector
 import Saturn.Clause 
+import Saturn.Containment
 import Saturn.Solverstep
 import Saturn.Resolution
 import Saturn.PosRestClause
 import Saturn.PrependClause
+import Saturn.SatSolution
 open Nat
 open FinSeq
 
@@ -189,8 +191,8 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
                   let treePf1 : 
                     ResolutionTree cls (unitClause zero true zero (zero_lt_succ zero)) :=
                     ResolutionTree.assumption zero (zero_lt_succ l) _ (lengthOneUnit ct)
-                  let rpf := mergeAlignUnitTrees treePf1 treePf2
-                  treeToUnsat rpf
+                  let tree := mergeAlignUnitTrees treePf1 treePf2
+                  SatSolution.unsat tree
               | ExistsElem.notExst noNeg => 
                  SatSolution.sat (FinSeq.vec (fun _ _ => true)) 
                     fun k kw =>
@@ -212,8 +214,8 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
                   let treePf1 : 
                     ResolutionTree cls (unitClause zero false zero (zero_lt_succ zero)) :=
                     ResolutionTree.assumption zero (zero_lt_succ l) _ (lengthOneUnit cf)
-                  let rpf := mergeAlignUnitTrees treePf1 treePf2
-                  treeToUnsat rpf
+                  let tree := mergeAlignUnitTrees treePf1 treePf2
+                  SatSolution.unsat tree
               | ExistsElem.notExst noNeg => 
                  SatSolution.sat (FinSeq.vec (fun _ _ => false)) 
                     fun k kw =>
@@ -281,10 +283,10 @@ def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
                         lem ev)
               
           | SatSolution.unsat tree => 
-                let rpf := 
+                let tree := 
                   transportResPf cntn.imageSeq clauses cntn.reverse (contradiction (n + 1))
                     tree 
-                SatSolution.unsat rpf 
+                SatSolution.unsat tree 
 
 
 def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolution clauses :=
@@ -320,11 +322,11 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                             tree
                       match liftedProof with
                       | LiftedResPf.contra pf => 
-                          treeToUnsat pf
-                      | LiftedResPf.unit rpf => 
+                          SatSolution.unsat pf
+                      | LiftedResPf.unit tree => 
                           let tree1 := unitProof eql
-                          let merged := mergeAlignUnitTrees tree1 rpf
-                          treeToUnsat merged 
+                          let merged := mergeAlignUnitTrees tree1 tree
+                          SatSolution.unsat merged 
               | none => 
                 match hasPure cls with 
                 | some ⟨index, bd, par, evid⟩=> 
@@ -344,8 +346,8 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                             tree
                       match liftedProof with
                       | LiftedResPf.contra pf => 
-                          treeToUnsat pf
-                      | LiftedResPf.unit rpf => 
+                          SatSolution.unsat pf
+                      | LiftedResPf.unit tree => 
                           let base : (j : Nat) → (lt : j < cntn.codom) → 
                               Not (Vector.coords (cls.coords j lt) index bd = some (not par)) := 
                                 fun j jw => 
@@ -353,7 +355,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                           let pure :=
                             proofs_preserve_notsomebranch (not par) index bd base
                                    (unitClause (m + 1) (!par) index bd)
-                                   rpf
+                                   tree
                           let impure := unitDiag (m + 1) (not par) index bd 
                           absurd impure pure
                 | none =>  
@@ -376,8 +378,8 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                             tree
                       match liftedProof with
                       | LiftedResPf.contra pf => 
-                          treeToUnsat pf
-                      | LiftedResPf.unit rpf1 => 
+                          SatSolution.unsat pf
+                      | LiftedResPf.unit tree1 => 
                           let rd : RestrictionData true zero bd cls 
                               := restrictionData true index bd cls
                           let subCls := rd.restrictionClauses.restClauses
@@ -395,10 +397,10 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                                     tree
                               match liftedProof with
                               | LiftedResPf.contra pf => 
-                                  treeToUnsat pf
-                              | LiftedResPf.unit rpf2 => 
-                                  let merged := mergeUnitTrees index bd rpf2 rpf1
-                                  treeToUnsat merged
+                                  SatSolution.unsat pf
+                              | LiftedResPf.unit tree2 => 
+                                  let merged := mergeUnitTrees index bd tree2 tree1
+                                  SatSolution.unsat merged
         containmentLift clauses cntn solution
 
 /-

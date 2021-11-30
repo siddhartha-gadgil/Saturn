@@ -46,3 +46,7 @@ def isUnSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
               ∃ (k : Nat), ∃ (kw : k < n + 1), 
                 ((clauses.coords p pw).coords k kw) = some (valuation.coords k kw))
 
+theorem not_sat_and_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
+    isSat clauses → isUnSat clauses → False := by
+      intro ⟨v, p⟩ h2
+      exact h2 v p

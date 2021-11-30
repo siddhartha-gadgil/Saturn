@@ -3,7 +3,6 @@ import Saturn.FinSeq
 import Saturn.Vector
 import Saturn.Clause 
 import Saturn.Solverstep
-import Lean.Meta
 open Nat
 open FinSeq
 
@@ -484,15 +483,6 @@ inductive ResolutionTree{dom n: Nat}
                 → ResolutionTree clauses top
 
 
-def Clause.toString {n: Nat}: Clause n → String :=
-  fun (cls : Clause n) => (cls.coords.list).toString
-
-instance {n: Nat} : ToString (Clause n) := 
-  ⟨fun (cls : Clause n) => (cls.coords.list).toString⟩
-
-instance {n: Nat}{α: Type}[ToString α] : ToString (FinSeq n α) := 
-  ⟨fun seq => (seq.list).toString⟩
-
 def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
       {top : Clause (n + 1)}
         (rt: ResolutionTree clauses top) : String := 
@@ -551,29 +541,6 @@ def resolutionToSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Cla
             by
               exact lemStep
               done
-/-
-Structured solution to a SAT problem. Either a valuation with evidence that it is satisfied
-by all the given clauses, or a resolution tree starting with the given clauses.
--/
-inductive SatSolution{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) where
-  | unsat : (tree : ResolutionTree clauses (contradiction (n + 1))) → 
-          SatSolution clauses
-  | sat : (valuation : Valuation (n + 1)) → ((k : Nat) → (kw : k < dom) 
-        → clauseSat (clauses.coords k kw) valuation) → SatSolution clauses 
-
-def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
-        (sol: SatSolution clauses) →  String := 
-      fun sol =>
-      match sol with
-      | unsat tree => "unsat: " ++ tree.toString 
-      | sat valuation _ => "sat: " ++ (valuation.coords.list).toString
-
-
-
-theorem not_sat_and_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
-    isSat clauses → isUnSat clauses → False := by
-      intro ⟨v, p⟩ h2
-      exact h2 v p
 
 -- unsat from a resolution tree
 theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
@@ -584,27 +551,6 @@ theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
               let lem := resolutionToProof clauses (contradiction (n + 1))
                             tree valuation hyp
               contradiction_is_false _ valuation lem
-
-def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
-                  (sol : SatSolution clauses) : Prop :=
-  match sol with
-  | SatSolution.unsat _  => isUnSat clauses
-  | SatSolution.sat _ _ => isSat clauses
-
-def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
-                  (sol : SatSolution clauses) :
-                    solutionProp sol :=
-  match sol with
-  | SatSolution.unsat tree   => 
-          tree_unsat clauses tree
-  | SatSolution.sat valuation evidence =>
-          ⟨valuation, fun k kw => (evidence k kw)⟩
-
-
-def treeToUnsat{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom} :
-                (rpf : ResolutionTree clauses (contradiction _)) → 
-                        SatSolution clauses := fun rpf =>
-          SatSolution.unsat rpf 
 
 /-
 Pieces for building trees.
