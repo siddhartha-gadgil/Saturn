@@ -65,7 +65,7 @@ def getJoin (bf : Bool)(left right : Option Bool) :
                 ⟨some b, Join.someSome b rfl (congrArg some lem2) rfl⟩
 
 -- deduction that the top of the join is not `some bf` if the bottom ones are not
-def topJoinNonPos(bf : Bool)(left right top: Option Bool): Join left right top →
+theorem top_of_join_not_positive(bf : Bool)(left right top: Option Bool): Join left right top →
     Not (left = some bf) → Not (right = some bf) → 
        Not (top = some bf) := 
         fun join =>
@@ -304,7 +304,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
           let ⟨topFoc, focJoin⟩ := 
             getJoin bf leftFoc rightFoc lbf rbf
           let topNonPos : Not (topFoc = some bf) := 
-            topJoinNonPos bf leftFoc rightFoc topFoc focJoin lbf rbf
+            top_of_join_not_positive bf leftFoc rightFoc topFoc focJoin lbf rbf
           let pivotN := skip k  rt.pivot
           let pivotNLt : pivotN < n + 2 := skip_le_succ rt.pivotLt
           let leftN := insert leftFoc (n + 1) k lt left.coords
@@ -340,8 +340,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                   let jj := skip pivotN j
                   let jjw : jj < n + 2 := skip_le_succ jw
                   let notPivot : Not (jj = pivotN) := skip_no_fixedpoints pivotN j
-                  if w : jj = k then  
-                    let lem0 := focJoin
+                  if w : jj = k then  by
                     let eqL : leftN k lt = leftFoc := 
                       insert_at_focus leftFoc (n + 1) k lt left.coords 
                     let eqR : rightN k lt = rightFoc := 
@@ -359,13 +358,10 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                     let topLem : topN jj jjw = topN k lt := by
                       apply witness_independent
                       exact w
-                      done
-                    let goal : Join (leftN jj jjw) (rightN jj jjw) (topN jj jjw) := by
-                      rw [leftLem, rightLem, topLem]
-                      rw [eqL, eqR, eqT]
-                      exact lem0
-                      done
-                    goal
+                      done                    
+                    rw [leftLem, rightLem, topLem]
+                    rw [eqL, eqR, eqT]
+                    exact focJoin                  
                   else 
                     let i := skipInverse k jj w
                     let w := skip_inverse_eq k jj w
@@ -377,7 +373,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                             exact w
                             done
                       absurd (Eq.symm lem2) notPivot
-                    else 
+                    else by
                       let ii := skipInverse rt.pivot i ww 
                       let  ww  := skip_inverse_eq rt.pivot i ww
                       let iiw : ii < n := skip_preimage_lt rt.pivotLt iw ww
@@ -417,16 +413,13 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                           apply witness_independent
                           exact ww
                           done
-                      let prevJoin := rt.joinRest ii iiw
-                      let goal : Join (leftN jj jjw) (rightN jj jjw) (topN jj jjw) := by
-                        rw [leftLem, rightLem, topLem]
-                        rw [eqL, eqR, eqT]
-                        rw [← leftLem2]
-                        rw [← rightLem2]
-                        rw [← topLem2]
-                        exact prevJoin
-                        done
-                      goal
+                      rw [leftLem, rightLem, topLem]
+                      rw [eqL, eqR, eqT]
+                      rw [← leftLem2]
+                      rw [← rightLem2]
+                      rw [← topLem2]
+                      exact rt.joinRest ii iiw
+                      done
       ⟨topFoc, ⟨pivotN, pivotNLt,
                        (
                          by
@@ -597,12 +590,12 @@ Lift of a resolution tree with apex a contradiction, i.e., a resolution proof of
  from the branch corresponding to `focus` and `topFocus`. The lift could be either a contradiction
  or the proof of a unit clause.
 -/
-inductive LiftedResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
+inductive LiftedResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
     (clauses: Vector (Clause (n + 2)) dom) where
     | contra : ResolutionTree clauses (contradiction (n + 2)) → 
-                  LiftedResPf branch focus focusLt clauses
+                  LiftedResTree branch focus focusLt clauses
     | unit : ResolutionTree clauses (unitClause (n + 1) (not branch) focus focusLt) → 
-                  LiftedResPf branch focus focusLt clauses
+                  LiftedResTree branch focus focusLt clauses
 
 theorem not_eq_implies_eq_not(b: Bool){x : Bool} : Not (x = b) → x = (not b) :=
   match b with
@@ -666,11 +659,11 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
               ⟨topFoc, topNonPos, tree⟩
 
 -- pulling back a proof of unsat by resolution to a contradiction or a proof of a unit clause.
-def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
+def pullBackResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
     (clauses: Vector (Clause (n + 2)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
     (np : NonPosReverse rc) (rr: ReverseRelation rc) : 
         ResolutionTree rc.restClauses (contradiction (n + 1)) → 
-            LiftedResPf branch focus focusLt clauses := fun rpf =>
+            LiftedResTree branch focus focusLt clauses := fun rpf =>
             let pbt := pullBackTree branch focus focusLt clauses rc np rr 
                                 (contradiction (n + 1)) rpf 
             match pbt.topFocus, pbt.nonPos, pbt.provedTree with 
@@ -686,7 +679,7 @@ def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n +
                             rw [← lem]
                             exact tree
                             done
-                LiftedResPf.contra t
+                LiftedResTree.contra t
             | some b, ineq, tree =>
                 have lemPar : Not (b = branch) := fun hyp => ineq (congrArg some hyp)
                 let par : b = not branch := not_eq_implies_eq_not branch lemPar
@@ -695,10 +688,10 @@ def pullBackResPf{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n +
                             rw [← par]
                             exact tree
                             done
-                LiftedResPf.unit t
+                LiftedResTree.unit t
 
 -- transporting proof from a subset of clauses to a larger set of clauses
-def transportResPf{l1 l2 n : Nat}(clauses1 : Vector (Clause (n + 1)) l1)
+def transportResTree{l1 l2 n : Nat}(clauses1 : Vector (Clause (n + 1)) l1)
                   (clauses2: Vector (Clause (n + 1)) l2)
                   (embed: (j : Nat) → (jw : j < l1) → ElemInSeq clauses2.coords (clauses1.coords j jw))
                   (top: Clause (n + 1)): 
@@ -713,9 +706,9 @@ def transportResPf{l1 l2 n : Nat}(clauses1 : Vector (Clause (n + 1)) l1)
                             exact te
                             done)
                       | ResolutionTree.resolve left right .(top) leftTree rightTree join =>
-                          let leftPf2 := transportResPf clauses1 clauses2 embed left
+                          let leftPf2 := transportResTree clauses1 clauses2 embed left
                               leftTree 
-                          let rightPf2 := transportResPf clauses1 clauses2 embed right
+                          let rightPf2 := transportResTree clauses1 clauses2 embed right
                               rightTree  
                           let tree := ResolutionTree.resolve left right top
                                       leftPf2 rightPf2 join
@@ -723,7 +716,7 @@ def transportResPf{l1 l2 n : Nat}(clauses1 : Vector (Clause (n + 1)) l1)
                           tree
 
 -- if none of the assumption clauses are `some bf` at a literal, the apex is not
-theorem proofs_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
+theorem trees_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
                 (bf: Bool)(k : Nat)(kw : k < n + 1)
                 (base : (j : Nat) → (lt : j < dom) → 
                   Not (Vector.coords (clauses.coords j lt) k kw = some bf)) : 
@@ -742,9 +735,9 @@ theorem proofs_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n +
                   | ResolutionTree.resolve left right .(top) leftTree rightTree triple =>
                     fun hyp => 
                       let leftLem :=
-                        proofs_preserve_notsomebranch bf k kw base left leftTree 
+                        trees_preserve_notsomebranch bf k kw base left leftTree 
                       let rightLem :=
-                        proofs_preserve_notsomebranch bf k kw base right rightTree 
+                        trees_preserve_notsomebranch bf k kw base right rightTree 
                       if c : k = triple.pivot then 
                           match bf, k, c, kw, leftLem, rightLem with
                           | false, .(triple.pivot), rfl, .(triple.pivotLt), lL, rL => 
@@ -759,7 +752,7 @@ theorem proofs_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n +
                           match (skip triple.pivot j), eqn, (skip_le_succ jw), joinIm with 
                           | .(k), rfl, .(kw), join => 
                             let lem := 
-                              topJoinNonPos bf (left.coords k kw) (right.coords k kw) (top.coords k kw) join
+                              top_of_join_not_positive bf (left.coords k kw) (right.coords k kw) (top.coords k kw) join
                                 leftLem rightLem
                             lem hyp               
 
