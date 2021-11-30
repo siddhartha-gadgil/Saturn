@@ -18,26 +18,19 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
   fun v1 v2 =>
   match v2 with 
   | none => 
-     let lem : v1 ≥  none := 
-      fun b =>
-        fun hyp =>
+     isTrue $ fun b hyp =>
           Option.noConfusion hyp
-     isTrue lem
   | some b2 => 
     match v1  with
     | none => 
-      let lem : Not (none ≥  (some b2)) := 
-         fun hyp => 
+      isFalse $ fun hyp => 
           Option.noConfusion (hyp b2 rfl)
-      isFalse lem
     | some b1 => 
           if c : b1 = b2 then 
-            isTrue (fun b => 
-                      fun hyp =>
-                       by
+            isTrue (by
+                        intro b hyp
                         rw [c]
-                        exact hyp
-                        done)
+                        exact hyp)
           else 
             isFalse (
               fun hyp =>
@@ -45,91 +38,69 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
                   let lem2 : b1 = b2 := by
                       injection lem1
                       assumption
-                      done
                   c (lem2) 
             )
-
-abbrev contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
+def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2.coords k kw = some b → cl1.coords k kw = some b
 
 infix:65 " ⊇  " => contains
 
 theorem contains_refl{n: Nat} (cl : Clause n) :   
-  cl ⊇ cl :=
-    fun k w b => 
-      fun hyp =>
-        hyp
+  cl ⊇ cl := fun k w b hyp => hyp
 
 theorem contains_trans{n: Nat} (cl1 cl2 cl3 : Clause n) :
-        cl1 ⊇  cl2 → cl2 ⊇ cl3 →  cl1 ⊇ cl3 :=
-        fun hyp1 hyp2 => 
-          fun k w b =>
-            fun dHyp =>
-              by
+        cl1 ⊇  cl2 → cl2 ⊇ cl3 →  cl1 ⊇ cl3 := by
+                intro hyp1 hyp2  k w b dHyp               
                 apply hyp1
                 apply hyp2
                 apply dHyp
-                done
 
 theorem contains_prepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
           v1 ≥  v2 → cl1 ⊇  cl2 → 
-                (v1 +: cl1) ⊇ (v2 +: cl2) := 
-           fun hyp1 hyp2 =>
-            fun k =>
+                (v1 +: cl1) ⊇ (v2 +: cl2) := by
+            intro hyp1 hyp2 k
             match k with
-            | zero => fun w b =>
-              fun hb => 
-                hyp1 b hb
+            | zero => 
+              intro w b hb
+              exact hyp1 b hb
             | j + 1  =>  
-              fun  kw b =>
-                fun hb =>
-                  hyp2 j  (le_of_succ_le_succ kw) b hb
+              intro kw b hb
+              have w : j < n := by 
+                  apply le_of_succ_le_succ
+                  exact kw              
+              exact hyp2 j w b hb
 
 /-
 Implementation of checking for containment; tail-call optimized
 -/
-
 abbrev containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, m ≤ k →  ∀ b : Bool, cl2.coords k kw = some b → cl1.coords k kw = some b
 
 theorem contains_implies_contains_beyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
   contains cl1 cl2 → containsBeyond cl1 cl2 m := by
-    intro h
-    intro k
-    intro kw
-    intro ineq
-    intro b
+    intro h k kw ineq b
     exact h k kw b
-    done
   
 theorem contains_beyond_zero_implies_contains {n: Nat} (cl1 cl2 : Clause n) :
   containsBeyond cl1 cl2 zero → contains cl1 cl2 := by
-    intro h
-    intro k
-    intro kw
-    intro b
+    intro h k kw b
     exact h k kw (Nat.zero_le _) b
-    done
 
 def containsSat{n: Nat} (cl1 cl2 : Clause n) :
-  cl1 ⊇  cl2 → (valuation : Valuation n) → clauseSat cl2 valuation → clauseSat cl1 valuation :=
-    fun dom valuation  =>
-      fun ⟨j, jw, vs⟩ =>
-        let lem0 :  cl2.coords j jw = some (valuation.coords j jw) := vs 
-        let lem1 := dom j jw (valuation.coords j jw) lem0
-        ⟨j, jw, lem1⟩
+  cl1 ⊇  cl2 → (valuation : Valuation n) → clauseSat cl2 valuation → clauseSat cl1 valuation := by
+    intro dom valuation  
+    intro ⟨j, jw, vs⟩ 
+    let lem0 :  cl2.coords j jw = some (valuation.coords j jw) := vs 
+    let lem1 : coords cl1 j jw = some (coords valuation j jw) := dom j jw (valuation.coords j jw) lem0
+    exact ⟨j, jw, lem1⟩
 
 
 theorem contains_beyond_vacuously{n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
     (n ≤ m) → containsBeyond cl1 cl2 m := by
-      intro h
-      intro k
-      intro kw
-      intro ineq
+      intro h k kw ineq
       let inq := Nat.le_trans h ineq
       let inq2 := Nat.lt_of_lt_of_le kw inq
       exact (False.elim (Nat.lt_irrefl k inq2))
-      done
 
 def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
         (m: Nat) → Decidable (containsBeyond cl1 cl2 m) → Decidable (contains cl1 cl2) :=
@@ -149,10 +120,7 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                 | isTrue pfHead =>                       
                       isTrue (
                         by
-                          intro k 
-                          intro kw
-                          intro ineq
-                          intro b
+                          intro k kw ineq b
                           cases Nat.eq_or_lt_of_le ineq with
                           | inl eql =>
                             let lem0 := pfHead b
@@ -213,7 +181,7 @@ structure Containment{dom n : Nat}(base: Vector (Clause n) dom) where
     forwardVec : Vector Nat dom
     forwardBound : (j : Nat) →  (jw : j < dom) → forwardVec.coords j jw < codom
     forwardEq : (j : Nat) →  (jw : j < dom) → 
-              contains (base.coords j jw) (imageSeq.coords (forwardVec.coords j jw) (forwardBound j jw))
+              base.coords j jw ⊇ imageSeq.coords (forwardVec.coords j jw) (forwardBound j jw)
     reverseVec : Vector Nat codom
     reverseBound : (j : Nat) →  (jw : j < codom) → reverseVec.coords j jw < dom
     reverseEq : (j : Nat) →  (jw : j < codom) →
@@ -236,46 +204,33 @@ abbrev reverse {dom n : Nat}{base: Vector (Clause n) dom}
 def identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment base :=
     let idVec : Vector Nat dom := FinSeq.vec (fun j jw => j)
     let idAt : (j : Nat) → (jw : j < dom) → idVec.coords j jw = j := by
-      intro j
-      intro jw
+      intro j jw
       rw [seq_to_vec_coords]
-      done
     let idBound : (j : Nat) → (jw : j < dom) → idVec.coords j jw < dom := by
-      intro j
-      intro jw
+      intro j jw
       rw [idAt]
       exact jw
-      done
-
     let idEqn : (j : Nat) → (jw : j < dom) → 
           idVec.coords (idVec.coords j jw) (idBound j jw) = j := by
-          intro j
-          intro jw
+          intro j jw
           rw [idAt]
           rw [idAt]
-          done
-
     let baseEqn : (j : Nat) → (jw : j < dom) →
           base.coords (idVec.coords j jw) (idBound j jw) = base.coords j jw := by
-          intro j
-          intro jw
+          intro j jw
           apply witness_independent
           rw [idAt]
-          done
     let baseContains : (j : Nat) → (jw : j < dom) →
           contains (base.coords j jw) (base.coords (idVec.coords j jw) (idBound j jw)) := by
-          intro j
-          intro jw
+          intro j jw
           rw [baseEqn]
           exact contains_refl (base.coords j jw)
-          done
     ⟨dom, base, idVec, idBound, baseContains, idVec, idBound, 
       by 
-      intro j
-      intro jw
+      intro j jw
       apply witness_independent
-      rw [idAt]
-      done⟩
+      rw [idAt]⟩
+
 end Containment
 
 def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →  
@@ -315,7 +270,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
             | none =>  
                 ⟨l + 1, imageSeq, forwardVec, forwardBound, forwardEq,
                    reverseVec, reverseBound, revereseEq⟩
-            | some ⟨zi, zb, zc⟩ => 
+            | some ⟨zi, zb, zc⟩ => -- clause at k contains clause at zi after deletion
               let codomN := l
               let imageSeqN := rest
               let domN := d + 1
@@ -323,114 +278,92 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                     ElemSeqPred imageSeqN (contains (base.coords j jw)) := 
                     fun j jw => 
                       let ⟨i, iw , ict⟩ := forward j jw
-                      if c : i = k then 
+                      if c : i = k then -- index i redirected
                           let lem1 : imageSeq.coords i iw = imageSeq.coords k lt := by
                                 apply witness_independent
                                 apply c
-                                done
                           let lem2 : imageSeq.coords i iw ⊇ imageSeqN zi zb := by
                                 rw [lem1] 
                                 exact zc
-                                done    
                           ⟨zi, zb, contains_trans _ _ _ ict lem2⟩
                       else 
-                        let ii := skipInverse k i c 
+                        let ii := skipInverse k i c -- index in original sequence
                         let eqn := skip_inverse_eq k i c
                         let iiw := skip_preimage_lt lt iw eqn
-                        let lem1 : imageSeqN ii iiw = imageSeq.coords (skip k ii) (skip_le_succ iiw)  := by rfl
-                        let lem2 : imageSeq.coords (skip k ii) (skip_le_succ iiw) = imageSeq.coords i iw := by
-                                        apply witness_independent
-                                        apply eqn
-                                        done 
+                        let lem1 : imageSeqN ii iiw = imageSeq.coords (skip k ii) (skip_le_succ iiw)  := 
+                                by rfl
+                        let lem2 : imageSeq.coords (skip k ii) (skip_le_succ iiw) = imageSeq.coords i iw := 
+                                by
+                                    apply witness_independent
+                                    apply eqn
+                                    done 
                         ⟨ii, iiw, by 
                                   rw [lem1]
                                   rw [lem2]
-                                  exact ict
-                                  done⟩
+                                  exact ict⟩
               let forwardNVec := FinSeq.vec (fun j jw => (forwardN j jw).index)
               have forwardNAt : (j : Nat) → (jw : j < domN) → 
                       forwardNVec.coords j jw = (forwardN j jw).index := 
                       by
-                        intro j
-                        intro jw
+                        intro j jw
                         rw [seq_to_vec_coords] 
-                        done
               have forwardNBound : (j : Nat) → (jw : j < domN) →
                       forwardNVec.coords j jw < codomN := by
-                        intro j
-                        intro jw
+                        intro j jw
                         rw [forwardNAt]
                         exact (forwardN j jw).bound
-                        done
               have forwardNEq : (j : Nat) → (jw : j < domN) → 
                   (imageSeqN (forwardNVec.coords j jw) (forwardNBound j jw)) =
                       imageSeqN (forwardN j jw).index (forwardN j jw).bound := 
                         by 
-                          intro j
-                          intro jw
+                          intro j jw
                           apply witness_independent
                           rw [forwardNAt]
-                          done
               have forwardNPred : (j : Nat) → (jw : j < domN) →
                     contains (base.coords j jw) 
                           (imageSeqN.vec.coords (forwardNVec.coords j jw) (forwardNBound j jw)) := 
                         by 
-                          intro j
-                          intro jw
+                          intro j jw
                           have se : 
                             (imageSeqN.vec.coords (forwardNVec.coords j jw) (forwardNBound j jw)) =
                             (imageSeqN (forwardNVec.coords j jw) (forwardNBound j jw)) := by
                               rw [seq_to_vec_coords]
                           rw [se, forwardNEq j jw]
                           exact (forwardN j jw).equation
-                          done
               let reverseN : (j : Nat) → (jw : j < codomN) → 
                     ElemInSeq base.coords (imageSeqN j jw) := 
-                    fun i =>
-                      fun iw => 
+                    fun i iw =>
                         let ⟨ind, bd, eqn⟩ := reverse (skip k i) (skip_le_succ iw)
-                        ⟨ind, bd, by 
-                            exact eqn
-                            done⟩
+                        ⟨ind, bd, by exact eqn⟩
               let reverseNVec := FinSeq.vec (fun j jw => (reverseN j jw).index)
               have reverseNAt : (j : Nat) → (jw : j < codomN) →
                       reverseNVec.coords j jw = (reverseN j jw).index :=
                       by
-                        intro j
-                        intro jw
+                        intro j jw
                         rw [seq_to_vec_coords]
-                        done
               have reverseNBound : (j : Nat) → (jw : j < codomN) →
                       reverseNVec.coords j jw < domN := by
-                        intro j
-                        intro jw
+                        intro j jw
                         rw [reverseNAt]
                         exact (reverseN j jw).bound
-                        done
               have reverseNAtImage : (j : Nat) → (jw : j < l) →
                       imageSeqN.vec.coords j jw = imageSeqN j jw :=
                       by
-                        intro j
-                        intro jw
+                        intro j jw
                         rw [seq_to_vec_coords]
-                        done
               have reverseNEq : (j : Nat) → (jw : j < codomN) →
                   (base.coords (reverseNVec.coords j jw) (reverseNBound j jw)) =
                     base.coords (reverseN j jw).index (reverseN j jw).bound := by
-                        intro j
-                        intro jw
+                        intro j jw
                         apply witness_independent
                         rw [reverseNAt]
-                        done
               have reverseNPred : (j : Nat) → (jw : j < codomN) →
                   base.coords (reverseNVec.coords j jw) (reverseNBound j jw) =
                     imageSeqN.vec.coords j jw := by
-                        intro j
-                        intro jw
+                        intro j jw
                         rw [reverseNAtImage j jw]
                         rw [reverseNEq j jw]
                         exact (reverseN j jw).equation
-                        done
              ⟨codomN, imageSeqN.vec, forwardNVec, forwardNBound, forwardNPred,
                 reverseNVec, reverseNBound, reverseNPred⟩
           simplifyNonEmptyContainment k base posCount negCount step
