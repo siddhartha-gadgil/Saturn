@@ -180,7 +180,6 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                             rw [(tail_commutes 
                                 (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))]
                             rw [map_coords_commute]
-                            done
                       let lem2 := Eq.trans (Eq.symm lem1) nw
                       let lem3 := none_mapsto_none _ _ lem2
                       let lem4 := drc.dropped l (le_of_succ_le_succ w) lem3
