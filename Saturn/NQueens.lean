@@ -1,7 +1,6 @@
 import Saturn.FinSeq
 import Saturn.Vector
 import Saturn.Clause 
-import Saturn.Solverstep
 import Saturn.DPLL
 
 /-

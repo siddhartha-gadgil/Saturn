@@ -8,6 +8,7 @@ import Saturn.Resolution
 import Saturn.PosRestClause
 import Saturn.PrependClause
 import Saturn.SatSolution
+import Saturn.LiftSolution
 open Nat
 open FinSeq
 
@@ -441,10 +442,7 @@ def decideUnSat{n dom : Nat}(clauses : Vector (Clause (n + 1)) dom) :
             exact ⟨valuation, fun k kw => (evidence k kw)⟩
             exact hyp        
       | SatSolution.unsat tree =>
-          by
-            apply isTrue
-            apply tree_unsat
-            exact tree
+          isTrue $ tree_unsat clauses tree
 
 instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
     Decidable (isSat clauses) := decideSat clauses
