@@ -447,11 +447,11 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                           have tp : topN =
                             insert topFoc (n + 1) k lt top.coords := by rfl
                           rw [← lp, ← rp, ← tp]
-                          have rn: (Vector.coords (FinSeq.vec rightN)) = rightN :=
+                          have rn:  (FinSeq.vec rightN).coords = rightN :=
                             by rw [seq_to_vec_coords] 
-                          have ln: (Vector.coords (FinSeq.vec leftN)) = leftN :=
+                          have ln: (FinSeq.vec leftN).coords = leftN :=
                             by rw [seq_to_vec_coords]
-                          have tn: (Vector.coords (FinSeq.vec topN)) = topN :=
+                          have tn: (FinSeq.vec topN).coords = topN :=
                             by rw [seq_to_vec_coords]
                           rw [rn, tn]
                           apply joinRestN
@@ -479,7 +479,8 @@ def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
       {top : Clause (n + 1)}
         (rt: ResolutionTree clauses top) : String := 
       match rt with
-      | ResolutionTree.assumption i iw _ _  => (FinSeq.list (Vector.coords (clauses.coords i iw))).toString
+      | ResolutionTree.assumption i iw _ _  => 
+          (clauses.coords i iw).coords.list.toString
       | ResolutionTree.resolve left right .(top) leftTree rightTree triple => 
                 top.toString ++ " from " ++ left.toString ++ " & " ++ right.toString  ++ 
                 "; using: {" ++ 
@@ -605,7 +606,7 @@ theorem not_eq_implies_eq_not(b: Bool){x : Bool} : Not (x = b) → x = (not b) :
 theorem trees_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
                 (bf: Bool)(k : Nat)(kw : k < n + 1)
                 (base : (j : Nat) → (lt : j < dom) → 
-                  Not (Vector.coords (clauses.coords j lt) k kw = some bf)) : 
+                  Not ((clauses.coords j lt).coords k kw = some bf)) : 
                 (top : Clause (n + 1)) → 
                 (tree : ResolutionTree clauses top) → 
                 Not (top.coords k kw = some bf) := 

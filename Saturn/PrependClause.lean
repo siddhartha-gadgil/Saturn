@@ -45,12 +45,6 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     rw [tl,
                       tail_commutes (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1))),
                       map_coords_commute]
-                    have fr : forwardN (succ i) jw = 
-                            (rc.forward i (le_of_succ_le_succ jw)).map (. + 1) :=
-                        by rfl
-                    rw [fr]
-                    rfl
-                    done
             have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
               fun k  => 
               match k with 
@@ -94,8 +88,6 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     rw [tl,
                        tail_commutes zero (rc.reverseVec.map (. + 1)),
                         map_coords_commute]
-                    rfl
-                    done
             have reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
               fun k =>
               match k with
@@ -105,8 +97,8 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   exact rc.reverseWit l (le_of_succ_le_succ w)
                   done
             RestrictionClauses.mk codomN restClausesN 
-                    (forwardVecN) 
-                    ( forwardNEq ▸ forwardWitN) 
+                    forwardVecN 
+                    (forwardNEq ▸ forwardWitN) 
                     reverseVecN
                     (reverseNEq ▸ reverseWitN)
 
@@ -156,7 +148,7 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
             let clausesN := head +: clauses
             let droppedN : 
               (k : Nat) → (w: k < domN) → rcN.forward k w = none → 
-                  Vector.coords (clausesN.coords k w) focus focusLt = some branch :=
+                  (clausesN.coords k w).coords focus focusLt = some branch :=
                 fun k =>
                   match k with
                   | zero => fun w wf => 
@@ -177,11 +169,12 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                                 := by rfl
                             rw [res3]
                             have res4 :
-                                Vector.coords ((some zero) +: 
-                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) (l + 1) w =
-                                FinSeq.tail (
-                                 Vector.coords ((some zero) +: 
-                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) 
+                                ((some zero) +: 
+                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).coords 
+                                    (l + 1) w =
+                                (
+                                 ((some zero) +: 
+                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).coords.tail 
                                 ) l (Nat.le_of_succ_le_succ w) := by rfl
                             rw [res4]
                             rw [(tail_commutes 
@@ -206,8 +199,8 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let codomN := rc.codom + 1
           let clausesN := head +: clauses
           have forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
-              (jw : j < codomN) →  delete focus focusLt (Vector.coords (clausesN.coords k w)) = 
-                Vector.coords (rcN.restClauses.coords j jw) := 
+              (jw : j < codomN) →  delete focus focusLt ((clausesN.coords k w).coords) = 
+                (rcN.restClauses.coords j jw).coords := 
                 fun k =>
                 match k with
                 | zero => fun w j => 
@@ -218,8 +211,8 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                       injection lem2
                       assumption
                       done
-                    let lem4 : delete focus focusLt (Vector.coords (clausesN.coords zero w )) = 
-                        Vector.coords (rcN.restClauses.coords zero (zero_lt_succ rc.codom)) := 
+                    let lem4 : delete focus focusLt ((clausesN.coords zero w).coords) = 
+                        (rcN.restClauses.coords zero (zero_lt_succ rc.codom)).coords := 
                           by
                             have resLHS : clausesN.coords zero w  = head := by rfl
                             rw [resLHS]
@@ -250,11 +243,11 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                             := by rfl
                         rw [res3]
                         have res4 :
-                            Vector.coords ((some zero) +: 
-                              (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) (l + 1) w =
-                            FinSeq.tail (
-                              Vector.coords ((some zero) +: 
-                              (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) 
+                            ((some zero) +: 
+                              (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).coords (l + 1) w =
+                            (
+                              ((some zero) +: 
+                              (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).coords.tail 
                             ) l (Nat.le_of_succ_le_succ w) := by rfl
                         rw [res4]
                         rw [(tail_commutes 
@@ -289,11 +282,11 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                               (rc.forwardVec.map (fun nop => nop.map (. + 1)) ) := by rfl
                             rw [res3]
                             have res4 :
-                                Vector.coords ((some zero) +: 
-                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) (l + 1) w =
-                                FinSeq.tail (
-                                  Vector.coords ((some zero) +: 
-                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) 
+                                ((some zero) +: 
+                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).coords (l + 1) w =
+                                (
+                                  ((some zero) +: 
+                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).coords.tail 
                                 ) l (Nat.le_of_succ_le_succ w) := by rfl
                             rw [res4]
                             rw [(tail_commutes 
@@ -319,11 +312,11 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                                := by rfl
                             rw [res3]
                             have res4 :
-                                Vector.coords ((some zero) +: 
-                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) (l + 1) w =
-                                FinSeq.tail (
-                                  Vector.coords ((some zero) +: 
-                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )) 
+                                ((some zero) +: 
+                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).coords (l + 1) w =
+                                (
+                                  ((some zero) +: 
+                                  (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).coords.tail 
                                 ) l (Nat.le_of_succ_le_succ w) := by rfl
                             rw [res4]
                             rw [(tail_commutes 
@@ -357,9 +350,9 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let codomN := rcN.codom
           let clausesN := head +: clauses
           have relationN : (k : Nat) → (w: k < codomN) → 
-                 Vector.coords (rcN.restClauses.coords k w) = 
+                 (rcN.restClauses.coords k w).coords = 
                   delete focus focusLt 
-                      (Vector.coords (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w))) := 
+                      (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)).coords := 
                     fun k =>
                     match k with
                     | zero => 
@@ -368,8 +361,8 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                                 = (delete focus focusLt head.coords).vec := by rfl
                         rw [resRHS]
                         have lll : 
-                          Vector.coords (FinSeq.vec (delete focus focusLt (Vector.coords head))) =
-                              delete focus focusLt (Vector.coords head) := by 
+                          (FinSeq.vec (delete focus focusLt (head.coords))).coords =
+                              delete focus focusLt (head.coords) := by 
                                 rw [seq_to_vec_coords]
                         rw [lll]
                         apply (congrArg)
@@ -397,12 +390,11 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                                     zero +: (rc.reverseVec.map (. + 1)) := by rfl
                                   rw [res3]
                                   have res4 :
-                                      Vector.coords (zero +: 
-                                        (rc.reverseVec.map (. + 1)) ) (l + 1) w =
-                                      FinSeq.tail (
-                                        Vector.coords (zero +: 
-                                        (rc.reverseVec.map (. + 1)) ) 
-                                      ) l (Nat.le_of_succ_le_succ w) := by rfl
+                                      (zero +: 
+                                        (rc.reverseVec.map (. + 1)) ).coords (l + 1) w =
+                                        (zero +: 
+                                        (rc.reverseVec.map (. + 1)) ).coords.tail 
+                                       l (Nat.le_of_succ_le_succ w) := by rfl
                                   rw [res4]
                                   rw [(tail_commutes 
                                       zero (rc.reverseVec.map (. + 1)))]
@@ -426,9 +418,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                                   rw [rs0]
                                   have dfn : clausesN = head +: clauses := by rfl
                                   rw [dfn] 
-                                  have td :
-                                    Vector.coords 
-                                        (head +: clauses) 
+                                  have td : (head +: clauses).coords 
                                        (rc.reverse l (Nat.le_of_succ_le_succ w) + 1) 
                                        (succ_le_succ (rc.reverseWit l 
                                         (Nat.le_of_succ_le_succ w))) =
@@ -453,7 +443,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let clausesN := head +: clauses
           have pureN : (k : Nat) → (w: k < codomN)  → 
                 Not (
-                  Vector.coords (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)) 
+                  (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)).coords  
                     (focus) focusLt = some branch) :=
                 fun k =>
                 match k with
@@ -461,17 +451,17 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   fun w  => 
                     fun hyp =>
                       let lem : 
-                        Vector.coords  (clausesN.coords (rcN.reverse zero w) (rcN.reverseWit zero w)) 
+                         (clausesN.coords (rcN.reverse zero w) (rcN.reverseWit zero w)).coords 
                           focus focusLt = head.coords focus focusLt := by rfl
                       let lem2 := Eq.trans (Eq.symm lem) hyp
                       neg lem2
                 | l + 1 => 
                   fun w hyp =>
                     let lem : 
-                        Vector.coords (clausesN.coords (rcN.reverse (l + 1) w) (rcN.reverseWit (l + 1) w)) 
+                        (clausesN.coords (rcN.reverse (l + 1) w) (rcN.reverseWit (l + 1) w)).coords 
                           focus focusLt =
-                          Vector.coords (clauses.coords (rc.reverse l (le_of_succ_le_succ w)) 
-                            (rc.reverseWit l (le_of_succ_le_succ w))) focus focusLt := 
+                          (clauses.coords (rc.reverse l (le_of_succ_le_succ w)) 
+                            (rc.reverseWit l (le_of_succ_le_succ w))).coords focus focusLt := 
                               by 
                                 have res0 : rcN.reverse (l + 1) w =
                                   rc.reverse l (Nat.le_of_succ_le_succ w) + 1 := 
@@ -486,12 +476,11 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                                         zero +: (rc.reverseVec.map (. + 1)) := by rfl
                                       rw [res3]
                                       have res4 :
-                                          Vector.coords (zero +: 
-                                            (rc.reverseVec.map (. + 1)) ) (l + 1) w =
-                                          FinSeq.tail (
-                                            Vector.coords (zero +: 
-                                            (rc.reverseVec.map (. + 1)) ) 
-                                          ) l (Nat.le_of_succ_le_succ w) := by rfl
+                                          (zero +: 
+                                            (rc.reverseVec.map (. + 1)) ).coords (l + 1) w =
+                                            (zero +: 
+                                            (rc.reverseVec.map (. + 1)) ).coords.tail 
+                                           l (Nat.le_of_succ_le_succ w) := by rfl
                                       rw [res4]
                                       rw [(tail_commutes 
                                           zero (rc.reverseVec.map (. + 1)))]
@@ -517,8 +506,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                                         have dfn : clausesN = head +: clauses := by rfl
                                         rw [dfn] 
                                         have td :
-                                          Vector.coords 
-                                            (head +: clauses) 
+                                            (head +: clauses).coords 
                                             (rc.reverse l (Nat.le_of_succ_le_succ w) + 1) 
                                             (succ_le_succ
                                               (rc.reverseWit l (Nat.le_of_succ_le_succ w))) =

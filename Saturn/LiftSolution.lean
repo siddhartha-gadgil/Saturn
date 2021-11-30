@@ -20,24 +20,23 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             let splitter := (rc.forward k w)
             match eq:splitter with
             | none => 
-              let lem1 : Vector.coords (clauses.coords k w) focus focusLt = some branch := dp.dropped k w eq
+              let lem1 : (clauses.coords k w).coords focus focusLt = some branch := dp.dropped k w eq
               let lem2 : insert branch n focus focusLt valuation.coords focus focusLt = branch := by 
                 apply insert_at_focus
                 done
-              let lem3 : Vector.coords (clauses.coords k w) focus focusLt = 
+              let lem3 : (clauses.coords k w).coords focus focusLt = 
                 some (insert branch n focus focusLt valuation.coords focus focusLt) := 
                 by
                   rw [lem1]
                   apply (congrArg some)
                   exact Eq.symm lem2
                   done
-              let lem4 : (Vector.coords (Vector.coords clauses k w) focus focusLt) = some (
-                  (Vector.coords 
+              let lem4 : ((clauses.coords k w).coords focus focusLt) = some (
                     (FinSeq.vec (insert branch n focus focusLt 
-                      (Vector.coords valuation))) focus focusLt)) := 
+                      valuation.coords)).coords focus focusLt) := 
                       by 
                         rw [seq_to_vec_coords (insert branch n focus focusLt 
-                      (Vector.coords valuation))]
+                      valuation.coords)]
                         rw [lem3]
                         done
               ⟨focus, focusLt, lem4⟩
@@ -50,16 +49,16 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
               let jWit : j < rc.codom := jWitAux
               let lem1 := fr.forwardRelation k w j eq jWit
               let ⟨i, iw, vs⟩ := pf j jWit
-              let lem2 : Vector.coords (rc.restClauses.coords j jWit) i iw = 
+              let lem2 : (rc.restClauses.coords j jWit).coords i iw = 
                       some (valuation.coords i iw) := vs
-              let lem3 : delete focus focusLt (Vector.coords (clauses.coords k w)) i iw =
+              let lem3 : delete focus focusLt ((clauses.coords k w).coords) i iw =
                   some (valuation.coords i iw) := 
                     by
                     rw [←  lem2]
                     rw [lem1]
                     done
-              let lem4 : delete focus focusLt (Vector.coords (clauses.coords k w)) i iw =
-                (Vector.coords (clauses.coords k w)) (skip focus i) (skip_le_succ iw) := by
+              let lem4 : delete focus focusLt ((clauses.coords k w).coords) i iw =
+                ((clauses.coords k w).coords) (skip focus i) (skip_le_succ iw) := by
                   rfl
                   done
               let lem5 : insert branch n focus focusLt valuation.coords 
@@ -67,19 +66,19 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
                                   valuation.coords i iw := by
                                     apply insert_at_image
                                     done
-              let lem6 : (Vector.coords (clauses.coords k w)) (skip focus i) (skip_le_succ iw) =
+              let lem6 : ((clauses.coords k w).coords) (skip focus i) (skip_le_succ iw) =
                           some (insert branch n focus focusLt valuation.coords 
                               (skip focus i) (skip_le_succ iw)) := by
                               rw [← lem4]
                               rw [lem3]
                               rw [lem5]
                               done
-              let lem7 : (Vector.coords (Vector.coords clauses k w) (skip focus i) (skip_le_succ iw)) =
+              let lem7 : ((clauses.coords k w).coords (skip focus i) (skip_le_succ iw)) =
                 some (
-                  (Vector.coords (FinSeq.vec (insert branch n focus focusLt (Vector.coords valuation))) 
+                  ((FinSeq.vec (insert branch n focus focusLt valuation.coords)).coords 
                     (skip focus i) (skip_le_succ iw))) := 
                       by
-                        rw [seq_to_vec_coords (insert branch n focus focusLt (Vector.coords valuation))]
+                        rw [seq_to_vec_coords (insert branch n focus focusLt valuation.coords)]
                         rw [lem6]
                         done
               ⟨skip focus i, skip_le_succ iw, lem7⟩
@@ -99,8 +98,8 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
             let topFocus := cl.coords focus focusLt
             let nonPosLem : Not (topFocus = some branch)  := 
                 np.nonPosRev j jw
-            have lem1 : Vector.coords (rc.restClauses.coords j jw) = 
-                  delete focus focusLt (Vector.coords (clauses.coords k kw)) 
+            have lem1 : (rc.restClauses.coords j jw).coords = 
+                  delete focus focusLt (clauses.coords k kw).coords 
                        := by
                        apply rr.relation
                        done
@@ -115,7 +114,7 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
             ⟨topFocus, nonPosLem,
               ResolutionTree.assumption k kw  _ (by
                     rw [lem]
-                    have lc : FinSeq.vec (Vector.coords cl) = cl := by 
+                    have lc : FinSeq.vec (cl.coords) = cl := by 
                       apply coords_eq_implies_vec_eq
                       apply seq_to_vec_coords
                       done
@@ -151,7 +150,8 @@ def pullBackResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n
             match pbt.topFocus, pbt.nonPos, pbt.provedTree with 
             | none, _, tree => 
                 have lem :
-                  FinSeq.vec (insert none (Nat.add n 1) focus focusLt (Vector.coords (contradiction (n + 1)))) =
+                  FinSeq.vec (insert none (Nat.add n 1) focus focusLt 
+                    (contradiction (n + 1)).coords) =
                     contradiction (n + 2) := by
                       rw [contradiction_insert_none focus focusLt]
                       apply coords_eq_implies_vec_eq

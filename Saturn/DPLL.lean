@@ -76,7 +76,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
               (FinSeq.vec (Eq.mpr sf clausesAccum.coords))  :=
           match dom , domAccum, ss, sf, clausesAccum, restAccum with
           | d, .(d), rfl, rfl, cls,  ra => by
-            have sm : FinSeq.vec (Eq.mpr rfl (Vector.coords cls)) = cls := by 
+            have sm : FinSeq.vec (Eq.mpr rfl cls.coords) = cls := by 
               apply coords_eq_implies_vec_eq
               rw [seq_to_vec_coords]
               rfl
@@ -99,10 +99,10 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
       restrictionDataAux branch focus focusLt (FinSeq.vec (init clausesHead.coords)) 
           ((last clausesHead.coords) +: clausesAccum) ss recRestAccum clauses 
           (by 
-            have sm : Vector.coords (FinSeq.vec (init (Vector.coords clausesHead))) =
-                init (Vector.coords clausesHead) := by rw [seq_to_vec_coords]
+            have sm : (FinSeq.vec (init clausesHead.coords)).coords =
+                init (clausesHead.coords) := by rw [seq_to_vec_coords]
             rw [sm,
-               (cons_commutes (last (Vector.coords clausesHead)) clausesAccum),
+               (cons_commutes (last (clausesHead.coords)) clausesAccum),
                ← resolve,
                clsEq]
             done)
@@ -154,13 +154,13 @@ def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.coords zero (zero_lt_succ zero)
 
 def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.coords zero (zero_lt_succ zero) = some b):
                                 cl = unitClause zero b zero (zero_lt_succ zero) := 
-                                let lem1 : Vector.coords 
-                                  (unitClause zero b zero (zero_lt_succ zero)) zero (zero_lt_succ zero) = 
+                                let lem1 :  
+                                  (unitClause zero b zero (zero_lt_succ zero)).coords zero (zero_lt_succ zero) = 
                                     some b :=
                                           by
                                             apply unitDiag
                                 let lem2 : cl.coords zero (zero_lt_succ zero) = 
-                                    Vector.coords (unitClause zero b zero (zero_lt_succ zero)) 
+                                    (unitClause zero b zero (zero_lt_succ zero)).coords 
                                       zero (zero_lt_succ zero) 
                                       := 
                                           by
@@ -197,12 +197,12 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
               | ExistsElem.notExst noNeg => 
                  SatSolution.sat (FinSeq.vec (fun _ _ => true)) 
                     fun k kw =>
-                      let lem1 : Not (Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = some false) :=
+                      let lem1 : Not ((cls.coords k kw).coords zero (zero_lt_succ zero) = some false) :=
                         fun hyp => noNeg k kw (lengthOneUnit hyp)
-                      let lem2 : Not (Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = none) :=
+                      let lem2 : Not ((cls.coords k kw).coords zero (zero_lt_succ zero) = none) :=
                         fun hyp => noContra k kw (lengthOneContra hyp)
-                      let lem : Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = some true :=
-                        match Vector.coords (cls.coords k kw) zero (zero_lt_succ zero), lem1, lem2 with
+                      let lem : (cls.coords k kw).coords zero (zero_lt_succ zero) = some true :=
+                        match (cls.coords k kw).coords zero (zero_lt_succ zero), lem1, lem2 with
                         | some true, l1, l2 => rfl
                         | some false, l1, l2 => absurd (l1 rfl) id
                         | none, l1, l2 => absurd (l2 rfl) id 
@@ -220,12 +220,12 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
               | ExistsElem.notExst noNeg => 
                  SatSolution.sat (FinSeq.vec (fun _ _ => false)) 
                     fun k kw =>
-                      let lem1 : Not (Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = some true) :=
+                      let lem1 : Not ((cls.coords k kw).coords zero (zero_lt_succ zero) = some true) :=
                         fun hyp => noNeg k kw (lengthOneUnit hyp)
-                      let lem2 : Not (Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = none) :=
+                      let lem2 : Not ((cls.coords k kw).coords zero (zero_lt_succ zero) = none) :=
                         fun hyp => noContra k kw (lengthOneContra hyp)
-                      let lem : Vector.coords (cls.coords k kw) zero (zero_lt_succ zero) = some false :=
-                        match Vector.coords (cls.coords k kw) zero (zero_lt_succ zero), lem1, lem2 with
+                      let lem : (cls.coords k kw).coords zero (zero_lt_succ zero) = some false :=
+                        match (cls.coords k kw).coords zero (zero_lt_succ zero), lem1, lem2 with
                         | some false, l1, l2 => rfl
                         | some true, l1, l2 => False.elim (l1 rfl) 
                         | none, l1, l2 => False.elim (l2 rfl)  
@@ -350,9 +350,9 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                           SatSolution.unsat pf
                       | LiftedResTree.unit tree => 
                           let base : (j : Nat) → (lt : j < cntn.codom) → 
-                              Not (Vector.coords (cls.coords j lt) index bd = some (not par)) := 
+                              Not ((cls.coords j lt).coords index bd = some (not par)) := 
                                 fun j jw => 
-                                  notpure_cases par (Vector.coords (cls.coords j jw) index bd) (evid j jw)
+                                  notpure_cases par ((cls.coords j jw).coords index bd) (evid j jw)
                           let pure :=
                             trees_preserve_notsomebranch (not par) index bd base
                                    (unitClause (m + 1) (!par) index bd)

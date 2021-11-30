@@ -24,16 +24,16 @@ Contradictions and basic properties
 abbrev contradiction(n: Nat) : Clause n :=
   FinSeq.vec (fun _ _ => none)
 
-theorem contra_at_none(n: Nat) : Vector.coords (contradiction n) = (fun _ _ => none) := 
+theorem contra_at_none(n: Nat) : (contradiction n).coords = (fun _ _ => none) := 
               by apply seq_to_vec_coords
 
 
 theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n, 
           Not (clauseSat (contradiction n) valuation) :=
   fun valuation => fun ⟨k, ⟨b, p⟩⟩ => 
-    let lem1 : Vector.coords (contradiction n) k b = none := by rw [contra_at_none n]
-    let lem2 : varSat (Vector.coords (contradiction n) k b) = varSat none := congrArg varSat lem1
-    let lem3 : varSat (Vector.coords (contradiction n) k b) (valuation.coords k b) = 
+    let lem1 : (contradiction n).coords k b = none := by rw [contra_at_none n]
+    let lem2 : varSat ((contradiction n).coords k b) = varSat none := congrArg varSat lem1
+    let lem3 : varSat ((contradiction n).coords k b) (valuation.coords k b) = 
                 varSat none (valuation.coords k b) := congr lem2 rfl
     let lem4 : (varSat none (valuation.coords k b)) = (none = some (valuation.coords k b)) := rfl
     let lem5 : (none = some (valuation.coords k b)) := by
@@ -44,13 +44,13 @@ theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n,
     Option.noConfusion lem5
 
 theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
-      insert none n focus focusLt (Vector.coords (contradiction n)) =
-                          Vector.coords (contradiction (n + 1)) :=
+      insert none n focus focusLt ((contradiction n).coords) =
+                          (contradiction (n + 1)).coords :=
       let lem0 : (j: Nat) → (jw : j < n + 1) →  
-            insert none n focus focusLt (Vector.coords (contradiction n)) j jw  =
-                      Vector.coords (contradiction (n + 1)) j jw := 
+            insert none n focus focusLt ((contradiction n).coords) j jw  =
+                      (contradiction (n + 1)).coords j jw := 
                       fun j jw =>
-                      let lem0 : Vector.coords (contradiction (n + 1)) j jw = none := 
+                      let lem0 : (contradiction (n + 1)).coords j jw = none := 
                           by rw [contra_at_none]
                       if c : j= focus then 
                         match focus, c, focusLt with
@@ -68,7 +68,7 @@ theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1)
                           by
                             rw [lem1]
                             rw [insert_at_image 
-                               none n focus focusLt (Vector.coords (contradiction n))
+                               none n focus focusLt ((contradiction n).coords)
                                i iw]
                             rw [contra_at_none]
                             done                               
@@ -91,26 +91,26 @@ Unit clauses: definitions and finding with proofs
 -/
 
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
-  FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) 
+  FinSeq.vec (insert (some b) n k w ((contradiction n).coords)) 
 
 theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
-          Vector.coords (unitClause n b k w) k w = b := by
+          (unitClause n b k w).coords k w = b := by
             have resolve  : unitClause n b k w = 
-                FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) := rfl
+                FinSeq.vec (insert (some b) n k w ((contradiction n).coords)) := rfl
             rw [resolve]
             rw [seq_to_vec_coords]
-            apply insert_at_focus (some b) n k w (Vector.coords (contradiction n))
+            apply insert_at_focus (some b) n k w ((contradiction n).coords)
             done
 
 theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1): 
-          (i: Nat) → (iw : i < n) →  Vector.coords (unitClause n b k w) (skip k i) 
+          (i: Nat) → (iw : i < n) → (unitClause n b k w).coords (skip k i) 
                   (skip_le_succ iw) = none := by 
                   intros i iw
                   have resolve  : unitClause n b k w = 
-                        FinSeq.vec (insert (some b) n k w (Vector.coords (contradiction n))) := rfl
+                        FinSeq.vec (insert (some b) n k w ((contradiction n).coords)) := rfl
                   rw [resolve]
                   rw [seq_to_vec_coords] 
-                  let ins := insert_at_image (some b) n k w (Vector.coords (contradiction n)) i iw
+                  let ins := insert_at_image (some b) n k w ((contradiction n).coords) i iw
                   rw [ins]
                   rw [contra_at_none]
                   done
@@ -124,7 +124,7 @@ structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
 def clauseUnit{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitClause clause) :=
   let f : Fin (n + 1) →   (Option (IsUnitClause clause)) := 
     fun ⟨k, w⟩ =>
-      match deqSeq _ clause.coords (Vector.coords (unitClause n parity k w)) with 
+      match deqSeq _ clause.coords ((unitClause n parity k w).coords) with 
       | isTrue pf => 
         let cl : IsUnitClause clause := IsUnitClause.mk k w parity (coords_eq_implies_vec_eq pf) 
         some (cl)
@@ -178,25 +178,25 @@ structure HasPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom) where
   bound : index < n
   parity : Bool
   evidence : (k : Nat) → (lt : k < dom) → 
-          (Vector.coords (clauses.coords k lt) index bound = none) ∨  
-            (Vector.coords (clauses.coords k lt) index bound = some parity)
+          ((clauses.coords k lt).coords index bound = none) ∨  
+            ((clauses.coords k lt).coords index bound = some parity)
 
 structure IsPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom) 
                       (index: Nat)(bound : index < n)(parity : Bool) where
-  evidence : (k : Nat) → (lt : k < dom) → (Vector.coords (clauses.coords k lt) index bound = none) ∨ 
-                                (Vector.coords (clauses.coords k lt) index bound = some parity)
+  evidence : (k : Nat) → (lt : k < dom) → ((clauses.coords k lt).coords index bound = none) ∨ 
+                                ((clauses.coords k lt).coords index bound = some parity)
 
 def pureEvidence {dom n : Nat}(clauses : Vector  (Clause n) dom) 
                   (index: Nat)(bound : index < n)(parity : Bool): Prop := 
                   (k : Nat) → (lt : k < dom) → 
-          (Vector.coords (clauses.coords k lt) index bound = none) ∨  
-          (Vector.coords (clauses.coords k lt) index bound = some parity)
+          ((clauses.coords k lt).coords index bound = none) ∨  
+          ((clauses.coords k lt).coords index bound = some parity)
 
 def pureBeyond{dom n : Nat}(clauses : Vector  (Clause n) dom) 
                   (index: Nat)(bound : index < n)(parity : Bool)(m: Nat): Prop := 
                   (k : Nat) → (lt : k < dom) → (m ≤ k) → 
-          (Vector.coords (clauses.coords k lt) index bound = none) ∨  
-          (Vector.coords (clauses.coords k lt) index bound = some parity)
+          ((clauses.coords k lt).coords index bound = none) ∨  
+          ((clauses.coords k lt).coords index bound = some parity)
 
 def pureBeyondZero{dom n : Nat}(clauses : Vector  (Clause n) dom)
                 (index: Nat)(bound : index < n)(parity : Bool) : 
@@ -237,7 +237,7 @@ def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
         | none => none
         | some pureBeyondEv => 
           if pw : p < dom then
-            let head := Vector.coords (clauses.coords p pw) index bound
+            let head := (clauses.coords p pw).coords index bound
               if pf : (head = none) ∨  (head = some parity) then
                 let evidence : pureBeyond clauses index bound parity p := 
                   by

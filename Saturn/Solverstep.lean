@@ -39,12 +39,12 @@ structure RestrictionClauses{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : foc
   reverseVec : Vector Nat codom
   reverseWit : (k : Nat) → (w : k < codom) → reverseVec.coords k w < dom
   
-def RestrictionClauses.forward{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
+abbrev RestrictionClauses.forward{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}
       (rc: RestrictionClauses branch focus focusLt clauses) :
         (j: Nat) → (jw : j < dom) → Option Nat := rc.forwardVec.coords
 
-def RestrictionClauses.reverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
+abbrev RestrictionClauses.reverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}
       (rc: RestrictionClauses branch focus focusLt clauses) :
         (j: Nat) → (jw : j < rc.codom) → Nat := rc.reverseVec.coords
@@ -56,23 +56,23 @@ structure DroppedProof{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n
     {clauses: Vector (Clause (n + 1)) dom}(
         rc: RestrictionClauses branch focus focusLt clauses)  where
     dropped : (k : Nat) → (w: k < dom) → rc.forward k w = 
-        none → (Vector.coords (clauses.coords k w) focus focusLt = some branch)
+        none → (clauses.coords k w).coords focus focusLt = some branch
 
 -- if a clause is not dropped, its image is the restricted clause
 structure ForwardRelation{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}(
         rc: RestrictionClauses branch focus focusLt clauses)  where
     forwardRelation : (k : Nat) → (w: k < dom) → (j: Nat) →  rc.forward k w = some j →
-    (jw : j < rc.codom) →  delete focus focusLt (Vector.coords (clauses.coords k w)) = 
-      Vector.coords (rc.restClauses.coords j jw)
+    (jw : j < rc.codom) →  delete focus focusLt (clauses.coords k w).coords = 
+        (rc.restClauses.coords j jw).coords
 
 -- a new clause is the restriction of its image under the reverse map 
 structure ReverseRelation{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}(
         rc: RestrictionClauses branch focus focusLt clauses)  where
     relation : (k : Nat) → (w: k < rc.codom) → 
-      Vector.coords (rc.restClauses.coords k w) = delete focus focusLt 
-        (Vector.coords (clauses.coords (rc.reverse k w) (rc.reverseWit k w)))
+      (rc.restClauses.coords k w).coords = delete focus focusLt 
+        (clauses.coords (rc.reverse k w) (rc.reverseWit k w)).coords
 
 -- the image of a new clause under the reverse map is not `some bf` at the `focus` index.
 structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
@@ -80,7 +80,7 @@ structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < 
         rc: RestrictionClauses branch focus focusLt clauses)  where
     nonPosRev : (k : Nat) → (w: k < rc.codom)  → 
       Not (
-        Vector.coords (clauses.coords (rc.reverse k w) (rc.reverseWit k w)) focus focusLt = some branch)
+        (clauses.coords (rc.reverse k w) (rc.reverseWit k w)).coords focus focusLt = some branch)
 
 -- the maps and conditions for the new clauses
 structure RestrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)

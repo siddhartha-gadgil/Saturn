@@ -41,12 +41,6 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                         forwardVecN.coords.tail i (Nat.le_of_succ_le_succ jw) := by rfl
                     rw [tl]
                     rw [tail_commutes none rc.forwardVec]
-                    have fr : forwardN (succ i) jw = 
-                            rc.forward i (le_of_succ_le_succ jw) :=
-                        by rfl
-                    rw [fr]
-                    rfl
-                    done
           have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
             fun k  => 
             match k with 
@@ -96,7 +90,7 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let clausesN := head +: clauses
           let droppedN : 
               (k : Nat) → (w: k < domN) → rcN.forward k w = none → 
-                  Vector.coords (clausesN.coords k w) focus focusLt = some branch :=
+                  (clausesN.coords k w).coords focus focusLt = some branch :=
                 fun k =>
                   match k with
                   | zero => fun _ _ => pos
@@ -123,8 +117,8 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let codomN := rc.codom
           let clausesN := head +: clauses
           have forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
-              (jw : j < codomN) →  delete focus focusLt (Vector.coords (clausesN.coords k w)) = 
-                Vector.coords (rcN.restClauses.coords j jw) := 
+              (jw : j < codomN) →  delete focus focusLt ((clausesN.coords k w).coords) = 
+                (rcN.restClauses.coords j jw).coords := 
                 fun k =>
                 match k with
                 | zero => fun w j => 
@@ -148,9 +142,9 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let codomN := rc.codom
           let clausesN := head +: clauses
           have relationN : (k : Nat) → (w: k < codomN) → 
-                 Vector.coords (rcN.restClauses.coords k w) = 
+                 (rcN.restClauses.coords k w).coords = 
                   delete focus focusLt 
-                    (Vector.coords (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w))) := 
+                    (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)).coords := 
                   fun k w =>
                   let resolve : (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)) =
                     clauses.coords (rc.reverse k w) (rc.reverseWit k w) :=  
@@ -184,7 +178,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                                   have dfn : clausesN = head +: clauses := by rfl
                                   rw [dfn] 
                                   have td :
-                                    Vector.coords (head +: clauses) 
+                                    (head +: clauses).coords 
                                        (rc.reverse k w + 1) 
                                        (succ_le_succ (rc.reverseWit k w)) =
                                         clauses.coords (rc.reverse k w)
@@ -209,7 +203,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let clausesN := head +: clauses
           have pureN : (k : Nat) → (w: k < codomN)  → 
                 Not (
-                  Vector.coords (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w))
+                  (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)).coords 
                      focus focusLt = some branch) :=
                   fun k w =>
                   let resolve : clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w) =
@@ -239,7 +233,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                         have dfn : clausesN = head +: clauses := by rfl
                         rw [dfn] 
                         have td :
-                          Vector.coords (head +: clauses) 
+                          (head +: clauses).coords 
                               (rc.reverse k w + 1) 
                               (succ_le_succ (rc.reverseWit k w)) =
                               clauses.coords (rc.reverse k w)
