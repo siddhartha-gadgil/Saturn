@@ -90,19 +90,19 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let clausesN := head +: clauses
           let droppedN : 
               (k : Nat) → (w: k < domN) → rcN.forward k w = none → 
-                  (clausesN.coords k w).coords focus focusLt = some branch :=
-                fun k =>
+                  (clausesN.coords k w).coords focus focusLt = some branch := by
+                  intro k 
                   match k with
-                  | zero => fun _ _ => pos
+                  | zero => 
+                    intro _ _ 
+                    exact pos
                   | l + 1 => 
-                    fun w nw =>
+                      intro w nw 
                       let resolve : rcN.forward (l + 1) w = 
                         rc.forward l (le_of_succ_le_succ w) := by rfl
-                      let lem2 := Eq.trans (Eq.symm resolve) nw
-                      let lem3 := drc.dropped l (le_of_succ_le_succ w) lem2
-                      by
-                        exact lem3
-                        done
+                      rw [resolve] at nw
+                      let lem3 := drc.dropped l (le_of_succ_le_succ w) nw
+                      exact lem3                      
           ⟨droppedN⟩
 
 def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
@@ -118,17 +118,44 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let clausesN := head +: clauses
           have forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
               (jw : j < codomN) →  delete focus focusLt ((clausesN.coords k w).coords) = 
-                (rcN.restClauses.coords j jw).coords := 
-                fun k =>
+                (rcN.restClauses.coords j jw).coords := by
+                intro k 
                 match k with
-                | zero => fun w j => 
-                  fun sw =>
-                    Option.noConfusion sw
+                | zero => 
+                  intro w j sw 
+                  exact Option.noConfusion sw
                 | l + 1 => 
-                  fun w j => 
-                    fun sw =>
-                      frc.forwardRelation l (le_of_succ_le_succ w) j sw
+                  intro w j sw 
+                  exact frc.forwardRelation l (le_of_succ_le_succ w) j sw
           ⟨forwardRelationN⟩
+
+theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) dom):
+      (rc: RestrictionClauses branch focus focusLt clauses) → 
+        (head : Clause (n + 1)) → (pos : (head.coords focus focusLt = some branch)) →
+        (l: Nat) → (w : l  < rc.codom ) → 
+          (addPositiveClause  branch focus focusLt clauses rc head pos).reverse l w = 
+            (rc.reverse l w) + 1 := by
+            intro rc head neg l w 
+            let rcN := addPositiveClause  branch focus focusLt clauses rc head neg 
+            have res1 : rcN.reverse l w = 
+                                      rcN.reverseVec.coords l w := by rfl
+            have res2 : rc.reverse l w =
+                    rc.reverseVec.coords l w := by rfl
+            rw [res1]
+            rw [res2]
+            have res3 :rcN.reverseVec = 
+              (rc.reverseVec.map (. + 1)) := by rfl
+            rw [res3]
+            have res4 :
+                ( (rc.reverseVec.map (. + 1)) ).coords l w =
+                  (zero +: 
+                  (rc.reverseVec.map (. + 1)) ).coords.tail 
+                  l w := by rfl
+            rw [res4]
+            rw [(tail_commutes 
+                zero (rc.reverseVec.map (. + 1)))]
+            rw [map_coords_commute]  
 
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
@@ -145,49 +172,24 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                  (rcN.restClauses.coords k w).coords = 
                   delete focus focusLt 
                     (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)).coords := 
-                  fun k w =>
-                  let resolve : (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)) =
-                    clauses.coords (rc.reverse k w) (rc.reverseWit k w) :=  
-                      by 
-                        have res0:  rcN.reverse k w = rc.reverse k w  + 1 :=
-                          by
-                            have res1 : rcN.reverse k w = 
-                                      rcN.reverseVec.coords k w := by rfl 
-                            have res2 : rc.reverse k w =
-                                    rc.reverseVec.coords k w := by rfl
-                            rw [res1]
-                            rw [res2]
-                            have res3 :rcN.reverseVec = 
-                              rc.reverseVec.map (. + 1) := by rfl
-                            rw [res3]
-                            rw [map_coords_commute]                                  
-                            done
-                            done
-                        have res00 : clausesN.coords (rcN.reverse k w) 
-                                  (rcN.reverseWit k w) =
-                              clauses.coords (rc.reverse k w )
-                                (rc.reverseWit k w) := by 
-                                  have rs0 : clausesN.coords (rcN.reverse k w) 
-                                    (rcN.reverseWit k w) =
-                                      clausesN.coords (rc.reverse k w + 1)
-                                        (succ_le_succ (rc.reverseWit k w)) := by 
-                                        apply witness_independent
-                                        exact res0
-                                        done
-                                  rw [rs0]
-                                  have dfn : clausesN = head +: clauses := by rfl
-                                  rw [dfn] 
-                                  have td :
-                                    (head +: clauses).coords 
-                                       (rc.reverse k w + 1) 
-                                       (succ_le_succ (rc.reverseWit k w)) =
-                                        clauses.coords (rc.reverse k w)
-                                          (rc.reverseWit k w) := by rfl
-                                  rw [td]
-                                  done
-                        rw [res00]
-                        done
-                  resolve ▸ rrc.relation k w                      
+                  by
+                    intro l
+                    intro w 
+                    let lem1 : rcN.restClauses.coords l w = 
+                              rc.restClauses.coords l w := by rfl
+                    let lem2 := rrc.relation l w               
+                    rw [lem1]                          
+                    rw [lem2]
+                    have rs0 : clausesN.coords (rcN.reverse l w) 
+                                (rcN.reverseWit l w) =
+                                  clausesN.coords 
+                                    (rc.reverse l w + 1)
+                                    (succ_le_succ
+                                      (rc.reverseWit l w)) := by 
+                                    apply witness_independent
+                                    apply reverseResolve
+                    rw [rs0]
+                    rfl
           ⟨relationN⟩
 
 def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
@@ -205,42 +207,26 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                 Not (
                   (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)).coords 
                      focus focusLt = some branch) :=
-                  fun k w =>
-                  let resolve : clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w) =
-                    clauses.coords (rc.reverse k w) (rc.reverseWit k w) :=  
-                    by
-                      have res0:  rcN.reverse k w = rc.reverse k w  + 1 :=
-                          by
-                            have res1 : rcN.reverse k w = 
-                                      rcN.reverseVec.coords k w := by rfl 
-                            have res2 : rc.reverse k w =
-                                    rc.reverseVec.coords k w := by rfl
-                            rw [res1]
-                            rw [res2]
-                            have res3 :rcN.reverseVec = 
-                              rc.reverseVec.map (. + 1) :=  by rfl
-                            rw [res3]
-                            rw [map_coords_commute]                                  
-                            done
-                      have rs0 : clausesN.coords (rcN.reverse k w) 
-                          (rcN.reverseWit k w) =
-                            clausesN.coords (rc.reverse k w + 1)
-                             (succ_le_succ (rc.reverseWit k w)) := by 
-                              apply witness_independent
-                              exact res0
-                              done
-                        rw [rs0]
-                        have dfn : clausesN = head +: clauses := by rfl
-                        rw [dfn] 
-                        have td :
-                          (head +: clauses).coords 
-                              (rc.reverse k w + 1) 
-                              (succ_le_succ (rc.reverseWit k w)) =
-                              clauses.coords (rc.reverse k w)
-                                (rc.reverseWit k w) := by rfl
-                      rw [td]
-                      done
-                  resolve ▸ prc.nonPosRev k w
+                  by
+                    intro l w hyp 
+                    have rs0 : clausesN.coords (rcN.reverse l w) 
+                                (rcN.reverseWit l w) =
+                                  clausesN.coords 
+                                    (rc.reverse l w + 1)
+                                    (succ_le_succ
+                                      (rc.reverseWit l w)) := by 
+                                    apply witness_independent
+                                    apply reverseResolve
+                    rw [rs0] at hyp
+                    have rs1 : clausesN.coords 
+                                    (rc.reverse l w + 1)
+                                    (succ_le_succ
+                                      (rc.reverseWit l w)) =
+                                        clauses.coords (rc.reverse l w)
+                                        (rc.reverseWit l w) := by rfl
+                    rw [rs1] at hyp
+                    let prev := prc.nonPosRev l w
+                    exact absurd hyp prev
           ⟨pureN⟩
 
 

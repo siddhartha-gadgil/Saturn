@@ -378,8 +378,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                                         (rc.reverseWit l (Nat.le_of_succ_le_succ w)) := by rfl
                     rw [rs1] at hyp
                     let prev := prc.nonPosRev l (Nat.le_of_succ_le_succ w)
-                    let contra := prev hyp
-                    exact False.elim contra
+                    exact absurd hyp prev
           ⟨pureN⟩
 
 
