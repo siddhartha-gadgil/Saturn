@@ -55,6 +55,138 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             rw [fwdEq]
             exact vs                      
 
+
+-- lift of a resolution triple from a branch: definition and implementation
+structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
+  (left right top : Clause (n + 1))(k: Nat)(lt : k < succ (n + 1)) where
+    topFoc : Option Bool
+    triple : ResolutionTriple 
+          (FinSeq.vec (insert  leftFoc (n + 1) k lt   left.coords)) 
+          (FinSeq.vec (insert  rightFoc (n + 1) k lt right.coords)) 
+          (FinSeq.vec (insert  topFoc (n + 1) k lt top.coords))
+    topNonPos : Not (topFoc = some bf) 
+
+def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
+  (left right top : Clause (n + 1)) : (k: Nat) → 
+    (lt : k < succ (n + 1)) → (lbf : Not (leftFoc = some bf)) → (rbf :Not (rightFoc = some bf)) → 
+       ResolutionTriple left right top → 
+        LiftedTriple bf leftFoc rightFoc left right top k lt  := 
+  fun k lt lbf rbf rt =>
+    let ⟨topFoc, focJoin⟩ := 
+      getJoin bf leftFoc rightFoc lbf rbf
+    let topNonPos : Not (topFoc = some bf) := 
+      top_of_join_not_positive bf leftFoc rightFoc topFoc focJoin lbf rbf
+    let pivotN := skip k  rt.pivot
+    let pivotNLt : pivotN < n + 2 := skip_le_succ rt.pivotLt
+    let leftN := insert leftFoc (n + 1) k lt left.coords
+    let rightN := insert rightFoc (n + 1) k lt right.coords
+    let topN := insert topFoc (n + 1) k lt top.coords
+    let leftPivotN : leftN pivotN pivotNLt = some false := 
+      by
+        rw [← rt.leftPivot]
+        apply insert_at_image 
+    let rightPivotN : rightN pivotN pivotNLt = some true := 
+      by
+        rw [← rt.rightPivot]
+        apply insert_at_image 
+    let topPivotN : topN pivotN pivotNLt = none := 
+      by
+        rw [← rt.topPivot]
+        apply insert_at_image 
+    let joinRestN : (j : Nat) → (jw : j < n + 1) →  
+      Join  (leftN (skip pivotN j) (skip_le_succ jw)) 
+            (rightN (skip pivotN j) (skip_le_succ jw)) 
+            (topN (skip pivotN j) (skip_le_succ jw)) := 
+      fun j jw => 
+      let jj := skip pivotN j
+      let jjw : jj < n + 2 := skip_le_succ jw
+      let notPivot : Not (jj = pivotN) := skip_no_fixedpoints pivotN j
+      if jj_eq_k : jj = k then  by
+        let leftLem : leftN jj jjw = leftN k lt := by
+          apply witness_independent
+          assumption
+        let rightLem : rightN jj jjw = rightN k lt := by
+          apply witness_independent
+          assumption
+        let topLem : topN jj jjw = topN k lt := by
+          apply witness_independent
+          assumption                   
+        rw [leftLem, rightLem, topLem]
+        let eqL : leftN k lt = leftFoc := by apply insert_at_focus 
+        let eqR : rightN k lt = rightFoc := by apply insert_at_focus
+        let eqT : topN k lt = topFoc := by apply insert_at_focus
+        rw [eqL, eqR, eqT]
+        exact focJoin                  
+      else 
+        let i := skipInverse k jj jj_eq_k
+        let skp_k_i_jj : skip k i = jj := skip_inverse_eq k jj jj_eq_k
+        let iw : i < n + 1 := skip_preimage_lt lt jjw skp_k_i_jj
+        if i_eq_pivot: i = rt.pivot then
+          have lem1 : skip k i = skip k rt.pivot := congrArg (skip k) i_eq_pivot
+          have lem2 : skip k  rt.pivot = jj := by 
+                rw [←  lem1]
+                exact skp_k_i_jj
+          absurd (Eq.symm lem2) notPivot
+        else by
+          let ii := skipInverse rt.pivot i i_eq_pivot 
+          let skp_ii_eq_i : skip rt.pivot ii = i := 
+                    skip_inverse_eq rt.pivot i i_eq_pivot
+          let iiw : ii < n := skip_preimage_lt rt.pivotLt iw skp_ii_eq_i
+          let leftLem : leftN jj jjw = leftN (skip k i) (skip_le_succ iw) := by
+              apply witness_independent 
+              rw [← skp_k_i_jj]
+          let rightLem : rightN jj jjw = rightN (skip k i) (skip_le_succ iw) := by
+              apply witness_independent 
+              rw [← skp_k_i_jj]
+          let topLem : topN jj jjw = topN (skip k i) (skip_le_succ iw) := by
+              apply witness_independent 
+              rw [← skp_k_i_jj]
+          rw [leftLem, rightLem, topLem]
+          let eqL : leftN (skip k i) (skip_le_succ iw) = left.coords i iw := by
+              apply insert_at_image 
+          let eqR : rightN (skip k i) (skip_le_succ iw) = right.coords i iw := by
+              apply insert_at_image              
+          let eqT : topN (skip k i) (skip_le_succ iw) = top.coords i iw := by
+              apply insert_at_image 
+          rw [eqL, eqR, eqT]
+          let leftLem2 : left.coords (skip rt.pivot ii) (skip_le_succ iiw) = left.coords i iw := by
+              apply witness_independent
+              exact skp_ii_eq_i
+          let rightLem2 : right.coords (skip rt.pivot ii) (skip_le_succ iiw) = right.coords i iw := by
+              apply witness_independent
+              exact skp_ii_eq_i
+          let topLem2 : top.coords (skip rt.pivot ii) (skip_le_succ iiw) = top.coords i iw := by
+              apply witness_independent
+              exact skp_ii_eq_i
+          rw [← leftLem2, ← rightLem2, ← topLem2]
+          exact rt.joinRest ii iiw
+  ⟨topFoc, ⟨pivotN, pivotNLt,
+                  (by rw [seq_to_vec_coords]; rw [← leftPivotN]), 
+                  (by rw [seq_to_vec_coords]; rw [← rightPivotN]), 
+                  (by rw [seq_to_vec_coords]; rw [← topPivotN]), 
+                  (by
+                      rw [seq_to_vec_coords]
+                      intro k1
+                      intro w
+                      have lp : leftN =
+                        insert leftFoc (n + 1) k lt left.coords := by rfl
+                      have rp : rightN =
+                        insert rightFoc (n + 1) k lt right.coords := by rfl
+                      have tp : topN =
+                        insert topFoc (n + 1) k lt top.coords := by rfl
+                      rw [← lp, ← rp, ← tp]
+                      have rn:  (FinSeq.vec rightN).coords = rightN :=
+                        by rw [seq_to_vec_coords] 
+                      have ln: (FinSeq.vec leftN).coords = leftN :=
+                        by rw [seq_to_vec_coords]
+                      have tn: (FinSeq.vec topN).coords = topN :=
+                        by rw [seq_to_vec_coords]
+                      rw [rn,  tn]
+                      apply joinRestN
+                      assumption
+                      )⟩, topNonPos⟩
+
+
 -- pulling back a tree
 def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
     (clauses: Vector (Clause (n + 2)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
