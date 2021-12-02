@@ -52,39 +52,31 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
     (clauses: Vector (Clause (n + 1)) dom) →
     (clsEq : concatSeqAux s clausesHead.coords clausesAccum.coords = clauses.coords) →    
         RestrictionData branch focus focusLt clauses := 
-         match domHead with
-    | zero => fun clausesHead clausesAccum s restAccum clauses clsEq =>
+    match domHead with
+    | zero =>  
       by
+        intro clausesHead clausesAccum s restAccum clauses clsEq
         have ss : dom = domAccum := by 
           rw [← s]
           apply Nat.zero_add
           done
         have sf : FinSeq dom (Clause (n + 1))  = FinSeq domAccum (Clause (n + 1)):= by
           rw [ss]
-        have sff : Vector (Clause (n + 1)) dom  = Vector (Clause (n + 1)) domAccum := by
-          rw [ss]
-        have resolve : concatSeqAux s clausesHead.coords clausesAccum.coords = 
-            Eq.mpr sf clausesAccum.coords := by rfl
-        have clSeq : clauses = FinSeq.vec (clauses.coords) := by 
+        have clSeq : clauses = clauses.coords.vec := by 
           apply coords_eq_implies_vec_eq
           rw [seq_to_vec_coords]
-          done
+        have resolve : concatSeqAux s clausesHead.coords clausesAccum.coords = 
+            Eq.mpr sf clausesAccum.coords := by rfl        
         rw [clSeq]
         rw [← clsEq]
         rw [resolve] 
-        let clausesTrans: RestrictionData branch focus focusLt 
-              (FinSeq.vec (Eq.mpr sf clausesAccum.coords))  :=
-          match dom , domAccum, ss, sf, clausesAccum, restAccum with
-          | d, .(d), rfl, rfl, cls,  ra => by
-            have sm : FinSeq.vec (Eq.mpr rfl cls.coords) = cls := by 
-              apply coords_eq_implies_vec_eq
-              rw [seq_to_vec_coords]
-              rfl
-              done
-            exact (Eq.symm sm) ▸ ra
-            done
-        exact clausesTrans
-        done
+        match dom , domAccum, ss, sf, clausesAccum, restAccum with
+        | d, .(d), rfl, rfl, cls,  ra => 
+          have sm : FinSeq.vec (cls.coords) = cls := by 
+            apply coords_eq_implies_vec_eq
+            rw [seq_to_vec_coords]
+          rw [← sm] at ra
+          exact ra
     | k + 1 => fun clausesHead clausesAccum s restAccum clauses clsEq => 
       let ss : k + (domAccum + 1)  = dom := 
         by
@@ -106,6 +98,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
                ← resolve,
                clsEq]
             done)
+    
 
 def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1):
     (clauses: Vector (Clause (n + 1)) dom) →   

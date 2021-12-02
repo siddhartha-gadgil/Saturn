@@ -109,9 +109,9 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
           | m, isFalse contra => isFalse (
               by
                 intro hyp
-                let h := contains_implies_contains_beyond cl1 cl2 m hyp
-                exact contra h
-                done)
+                apply contra
+                apply contains_implies_contains_beyond cl1 cl2 m hyp
+                )
           | zero, isTrue pf => isTrue (contains_beyond_zero_implies_contains cl1 cl2 pf)
           | l + 1, isTrue pf => 
             let accum: Decidable (containsBeyond cl1 cl2 l) := 
@@ -123,28 +123,20 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                           intro k kw ineq b
                           cases Nat.eq_or_lt_of_le ineq with
                           | inl eql =>
-                            let lem0 := pfHead b
                             let lem1 : cl1.coords l lw = cl1.coords k kw := by
                               apply witness_independent
                               exact eql
-                              done
                             let lem2 : cl2.coords l lw = cl2.coords k kw := by
                               apply witness_independent
                               exact eql
                             rw [← lem1]
                             rw [← lem2]
-                            exact lem0
-                            done
+                            exact pfHead b
                           | inr l2 => 
-                            exact pf k kw l2 b
-                            done                      
+                            exact pf k kw l2 b                     
                       )
-                  | isFalse contra => isFalse (fun hyp =>
-                              contra ( 
-                                fun b => 
-                                  hyp l lw (Nat.le_refl _) b 
-                                )                           
-                                )
+                | isFalse contra => 
+                    isFalse (fun hyp => contra (fun b => hyp l lw (Nat.le_refl _) b))
             else
                 let overshoot : n ≤ l := by
                   cases Nat.lt_or_ge l n with
@@ -270,7 +262,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
             | none =>  
                 ⟨l + 1, imageSeq, forwardVec, forwardBound, forwardEq,
                    reverseVec, reverseBound, revereseEq⟩
-            | some ⟨zi, zb, zc⟩ => -- clause at k contains clause at zi after deletion
+            | some ⟨zi, zb, zc⟩ => -- clause at k contains clause at index zi in deleted sequence
               let codomN := l
               let imageSeqN := rest
               let domN := d + 1
@@ -287,7 +279,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                                 exact zc
                           ⟨zi, zb, contains_trans _ _ _ ict lem2⟩
                       else 
-                        let ii := skipInverse k i c -- index in original sequence
+                        let ii := skipInverse k i c -- index in sequence before deletion
                         let eqn := skip_inverse_eq k i c
                         let iiw := skip_preimage_lt lt iw eqn
                         let lem1 : imageSeqN ii iiw = imageSeq.coords (skip k ii) (skip_le_succ iiw)  := 

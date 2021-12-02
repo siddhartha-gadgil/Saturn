@@ -48,11 +48,9 @@ structure NatSucc (n: Nat) where
   pred: Nat
   eqn : n = succ (pred)
 
-def posSucc : (n : Nat) → Not (zero = n) → NatSucc n :=
-  fun n =>
-  match n with
-  | zero => fun w => absurd rfl w
-  | l + 1 => fun _ => ⟨l, rfl⟩
+def posSucc : (n : Nat) → Not (zero = n) → NatSucc n 
+  | zero, w => absurd rfl w
+  | l + 1, _ => ⟨l, rfl⟩
 
 structure SkipProvedInv(n m : Nat) where
   k : Nat
@@ -60,34 +58,32 @@ structure SkipProvedInv(n m : Nat) where
 
 def provedSkipInverse : (n : Nat) → (m : Nat) → (m ≠ n) →  SkipProvedInv n m :=
   fun n m eqn =>
-  if mLtn : m < n then
-    ⟨m, skip_below_eq n m mLtn⟩
+  if m_lt_n : m < n then
+    ⟨m, skip_below_eq n m m_lt_n⟩
   else 
-    let nLtm : n < m := 
+    have n_lt_m : n < m := 
         match Nat.lt_or_ge m n with
-        | Or.inl p => absurd p mLtn
+        | Or.inl p => absurd p m_lt_n
         | Or.inr p => 
           match Nat.eq_or_lt_of_le p with
           | Or.inl q => absurd (Eq.symm q) eqn
-          |Or.inr q => q
-    let notZero : Not (zero = m) := 
+          | Or.inr q => q
+    have notZero : Not (zero = m) := 
       fun hyp =>
         let nLt0 : n < zero := by
           rw [hyp]
-          exact nLtm
-        let nLtn : n < n :=
+          exact n_lt_m
+        let n_lt_n : n < n :=
           Nat.lt_of_lt_of_le nLt0 (Nat.zero_le _)
-        Nat.lt_irrefl n nLtn
+        Nat.lt_irrefl n n_lt_n
     let ⟨p, seq⟩ := posSucc m notZero
-    let nLep : n ≤ p := 
+    have n_le_p : n ≤ p := 
       Nat.le_of_succ_le_succ (by
         rw [← seq]
-        exact nLtm
-        done)
-    let imeq : skip n p = m := by
+        exact n_lt_m)
+    have imeq : skip n p = m := by
       rw [seq]
-      exact (skip_above_eq n p nLep)
-      done
+      exact (skip_above_eq n p n_le_p)
     ⟨p, imeq⟩
 
 def skipInverse (n m : Nat) : (m ≠ n) → Nat := 
@@ -105,13 +101,11 @@ theorem skip_lt: (k j: Nat) →  skip k j < j + 2 :=
           rw [eqn]
           apply Nat.le_step
           apply Nat.le_refl
-          done
       else 
         let eqn := skip_not_below_eq k j c
         by 
           rw [eqn]
           apply Nat.le_refl
-          done 
 
 theorem skip_ge :(k j: Nat) →  j ≤ skip k j  :=
     fun k j =>
@@ -120,14 +114,12 @@ theorem skip_ge :(k j: Nat) →  j ≤ skip k j  :=
           by 
             rw [eqn]
             apply Nat.le_refl
-            done
       else 
         let eqn := skip_not_below_eq k j c
         by 
           rw [eqn]
           apply Nat.le_step
           apply Nat.le_refl
-          done
 
 theorem skip_gt_or :(k j: Nat) →  Or (j + 1 ≤ skip k j) (j <  k)  :=
     fun k j =>
@@ -156,17 +148,10 @@ theorem skip_preimage_lt {i j k n : Nat}: (k < n + 1) → (j < n + 1) →
                   have lem1 : i <  j :=
                   by
                     rw [← eqn]
-                    exact ineq
-                    done                 
-                  have lem2 : i < n :=
-                  by
-                    apply Nat.lt_of_lt_of_le
-                    apply lem1
-                    apply Nat.le_of_succ_le_succ
-                    apply jw
-                    done 
-                  exact lem2
-                  done
+                    exact ineq                
+                  apply Nat.lt_of_lt_of_le lem1
+                  apply Nat.le_of_succ_le_succ
+                  apply jw
               | Or.inr ineqn => by
                   apply Nat.lt_of_lt_of_le ineqn 
                   apply Nat.le_of_succ_le_succ
