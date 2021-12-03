@@ -68,14 +68,14 @@ def provedSkipInverse : (n : Nat) → (m : Nat) → (m ≠ n) →  SkipProvedInv
           match Nat.eq_or_lt_of_le p with
           | Or.inl q => absurd (Eq.symm q) eqn
           | Or.inr q => q
-    have notZero : Not (zero = m) := 
-      fun hyp =>
+    have notZero : Not (zero = m) := by
+        intro hyp
         let nLt0 : n < zero := by
           rw [hyp]
           exact n_lt_m
         let n_lt_n : n < n :=
           Nat.lt_of_lt_of_le nLt0 (Nat.zero_le _)
-        Nat.lt_irrefl n n_lt_n
+        exact Nat.lt_irrefl n n_lt_n
     let ⟨p, seq⟩ := posSucc m notZero
     have n_le_p : n ≤ p := 
       Nat.le_of_succ_le_succ (by
@@ -121,16 +121,14 @@ theorem skip_ge :(k j: Nat) →  j ≤ skip k j  :=
           apply Nat.le_step
           apply Nat.le_refl
 
-theorem skip_gt_or :(k j: Nat) →  Or (j + 1 ≤ skip k j) (j <  k)  :=
+theorem skip_gt_or_arg_below :(k j: Nat) →  Or (j + 1 ≤ skip k j) (j <  k)  :=
     fun k j =>
-      if c : j < k then
-          Or.inr c
+      if c : j < k then Or.inr c
       else
           let eqn := skip_not_below_eq k j c
           Or.inl (by 
                     rw [eqn]
-                    apply Nat.le_refl
-                    done)
+                    apply Nat.le_refl)
 
 theorem skip_le_succ {n k j : Nat} : j < n → skip k j < n + 1 := 
    by
@@ -142,7 +140,7 @@ theorem skip_le_succ {n k j : Nat} : j < n → skip k j < n + 1 :=
 theorem skip_preimage_lt {i j k n : Nat}: (k < n + 1) → (j < n + 1) → 
                                 skip k i = j → i < n :=
           fun kw jw eqn =>
-            match skip_gt_or k i with
+            match skip_gt_or_arg_below k i with
               | Or.inl ineq =>
                 by 
                   have lem1 : i <  j :=
