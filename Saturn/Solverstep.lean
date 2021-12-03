@@ -1,6 +1,5 @@
 import Saturn.FinSeq
 import Saturn.Vector
-import Saturn.Clause 
 open Nat
 open Vector
 open FinSeq
