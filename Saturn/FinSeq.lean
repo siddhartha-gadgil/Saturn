@@ -168,49 +168,34 @@ structure ProvedInsert{α : Type}{n: Nat}(value : α) (seq : FinSeq n α)
   checkImage : (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw
   checkFocus : j = k → result = value
 
-
 def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
                 (k : Nat)(kw : k < n + 1)(j: Nat) (jw : j < n + 1) : 
                   ProvedInsert value seq k kw j jw := 
           if c: j = k then
             let result := value
             let checkImage : 
-              (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw := 
-                fun i iw hyp =>
-                  let lem : skip k i = k := by
-                    rw [hyp]
-                    rw [c]
-                    done
-                  let contra := skip_no_fixedpoints k i lem
-                  nomatch contra
+              (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw := by
+                  intro i iw hyp
+                  rw [c] at hyp
+                  exact False.elim $ skip_no_fixedpoints k i hyp
             let  checkFocus : j = k → result = value := fun  _  => rfl
             ⟨result, checkImage, checkFocus⟩
           else  
-            let i := skipInverse k j c 
+            let ii := skipInverse k j c 
             let eqn := skip_inverse_eq k j c  
-            let bound : i < n  := skip_preimage_lt kw jw eqn
-            let result := seq i bound
+            let bound : ii < n  := skip_preimage_lt kw jw eqn
+            let result := seq ii bound
             let checkImage : 
-              (i : Nat) → (iw : i < n) → (skip  k i = j) → result = seq i iw := 
-                fun i1 iw1 hyp =>
-                  let lem1 : i1 = i := by 
-                    apply (skip_injective k)
-                    rw [hyp]
-                    rw [(Eq.symm eqn)]
-                    done
-                  let lem2 : seq i1 iw1 = seq i bound := 
-                    witness_independent seq i1 i iw1 bound lem1
-                  by
-                    rw [lem2]
-                    done
-            let  checkFocus : j = k → result = value := 
-              fun  hyp  => 
-                let lem : skip k i = k := by
-                    rw [eqn]
-                    rw [hyp]
-                    done
-                  let contra := skip_no_fixedpoints k i lem
-                  nomatch contra 
+              (i : Nat) → (iw : i < n) → (skip  k i = j) → seq ii bound = seq i iw := by
+                  intro i1 iw1 hyp 
+                  apply witness_independent
+                  apply (skip_injective k)
+                  rw [hyp]
+                  rw [← eqn]
+            let  checkFocus : j = k → result = value := by
+                intro  hyp  
+                rw [← eqn] at hyp
+                exact False.elim $ skip_no_fixedpoints k ii hyp
             ⟨result, checkImage, checkFocus⟩
 
 def FinSeq.insert{α : Type}(value: α) : (n : Nat) →  (k: Nat) → 
@@ -231,45 +216,29 @@ theorem insert_at_image(value: α) : (n : Nat) →  (k: Nat) →
 
 theorem insert_delete_id{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α) :
   insert (seq k kw) n k kw (delete k kw seq) = seq := 
-    let delSeq := delete k kw seq
-    funext (
-      fun j =>
-        funext (
-          fun jw => 
-            if c : j = k then
-              by
-              have lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw =
-                insert (seq k kw) n k kw (delete k kw seq) k kw :=
-                by
-                  apply witness_independent
-                  apply c
-                  done 
-              rw [lem1]
-              rw [(insert_at_focus (seq k kw) n k kw (delete k kw seq))]
-              apply witness_independent
-              rw [← c]
-              done  
-            else  
-              let i := skipInverse k j c 
-              let eqn := skip_inverse_eq k j c
-              let iw : i < n := skip_preimage_lt kw jw eqn
-              let lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw
-                = insert (seq k kw) n k kw (delete k kw seq) (skip k i) (skip_le_succ iw) := 
-                  by 
-                    apply witness_independent
-                    rw [← eqn]
-                    done
-              let lem2 := insert_at_image (seq k kw) n k kw (delete k kw seq) i iw
-              let lem3 : delete k kw seq i iw = seq (skip k i) (skip_le_succ iw) := by rfl
-              by
-                rw [lem1]
-                rw [lem2]
-                rw [lem3]
+    funext $ fun j => funext $ fun jw => 
+        if c : j = k then
+          by
+          match j, jw, c with
+          | .(k), .(kw), rfl => apply insert_at_focus
+        else 
+          by 
+          let i := skipInverse k j c 
+          let eqn : skip k i = j  := skip_inverse_eq k j c
+          let iw : i < n := skip_preimage_lt kw jw eqn
+          let lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw
+            = insert (seq k kw) n k kw (delete k kw seq) (skip k i) (skip_le_succ iw) := 
+              by 
                 apply witness_independent
-                exact eqn
-                done
-        )
-    )
+                rw [← eqn]
+          let lem2 : insert (seq k kw) n k kw (delete k kw seq) (skip k i) (_ : skip k i < n + 1) = 
+                        delete k kw seq i iw := by apply insert_at_image 
+          let resolve : delete k kw seq i iw = seq (skip k i) (skip_le_succ iw) := by rfl
+          rw [lem1]
+          rw [lem2]
+          rw [resolve]
+          apply witness_independent
+          exact eqn    
 
 -- Part 4 : searching
 
@@ -307,11 +276,10 @@ def findAux?{α: Type}{n : Nat}(pred : α → Prop)(cursor: Nat)
           match cursor, cursorBound with
           | zero, _ => none
           | l + 1, cb => 
-            let lem : l + 1 ≤  n := by
-                apply (Nat.le_trans ·  cb)
-                apply Nat.le_succ
-                done
-            findAux? pred l lem seq    
+            let bd : l + 1 ≤  n := by
+                apply Nat.le_of_lt
+                exact cb
+            findAux? pred l bd seq    
 
 def find?{α: Type}{n : Nat}(pred : α → Prop)[DecidablePred pred]:
   (seq : FinSeq n α) → Option (ElemSeqPred seq pred) :=
@@ -330,20 +298,18 @@ def findFilteredAux?{α: Type}{n : Nat}(filter : FinSeq n Bool)(pred : α → Pr
           match cursor, cursorBound with
           | zero, _ => none
           | l + 1, cb => 
-            let lem : l + 1 ≤  n := by
-                apply (Nat.le_trans ·  cb)
-                apply Nat.le_succ
-                done
-            findFilteredAux? filter pred l lem seq    
+            let bd : l + 1 ≤  n := by
+                apply Nat.le_of_lt
+                exact cb
+            findFilteredAux? filter pred l bd seq    
     else
       match cursor, cursorBound with
           | zero, _ => none
           | l + 1, cb => 
-            let lem : l + 1 ≤  n := by
-                apply (Nat.le_trans ·  cb)
-                apply Nat.le_succ
-                done
-            findFilteredAux? filter pred l lem seq
+            let bd : l + 1 ≤  n := by
+                apply Nat.le_of_lt
+                exact cb
+            findFilteredAux? filter pred l bd seq
 
 def findFiltered?{α: Type}{n : Nat}(filter : FinSeq n Bool)(pred : α → Prop)[DecidablePred pred]:
   (seq : FinSeq n α) → Option (ElemSeqPred seq pred) :=
@@ -362,11 +328,10 @@ def findElemAux?{α: Type}{n : Nat}(cursor: Nat)
           match cursor, cursorBound with
           | zero, _ => none
           | l + 1, cb => 
-            let lem : l + 1 ≤  n := by
-                apply (Nat.le_trans ·  cb)
-                apply Nat.le_succ
-                done
-            findElemAux? l lem seq elem  
+            let bd : l + 1 ≤  n := by
+                apply Nat.le_of_lt
+                exact cb
+            findElemAux? l bd seq elem  
 
 def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  Option (ElemInSeq seq elem) :=
@@ -379,8 +344,7 @@ def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}:
     match n with
     | zero => fun seq  => fun elem => ExistsElem.notExst (fun j jw => nomatch jw)
     | m + 1 => 
-      fun fn =>
-        fun x =>
+      fun fn x =>
           if pf0 : fn zero (zero_lt_succ m) =  x then
             ExistsElem.exsts zero (zero_lt_succ m) pf0
           else
@@ -416,7 +380,7 @@ def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → O
 def equalBeyond{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α)(m: Nat): Prop :=
   ∀ k: Nat, ∀ kw : k <n, ∀ mw : m ≤ k, seq1 k kw = seq2 k kw
 
-theorem equal_beyond_zero{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α):
+theorem equal_beyond_zero_implies_equals{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α):
     equalBeyond seq1 seq2 zero → seq1 = seq2 := by
       intro hyp
       apply funext
@@ -424,19 +388,13 @@ theorem equal_beyond_zero{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α):
       apply funext
       intro kw
       exact hyp k kw  (Nat.zero_le k)
-      done
-
 
 theorem equal_beyond_vacuously{α: Type}{n : Nat}(seq1 seq2 : FinSeq n α)(m: Nat):
     (n ≤ m) → equalBeyond seq1 seq2 m := by
-      intro hyp
-      intro k
-      intro kw
-      intro ineq
+      intro hyp k kw ineq
       let inq := Nat.le_trans hyp ineq
       let inq2 := Nat.lt_of_lt_of_le kw inq
       exact (False.elim (Nat.lt_irrefl k inq2))
-      done
 
 def deqSeqRec{α: Type}[DecidableEq α]{n : Nat}(seq1 seq2 : FinSeq n α): (m: Nat) → 
       Decidable (equalBeyond seq1 seq2 m) → 
@@ -448,42 +406,32 @@ def deqSeqRec{α: Type}[DecidableEq α]{n : Nat}(seq1 seq2 : FinSeq n α): (m: N
           by
             intro hyp
             have restr : equalBeyond seq1 seq2 m := by
-              intro k
-              intro kw
-              intro _ 
+              intro k kw _
               rw [hyp]
-              done
-            exact contra restr
-            done)
+            exact contra restr)
       | zero, isTrue pf => 
-        isTrue (equal_beyond_zero seq1 seq2 pf)
-      | l + 1, isTrue pf  => 
+        isTrue (equal_beyond_zero_implies_equals seq1 seq2 pf)
+      | l + 1, isTrue eql_bynd  => 
         if lw : l < n then
           match decEq (seq1 l lw) (seq2 l lw) with
-          | isTrue pfHead => 
+          | isTrue eql_at_l => 
               let accum: Decidable (equalBeyond seq1 seq2 l) := 
                 isTrue (
                   by
-                    intro k 
-                    intro kw
-                    intro ineq
+                    intro k kw ineq
                     cases Nat.eq_or_lt_of_le ineq with
                     | inl eql =>
-                      let lem0 := pfHead
                       let lem1 : seq1 l lw = seq1 k kw := by
                         apply witness_independent
                         exact eql
-                        done
                       let lem2 : seq2 l lw = seq2 k kw := by
                         apply witness_independent
                         exact eql
                       rw [← lem1]
                       rw [← lem2]
-                      exact lem0
-                      done
+                      exact eql_at_l
                     | inr l2 => 
-                      exact pf k kw l2 
-                      done                      
+                      exact eql_bynd k kw l2                      
                 )
               deqSeqRec seq1 seq2 l accum
           | isFalse contra => isFalse (fun hyp =>
