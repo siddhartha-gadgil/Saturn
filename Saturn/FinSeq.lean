@@ -22,30 +22,22 @@ open Nat
 -- Part 1: `FinSeq` definition and elementary operations
 
 namespace FinSeq
-def cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α :=
-  fun k =>
-  match k with
-  | zero => fun _ => head
-  | j + 1 => 
-    fun w =>
-      tail j (le_of_succ_le_succ w)
+def cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α 
+  | zero, _  => head
+  | j + 1, w => tail j (le_of_succ_le_succ w)
 
 def empty {α: Type} : FinSeq zero α := 
   fun j jw => nomatch jw
 
 infixr:66 "+|" => cons
 
-def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
-  fun k w =>
-      seq (k + 1) (succ_lt_succ w)
+def tail {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α 
+  | k, w => seq (k + 1) (succ_lt_succ w)
 
-def head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
-  seq zero (zero_lt_succ _)
+def head{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α := seq zero (zero_lt_succ _)
 
-
-def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α := 
-  fun k w =>
-      seq k (Nat.le_step w)
+def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α 
+ | k, w => seq k (Nat.le_step w)
 
 def last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq n (Nat.le_refl _)
@@ -58,12 +50,10 @@ end FinSeq
 
 
 theorem witness_independent{α : Type}{n : Nat}(seq: FinSeq n α) :
-    (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) → 
-        (i = j) → seq i iw = seq j jw :=
-        fun i j iw jw eqn =>
-          match j, eqn, jw with 
-          | .(i), rfl, ijw =>
-               rfl
+    (i : Nat)→ (j : Nat) → (iw : i < n) → (jw : j < n) →  (i = j) → seq i iw = seq j jw 
+    | i, j, _, _, eqn => 
+    match j, eqn with 
+    | .(i), rfl => rfl
 
 -- Part 2: concatenation
 def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →   
@@ -74,63 +64,43 @@ def concatSeqAux {α: Type}{n m l: Nat}: (s : n + m = l) →
         have ss : l = m := by
           rw [← s]
           apply Nat.zero_add
-          done
-        have sf : FinSeq l α = FinSeq m α := by
-          rw [ss]
-        exact Eq.mpr sf seq2
-        done
+        rw [ss]
+        exact seq2
     | k + 1 => fun s seq1 seq2 => 
       let ss : k + (m + 1)  = l := 
         by
           rw [← s]
           rw [(Nat.add_comm m 1)]
           rw [(Nat.add_assoc k 1 m)]
-          done
       concatSeqAux ss (seq1.init) ((seq1.last) +| seq2)
 
 def concatSeq {α: Type}{n m: Nat}(seq1 : FinSeq n α)(seq2 : FinSeq m α): 
   FinSeq (n + m) α := concatSeqAux rfl seq1 seq2
 
-
 theorem concat_aux_eqs{α: Type}{n m l: Nat}: (s : n + m = l) →   
     (seq1 : FinSeq n α) → (seq2 : FinSeq m α) → (k: Nat) → 
       ((kw : k < n) → (w : k < l) → concatSeqAux s seq1 seq2 k w = seq1 k kw) ∧ 
-      ((kw : k < m) → (w : (n + k) < l) → concatSeqAux s seq1 seq2 (n + k) w = seq2 k kw) := 
+      ((kw : k < m) → (w : (n + k) < l) → concatSeqAux s seq1 seq2 (n + k) w = seq2 k kw) := by
         match n with
-        | zero => fun s => fun seq1 => fun seq2 =>
-          by
+        | zero => 
+
+            intro s seq1 seq2 k
             have ss : l = m := by 
               rw [← s]
               apply Nat.zero_add
-              done
             have sf : FinSeq l α = FinSeq m α := by
               rw [ss]
-              done
-            have resolve : concatSeqAux s seq1 seq2 = Eq.mpr sf seq2 := rfl
-            rw [resolve]
-            let lem1 : ∀ (k : Nat),
-                (∀ (kw : k < zero) (w : k < l), Eq.mpr sf seq2 k w = seq1 k kw) := 
-                  fun k kw => nomatch kw
-            let lem2 :  ∀ (k : Nat),
-              ∀ (kw : k < m) (w : zero + k < l), Eq.mpr sf seq2 (zero + k) w = 
-              seq2 k kw := 
-                match l, m, ss, sf, seq2 with
+            apply And.intro
+            focus
+              intro kw
+              exact nomatch kw
+            match l, m, ss, sf, seq2 with
                 | d, .(d), rfl, rfl, seq => 
-                  by 
-                    intro k
-                    intro kw
-                    intro w
-                    let zp: zero + k = k :=
-                        Nat.zero_add k
-                    let lm : Eq.mpr rfl seq (zero + k) w = seq (zero + k) w := rfl 
-                    rw [lm]
+                    intro kw w
                     apply witness_independent
-                    exact zp
-                    done
-            exact (fun k => And.intro (lem1 k) (lem2 k))
-            done
+                    apply Nat.zero_add
         | p + 1 => 
-          fun s seq1 seq2 => 
+          intro s seq1 seq2 k
           let ss : p + (m + 1)  = l := 
             by
               rw [← s]
@@ -139,69 +109,42 @@ theorem concat_aux_eqs{α: Type}{n m l: Nat}: (s : n + m = l) →
               done
           let resolve : concatSeqAux s seq1 seq2=
               concatSeqAux ss (seq1.init) ((seq1.last) +| seq2) := rfl
+          rw [resolve]
           let hyp := concat_aux_eqs ss (seq1.init) ((seq1.last) +| seq2)
-          by
-            rw [resolve]
-            intro k
-            let hyp1 := (hyp k).left
-            let lem1 : (∀ (kw : k < p + 1) (w : k < l), 
-                concatSeqAux ss (seq1.init) (seq1.last+|seq2) k w = seq1 k kw) := 
-                fun kw w => 
-                  if kww : k < p then 
-                    hyp1 kww w 
-                  else 
-                    let eql: k = p := 
-                      match Nat.eq_or_lt_of_le kw with
-                      | Or.inl h => by 
-                                      injection h
-                                      assumption
-                      | Or.inr h =>
-                          let contra : k < p := by
-                              apply Nat.le_of_succ_le_succ
-                              exact h
-
-                          absurd contra kww
-                    match k, eql, kw, w with
-                    | .(p), rfl, pw, w =>
-                      let ww : p + zero < l := by
-                        rw [(Nat.add_zero p)]
-                        assumption 
-                      let hyp2 := (hyp zero).right (Nat.zero_lt_succ _) ww
-                      let lem2 : concatSeqAux ss (seq1.init) (seq1.last+|seq2) (p + zero) ww =
-                            concatSeqAux ss (seq1.init) (seq1.last+|seq2) p w := 
-                            match (p + zero), Nat.add_zero p, ww with
-                            | .(p), rfl, ww => rfl
-                      by
-                        rw [← lem2]
-                        rw [hyp2]
-                        rfl
-                        done
-            let ass := Nat.add_assoc p 1 k
-            let comm := Nat.add_comm 1 k
-            let lem2 : ∀ (kw : k < m) (w : p + 1 + k < l), 
-                concatSeqAux ss (seq1.init) (seq1.last+|seq2) (p + 1 + k) w = 
-                    seq2 k kw := fun kw w =>
-                    match p + 1 + k, ass, w with
-                    | .(p + (1 + k)), rfl, ww => 
-                      by
-                      let hypw := (hyp (1 + k)).right
-                      let kww : 1 + k < m + 1 := by
-                        rw [comm]
-                        apply Nat.succ_lt_succ
-                        assumption
-                        done 
-                      let lm := hypw kww ww
-                      rw [lm]
-                      let lmc : FinSeq.cons (seq1.last) seq2 (1 + k) kww = 
-                                  FinSeq.cons (seq1.last) seq2 (k + 1) 
-                                  (succ_lt_succ kw) := 
-                              match 1 + k, comm, kww with 
-                              | .(k + 1), rfl, kwww => by rfl
-                      rw [lmc]
-                      rfl
-                      done
-            exact (And.intro lem1 lem2)
-            done
+          let hyp1 := (hyp k).left
+          apply And.intro
+          focus
+              intro kw w  
+              match Nat.eq_or_lt_of_le kw with
+              | Or.inr kww => exact hyp1 (le_of_succ_le_succ kww) w
+              | Or.inl eql =>
+                  match k, eql, kw, w with
+                  | .(p), rfl, pw, w =>
+                    let ww : p + zero < l := by
+                      rw [(Nat.add_zero p)]
+                      assumption 
+                    let hyp2 := (hyp zero).right (Nat.zero_lt_succ _) ww
+                    let lem2 : concatSeqAux ss (seq1.init) (seq1.last+|seq2) (p + zero) ww =
+                          concatSeqAux ss (seq1.init) (seq1.last+|seq2) p w := 
+                          match (p + zero), Nat.add_zero p, ww with
+                          | .(p), rfl, ww => rfl                    
+                    rw [← lem2]
+                    rw [hyp2]
+                    rfl
+          let ass := Nat.add_assoc p 1 k
+          let comm := Nat.add_comm 1 k
+          intro kw w 
+          match p + 1 + k, ass, w with
+          | .(p + (1 + k)), rfl, ww => 
+            let hypw := (hyp (1 + k)).right
+            let kww : 1 + k < m + 1 := by
+              rw [comm]
+              apply Nat.succ_lt_succ
+              assumption
+            let resol := hypw kww ww
+            rw [resol]
+            match 1 + k, comm, kww with 
+            | .(k + 1), rfl, kwww => rfl
 
 infix:65 "++|" => concatSeq
 
@@ -211,20 +154,10 @@ theorem concat_empty_seq_id{α: Type}{n: Nat}: (seq : FinSeq n α) → seq ++| (
             apply funext
             intro k
             apply funext
-            intro kw
-            let resolve : concatSeq seq FinSeq.empty =  
-                  concatSeqAux rfl seq FinSeq.empty := rfl
-            rw [resolve]
-            have w : k < n + zero := by
-              rw [(Nat.add_zero n)]
-              assumption
-              done
-            let lem := (concat_aux_eqs rfl seq FinSeq.empty k).left kw w
-            exact lem
-            done
-
+            intro kw            
+            apply (concat_aux_eqs rfl seq FinSeq.empty k).left 
+            
 -- Part 3 : insertion and deletion
-
 
 def FinSeq.delete{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : FinSeq (n + 1) α): FinSeq n α 
   | j, w => seq (skip k j) (skip_le_succ w)
