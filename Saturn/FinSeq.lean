@@ -392,28 +392,8 @@ def searchElemRec{α: Type}[deq: DecidableEq α]{n: Nat}:
 
 def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  ExistsElem seq elem :=
-    match n with
-    | zero => fun seq  => fun elem => ExistsElem.notExst (fun j jw => nomatch jw)
-    | m + 1 => 
-      fun fn x =>
-          if pf0 : fn zero (zero_lt_succ m) =  x then
-            ExistsElem.exsts zero (zero_lt_succ m) pf0
-          else
-            match searchElem (fn.tail) x with
-            | ExistsElem.exsts j jw eql => 
-              let l1 : fn (j + 1) (succ_lt_succ jw) = (fn.tail) j jw := by rfl 
-              let l2 : fn (j + 1) (succ_lt_succ jw) = x := by 
-                    rw [l1]
-                    exact eql
-              ExistsElem.exsts (j + 1) (succ_lt_succ jw) l2              
-            | ExistsElem.notExst tailPf => 
-                  ExistsElem.notExst (
-                    fun j =>
-                    match j with
-                    | zero => fun jw => pf0 
-                    | i + 1 => fun iw => tailPf i (le_of_succ_le_succ iw)
-                  )
-
+  fun seq elem => searchElemRec seq elem n 
+            (elem_not_beyond_vacuously seq elem n (Nat.le_refl _))
 
 def findSome?{α β : Type}{n: Nat}(f : α → Option β) : (FinSeq n  α) → Option β :=
     match n with
