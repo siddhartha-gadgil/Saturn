@@ -339,6 +339,57 @@ def findElem?{α: Type}[deq: DecidableEq α]{n: Nat}:
   | zero => fun _ _ =>  none
   | m + 1 => fun seq elem => findElemAux?  m (Nat.le_refl _) seq elem
 
+def elemNotBeyond{α: Type}{n : Nat}(seq : FinSeq n α)(elem : α)(m: Nat): Prop :=
+      ∀ k: Nat, ∀ kw : k <n, ∀ mw : m ≤ k, Not (seq k kw = elem)
+
+def elem_not_beyond_zero_implies_not_exsts{α: Type}{n : Nat}(seq : FinSeq n α)(elem: α):
+    elemNotBeyond seq elem zero → ExistsElem seq elem := 
+    fun hyp => ExistsElem.notExst $ 
+    by
+      intro k
+      intro kw
+      exact hyp k kw  (Nat.zero_le k)
+    
+theorem elem_not_beyond_vacuously{α: Type}{n : Nat}(seq : FinSeq n α)(elem: α)(m: Nat):
+    (n ≤ m) → elemNotBeyond seq elem m  := by
+      intro hyp k kw ineq
+      let inq := Nat.le_trans hyp ineq
+      let inq2 := Nat.lt_of_lt_of_le kw inq
+      exact (False.elim (Nat.lt_irrefl k inq2))
+
+def searchElemRec{α: Type}[deq: DecidableEq α]{n: Nat}: 
+  (seq: FinSeq n  α) → (elem: α) →  
+  (m: Nat) → elemNotBeyond seq elem m →   ExistsElem seq elem := 
+  fun seq elem m =>
+  match m with
+  | zero => fun hyp => elem_not_beyond_zero_implies_not_exsts seq elem hyp
+  | l + 1 => 
+    fun hyp =>
+    if lw : l < n then 
+      if eqn : seq l lw = elem 
+        then ExistsElem.exsts l lw eqn
+        else 
+          let accum : elemNotBeyond seq elem l := 
+            by
+                    intro k kw ineq
+                    cases Nat.eq_or_lt_of_le ineq with
+                    | inl eql => 
+                      let lem1 : seq l lw = seq k kw := by
+                        apply witness_independent
+                        exact eql
+                      rw [← lem1]
+                      exact eqn
+                    | inr lt => exact hyp k kw lt
+        searchElemRec seq elem l accum
+    else 
+    let overshoot : n ≤ l := by
+            cases Nat.lt_or_ge l n with
+            | inl l1 => exact absurd l1 lw
+            | inr l2 => exact l2
+          let accum: elemNotBeyond seq elem l := 
+            elem_not_beyond_vacuously seq elem l overshoot
+          searchElemRec seq elem l accum
+
 def searchElem{α: Type}[deq: DecidableEq α]{n: Nat}: 
   (seq: FinSeq n  α) → (elem: α) →  ExistsElem seq elem :=
     match n with
