@@ -34,4 +34,4 @@ def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
   | SatSolution.unsat tree   => 
           tree_unsat clauses tree
   | SatSolution.sat valuation evidence =>
-          ⟨valuation, fun k kw => (evidence k kw)⟩
+          ⟨valuation, evidence⟩
