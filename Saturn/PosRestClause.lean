@@ -12,9 +12,9 @@ constructed.
 -/
 def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
-      (rc: RestrictionClauses branch focus focusLt clauses) → 
+      (rc: ReductionClauses branch focus focusLt clauses) → 
         (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) → 
-            RestrictionClauses branch focus focusLt (head +: clauses) := 
+            ReductionClauses branch focus focusLt (head +: clauses) := 
           fun rc head pos => 
           let domN := dom + 1
           let codomN := rc.codom
@@ -69,7 +69,7 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                   done
           have reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
             fun k w => succ_le_succ (rc.reverseWit k  w)
-          RestrictionClauses.mk codomN rc.restClauses 
+          ReductionClauses.mk codomN rc.restClauses 
                     (forwardVecN) 
                     (forwardNEq ▸ forwardWitN) 
                     reverseVecN
@@ -79,7 +79,7 @@ namespace PosResClause
 
 def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
-      (rc: RestrictionClauses branch focus focusLt clauses) → 
+      (rc: ReductionClauses branch focus focusLt clauses) → 
         (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
           DroppedProof rc → 
           DroppedProof (addPositiveClause  branch focus focusLt clauses rc head pos) := 
@@ -107,7 +107,7 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
 
 def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
-      (rc: RestrictionClauses branch focus focusLt clauses) → 
+      (rc: ReductionClauses branch focus focusLt clauses) → 
         (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
           ForwardRelation rc → 
           ForwardRelation (addPositiveClause  branch focus focusLt clauses rc head pos) := 
@@ -131,7 +131,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
 
 theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
-      (rc: RestrictionClauses branch focus focusLt clauses) → 
+      (rc: ReductionClauses branch focus focusLt clauses) → 
         (head : Clause (n + 1)) → (pos : (head.coords focus focusLt = some branch)) →
         (l: Nat) → (w : l  < rc.codom ) → 
           (addPositiveClause  branch focus focusLt clauses rc head pos).reverse l w = 
@@ -159,7 +159,7 @@ theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n
 
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
-      (rc: RestrictionClauses branch focus focusLt clauses) → 
+      (rc: ReductionClauses branch focus focusLt clauses) → 
         (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
           ReverseRelation rc → 
           ReverseRelation (addPositiveClause  branch focus focusLt clauses rc head pos) := 
@@ -194,7 +194,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
 
 def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
-      (rc: RestrictionClauses branch focus focusLt clauses) → 
+      (rc: ReductionClauses branch focus focusLt clauses) → 
         (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
           NonPosReverse rc → 
           NonPosReverse (addPositiveClause  branch focus focusLt clauses rc head pos) := 
@@ -233,8 +233,8 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
 def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom): 
         (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
-        (rd : RestrictionData branch focus focusLt clauses) → 
-        RestrictionData branch focus focusLt (head +: clauses) := 
+        (rd : ReductionData branch focus focusLt clauses) → 
+        ReductionData branch focus focusLt (head +: clauses) := 
           fun head pos rd =>
           let rc := addPositiveClause branch focus focusLt clauses rd.restrictionClauses head pos
           ⟨rc, 

@@ -34,9 +34,9 @@ We map to branches inductively. The main work is done earlier.
 -/
 def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom): 
-        (rd : RestrictionData branch focus focusLt clauses) → 
+        (rd : ReductionData branch focus focusLt clauses) → 
            (head : Clause (n + 1)) → 
-        RestrictionData branch focus focusLt (head +: clauses) := 
+        ReductionData branch focus focusLt (head +: clauses) := 
         fun rd  head => 
           if c : head.coords focus focusLt = some branch then
             PosResClause.prependResData branch focus focusLt clauses head c rd
@@ -48,10 +48,10 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
     (clausesHead: Vector (Clause (n + 1)) domHead) → 
     (clausesAccum: Vector (Clause (n + 1)) domAccum) → 
     (s : domHead + domAccum = dom) → 
-    (restAcum : RestrictionData branch focus focusLt clausesAccum) → 
+    (restAcum : ReductionData branch focus focusLt clausesAccum) → 
     (clauses: Vector (Clause (n + 1)) dom) →
     (clsEq : concatSeqAux s clausesHead.coords clausesAccum.coords = clauses.coords) →    
-        RestrictionData branch focus focusLt clauses := 
+        ReductionData branch focus focusLt clauses := 
     match domHead with
     | zero =>  
       by
@@ -102,13 +102,13 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
 
 def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1):
     (clauses: Vector (Clause (n + 1)) dom) →   
-        RestrictionData branch focus focusLt clauses := 
+        ReductionData branch focus focusLt clauses := 
         fun clauses =>
-          let rc : RestrictionClauses branch focus focusLt Vector.nil := 
+          let rc : ReductionClauses branch focus focusLt Vector.nil := 
               ⟨0, Vector.nil, Vector.nil,
                 fun k w => nomatch w, 
                 Vector.nil, fun k w => nomatch w⟩
-          let rd : RestrictionData branch focus focusLt Vector.nil := ⟨rc,
+          let rd : ReductionData branch focus focusLt Vector.nil := ⟨rc,
             ⟨fun k w => nomatch w⟩,
             ⟨fun k w => nomatch w⟩,
             ⟨fun k w => nomatch w⟩, 
@@ -355,7 +355,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                 | none =>  
                   let index := zero
                   let bd := zero_lt_succ (m + 1)
-                  let rd : RestrictionData false zero bd cls := 
+                  let rd : ReductionData false zero bd cls := 
                       restrictionData false index bd cls
                   let subCls := rd.restrictionClauses.restClauses
                   let subSol: SatSolution subCls := solveSAT subCls
@@ -374,7 +374,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                       | LiftedResTree.contra pf => 
                           SatSolution.unsat pf
                       | LiftedResTree.unit tree1 => 
-                          let rd : RestrictionData true zero bd cls 
+                          let rd : ReductionData true zero bd cls 
                               := restrictionData true index bd cls
                           let subCls := rd.restrictionClauses.restClauses
                           let subSol := solveSAT subCls

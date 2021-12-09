@@ -9,7 +9,7 @@ open FinSeq
 
 -- pull back of solutions from a branch to the original problem
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
+    (clauses: Vector (Clause (n + 1)) dom)(rc: ReductionClauses branch focus focusLt clauses) 
     (dp : DroppedProof rc) (fr: ForwardRelation rc): 
       (valuation : Valuation n) → 
         ((j : Nat) → (jw : j < rc.codom) → clauseSat (rc.restClauses.coords j jw) valuation) → 
@@ -189,7 +189,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
 
 -- pulling back a tree
 def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
-    (clauses: Vector (Clause (n + 2)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
+    (clauses: Vector (Clause (n + 2)) dom)(rc: ReductionClauses branch focus focusLt clauses) 
     (np : NonPosReverse rc) (rr: ReverseRelation rc): (top : Clause (n + 1)) → 
       (tree : ResolutionTree (rc.restClauses) top) 
        → BranchResolutionProof branch focus focusLt clauses top  := 
@@ -245,7 +245,7 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
 
 -- pulling back a proof of unsat by resolution to a contradiction or a proof of a unit clause.
 def pullBackResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
-    (clauses: Vector (Clause (n + 2)) dom)(rc: RestrictionClauses branch focus focusLt clauses) 
+    (clauses: Vector (Clause (n + 2)) dom)(rc: ReductionClauses branch focus focusLt clauses) 
     (np : NonPosReverse rc) (rr: ReverseRelation rc) : 
         ResolutionTree rc.restClauses (contradiction (n + 1)) → 
             LiftedResTree branch focus focusLt clauses := by
