@@ -15,23 +15,16 @@ inductive SatSolution{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) where
         → clauseSat (clauses.coords k kw) valuation) → SatSolution clauses 
 
 def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
-        (sol: SatSolution clauses) →  String := 
-      fun sol =>
-      match sol with
+        (sol: SatSolution clauses) →  String 
       | unsat tree => "unsat: " ++ tree.toString 
       | sat valuation _ => "sat: " ++ (valuation.coords.list).toString
 
-def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
-                  (sol : SatSolution clauses) : Prop :=
-  match sol with
-  | SatSolution.unsat _  => isUnSat clauses
-  | SatSolution.sat _ _ => isSat clauses
+def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
+                  (sol : SatSolution clauses) →  Prop 
+| SatSolution.unsat _  => isUnSat clauses
+| SatSolution.sat _ _ => isSat clauses
 
 def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
-                  (sol : SatSolution clauses) :
-                    solutionProp sol :=
-  match sol with
-  | SatSolution.unsat tree   => 
-          tree_unsat clauses tree
-  | SatSolution.sat valuation evidence =>
-          ⟨valuation, evidence⟩
+                  :(sol : SatSolution clauses) → solutionProp sol 
+| SatSolution.unsat tree  => tree_unsat clauses tree
+| SatSolution.sat valuation evidence => ⟨valuation, evidence⟩

@@ -15,7 +15,7 @@ def cl2 : Clause 2 := (some false) +: (none) +: Vector.nil -- ¬P
 
 def cl3 : Clause 2 := (none) +: (some false) +: Vector.nil -- ¬Q
 
-def eg1Statement : Vector (Clause 2) 3 := cl1 +: cl2 +: cl3 +: Vector.nil -- all three clauses
+def eg1Statement := cl1 +: cl2 +: cl3 +: Vector.nil -- all three clauses
 def eg2Statement := cl1 +: cl3 +: Vector.nil -- clauses 1 and 3 only
 
 #eval decide (isSat eg2Statement)  -- true

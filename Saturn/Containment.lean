@@ -40,6 +40,7 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
                       assumption
                   c (lem2) 
             )
+
 def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2.coords k kw = some b → cl1.coords k kw = some b
 
@@ -86,7 +87,7 @@ theorem contains_beyond_zero_implies_contains {n: Nat} (cl1 cl2 : Clause n) :
     intro h k kw b
     exact h k kw (Nat.zero_le _) b
 
-def containsSat{n: Nat} (cl1 cl2 : Clause n) :
+theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
   cl1 ⊇  cl2 → (valuation : Valuation n) → clauseSat cl2 valuation → clauseSat cl1 valuation := by
     intro dom valuation  
     intro ⟨j, jw, vs⟩ 

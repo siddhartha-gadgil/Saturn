@@ -166,7 +166,7 @@ def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
                       ⟩
 
 -- if a valuation satisfies the bottom two clauses, it satisfies the top clause as a proposition
-theorem triple_step_proof{n: Nat}(left right top : Clause (n + 1))
+theorem triple_step{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
         (valuation: Valuation (n + 1))  → (clauseSat left valuation) → 
         (clauseSat right valuation) → (clauseSat top valuation) := 
@@ -308,7 +308,7 @@ theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top
                 resolutionToProof clauses left leftTree valuation base 
               let rightBase : clauseSat right valuation := 
                 resolutionToProof clauses right rightTree  valuation base 
-              let lemStep := triple_step_proof left right top triple valuation leftBase rightBase
+              let lemStep := triple_step left right top triple valuation leftBase rightBase
             by
               exact lemStep
               done
@@ -316,12 +316,9 @@ theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top
 -- unsat from a resolution tree
 theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
       ResolutionTree clauses (contradiction (n + 1)) → isUnSat clauses := 
-        fun tree => 
-          fun valuation =>
-            fun hyp : ∀ p : Nat, ∀ pw : p < dom, clauseSat (clauses.coords p pw) valuation =>
-              let lem := resolutionToProof clauses (contradiction (n + 1))
-                            tree valuation hyp
-              contradiction_is_false _ valuation lem
+  fun tree valuation hyp =>
+    contradiction_is_false _ valuation $ 
+      resolutionToProof clauses (contradiction (n + 1)) tree valuation hyp
 
 /-
 Pieces for building trees.
@@ -421,6 +418,3 @@ theorem trees_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 
                         (left.coords k kw) (right.coords k kw) (top.coords k kw) join
                           leftLem rightLem
                     lem hyp               
-
-
-

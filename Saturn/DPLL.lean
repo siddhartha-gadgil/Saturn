@@ -408,24 +408,18 @@ instance {dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
 def proveOrDisprove{n dom : Nat}(clauses : Vector (Clause (n + 1)) dom) :=
             getProof (solveSAT clauses)
 
-def decideSat{n dom : Nat}(clauses : Vector (Clause (n + 1)) dom) :
+instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
     Decidable (isSat clauses) := 
-      match solveSAT clauses with
+    match solveSAT clauses with
       | SatSolution.sat valuation evidence =>
           isTrue ⟨valuation, evidence⟩
-      | SatSolution.unsat tree =>
-          isFalse $ fun hyp => not_sat_and_unsat clauses hyp $ tree_unsat clauses tree
+      | SatSolution.unsat tree => isFalse $ fun hyp => 
+            not_sat_and_unsat clauses hyp $ tree_unsat clauses tree
 
-def decideUnSat{n dom : Nat}(clauses : Vector (Clause (n + 1)) dom) :
+instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
     Decidable (isUnSat clauses) := 
-      match solveSAT clauses with
-      | SatSolution.sat valuation evidence =>
-          isFalse $ fun hyp => not_sat_and_unsat clauses ⟨valuation, evidence⟩ hyp    
+    match solveSAT clauses with
+      | SatSolution.sat valuation evidence => isFalse $ fun hyp => 
+        not_sat_and_unsat clauses ⟨valuation, evidence⟩ hyp    
       | SatSolution.unsat tree =>
-          isTrue $ tree_unsat clauses tree
-
-instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
-    Decidable (isSat clauses) := decideSat clauses
-
-instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
-    Decidable (isUnSat clauses) := decideUnSat clauses
+        isTrue $ tree_unsat clauses tree
