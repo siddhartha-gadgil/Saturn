@@ -1,5 +1,11 @@
 open Nat
 
+/-
+The code that is necessary to represent a SAT problem and the associated propositions
+corresponding to its satisfiability. Also a theorem that `isSat` and `isUnsat` are
+exclusive.
+-/
+
 def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 
 inductive Vector (α : Type) : Nat → Type where 

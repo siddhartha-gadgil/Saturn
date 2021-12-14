@@ -7,7 +7,14 @@ open Nat
 open Vector
 open FinSeq
 
--- pull back of solutions from a branch to the original problem
+/-
+We show that solutions in a branch can be pulled back to solutions to the
+original problem. We also show that resolution trees with top a contradiction
+pull back to lifted resolution trees, which are trees with top either a contradiction
+or a specifc unit clause determined by the branch.
+-/
+
+-- pull back of a solution
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom)(rc: ReductionClauses branch focus focusLt clauses) 
     (dp : DroppedProof rc) (fr: ForwardRelation rc): 

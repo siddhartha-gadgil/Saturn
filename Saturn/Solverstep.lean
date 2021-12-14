@@ -6,12 +6,7 @@ open FinSeq
 
 /-
 We define structures that correspond to restricting a SAT problem to a branch as in the 
-DPLL algorithm. We show that solutions in a branch can be pulled back to solutions to the
-original problem.
-
-We also define unit clauses, which are clauses that have only one literal, and pure clauses.
-We define functions that find unit clauses and pure variables in a finite sequence of clauses,
-with proofs.
+DPLL algorithm. 
 -/
 def boundOpt(n: Nat) : Option (Nat) → Prop
   | none => True

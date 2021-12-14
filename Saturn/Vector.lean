@@ -1,7 +1,12 @@
 import Saturn.FinSeq
 import Saturn.Core
 open Nat 
-
+/-
+Functions and theorems for working with vectors. Most of these are conversions from
+finite sequences to vectors,  its consistency with the conversion from vectors to
+finite sequences defined in `Core`, and the consistency of various operations with conversions
+between finite sequences and vectors in both directions.
+-/
 open Vector
 
 def countAux {α : Type}{n : Nat}(v: Vector α n)(pred: α → Bool)(accum : Nat) : Nat :=

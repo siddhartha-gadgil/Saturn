@@ -15,7 +15,11 @@ a term of type `Option Bool`, with `none` meaning absence of the variable in the
 is part of the clause. Thus, clauses correspond to `FinSeq n (Option Bool)`, with `n` the number
 of variables. Similarly a valuation (assignment of `true` or `false` to each variable) is a
 term of type `FinSeq n Bool`.
- -/
+
+We also define unit clauses, which are clauses that have only one literal, and pure clauses.
+We define functions that find unit clauses and pure variables in a finite sequence of clauses,
+with proofs.
+-/
 
 
 /-

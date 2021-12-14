@@ -2,24 +2,25 @@ import Saturn.Skip
 import Saturn.Core
 open Nat
 
- /- An implementation of finite sequences as `FinSeq α`   and operations and relations on these, 
+ /- Operations and relations on the types `FinSeq α` of finite sequences, 
     with proofs of correctness. Specifically, we implement:
-    * definition and elementary operations
+    * elementary operations
     * concatenation of sequences
       - including a proof that the concatenation function is as required.
     * deletion and insertion of elements
       - we define deletion (properties are easy to prove)
       - we define insertion, and prove that the sequence after insertion has correct values.
       - we prove the relation between deletion and insertion.
-    * Searching for elements
-      - we implement functions to search for elements equal to given ones or satisfying a predicate.
+    * searching for elements
+      - we implement functions to search for elements equal to given ones 
+          or satisfying a predicate.
       - these functions return an index and a proof of correctness.
       - another function either finds an element with proof or shows it is not in the sequence
-    * Equality of sequences
+    * decidable equality of sequences
       - if `α` is a type with decidable equality, we implement decidable equality of `FinSeq α`.
  -/
 
--- Part 1: `FinSeq` definition and elementary operations
+-- Part 1:  elementary operations on `FinSeq`
 
 namespace FinSeq
 def cons {α : Type}{n: Nat}(head : α)(tail : FinSeq n α) : FinSeq (n + 1) α 
