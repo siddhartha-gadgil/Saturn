@@ -21,12 +21,11 @@ def eg2Statement := cl1 +: cl3 +: Vector.nil -- clauses 1 and 3 only
 
 -- structured solutions
 
-def eg1Soln := solveSAT (eg1Statement)
-def eg2Soln := solveSAT (eg2Statement)
+def eg1Soln : SatSolution eg1Statement := solveSAT (eg1Statement)
+def eg2Soln : SatSolution eg2Statement := solveSAT (eg2Statement)
 
 #eval eg1Soln.toString
 #eval eg2Soln.toString
-
 
 def eg1Untyped  := getProof eg1Soln
 
@@ -35,8 +34,7 @@ def eg1 : isUnSat eg1Statement := by
   exact of_decide_eq_true lem 
 
 set_option maxHeartbeats 500000
-
 def eg2 : isSat eg2Statement := getProof eg2Soln 
 
-#check eg1
-#check eg2
+#check eg1 -- isUnSat eg1Statement
+#check eg2 -- isSat eg2Statement
