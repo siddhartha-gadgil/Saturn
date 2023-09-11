@@ -38,7 +38,7 @@ def rowClauses (n: Nat) : List (Clause (n * n)) :=
   (List.range n).map (fun r => rowClause r n) 
 
 def listToFinSeq{α : Type}(l : List α) : FinSeq (l.length) α := 
-  fun j jw => l.get j jw
+  fun j jw => l.get ⟨j, jw⟩
 
 def queensClauses(n: Nat) :=
   FinSeq.vec 

@@ -113,7 +113,7 @@ theorem map_plusone_not_somezero{n: Option Nat} : Not (n.map (. + 1) = some zero
     fun hyp : some (j + 1) = some zero =>
     let lem : j + 1 = zero := by
       injection hyp
-      assumption
+      
     Nat.noConfusion lem
 
 theorem map_plusone_pred{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1) → 
@@ -125,10 +125,10 @@ theorem map_plusone_pred{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1)
     fun hyp : some (j + 1) = some (m + 1) => 
       let lem1 : j + 1 = m + 1 := by
         injection hyp
-        assumption
+        
       let lem2 : j = m := by
         injection lem1
-        assumption 
+        
     congrArg some lem2
 
 
@@ -182,7 +182,7 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
               (k : Nat) → (w: k < domN) → rcN.forward k w = none → 
                   (clausesN.coords k w).coords focus focusLt = some branch :=
                 by
-                intro k
+                  intro k
                   match k with
                   | zero => 
                     intro w wf  
@@ -221,7 +221,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     let lem2 : some j = some zero := Eq.trans (Eq.symm sw) lem1
                     let lem3 : j = zero := by 
                       injection lem2
-                      assumption
+                     
                     rw [lem3]
                     intro jw
                     have hl1 : clausesN.coords zero w = head := by rfl
@@ -245,7 +245,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                       intro j1 eq1
                       have eq2 : j + 1 = j1 := by 
                         injection eq1
-                        assumption 
+                         
                       rw [← eq2]
                       intro jw
                       have clres: clausesN.coords (l + 1) w = 

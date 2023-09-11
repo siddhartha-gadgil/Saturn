@@ -48,7 +48,7 @@ theorem prevsum{n m l: Nat}: n + 1 + m = l + 1 → n + m = l :=
     rw [← Nat.add_assoc] at hyp    
     have sc : succ (n + m) = succ l := hyp
     injection sc
-    assumption
+
 
 theorem seq_vec_cons_aux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 : FinSeq (n + 1) α) 
         (accum : Vector α m) : seqVecAux s seq1 accum =

@@ -27,7 +27,9 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
           let fwdOpt := (rc.forward k w)
           match eq:fwdOpt with
           | none => 
-            apply (fun vs => ⟨focus, focusLt, vs⟩)
+            simp [clauseSat]
+            apply Exists.intro focus
+            apply Exists.intro focusLt
             let resolve : (clauses.coords k w).coords focus focusLt = some branch := dp.dropped k w eq
             rw [resolve]
             let insfoc : insert branch n focus focusLt valuation.coords focus focusLt = branch := by 
@@ -45,7 +47,9 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             let jWit : j < rc.codom := jWitAux
             let fwdEq := fr.forwardRelation k w j eq jWit
             let ⟨i, iw, vs⟩ := pf j jWit
-            apply (fun val => ⟨skip focus i, skip_le_succ iw, val⟩)
+            simp [clauseSat]
+            apply Exists.intro (skip focus i)
+            apply Exists.intro (skip_le_succ iw)
             let sv : coords (vec (insert branch n focus focusLt valuation.coords)) = 
                             insert branch n focus focusLt (valuation.coords) := by
                               apply seq_to_vec_coords
@@ -184,8 +188,6 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                       rw [← lp, ← rp, ← tp]
                       have rn:  (FinSeq.vec rightN).coords = rightN :=
                         by rw [seq_to_vec_coords] 
-                      have ln: (FinSeq.vec leftN).coords = leftN :=
-                        by rw [seq_to_vec_coords]
                       have tn: (FinSeq.vec topN).coords = topN :=
                         by rw [seq_to_vec_coords]
                       rw [rn,  tn]

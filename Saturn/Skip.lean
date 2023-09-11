@@ -195,8 +195,6 @@ theorem skip_injective: (n: Nat) → (j1 : Nat) → (j2 : Nat) →
               done
             by
               injection eq3
-              assumption
-              done
 
 theorem skip_no_fixedpoints (k: Nat) : (j: Nat) → Not (skip k j = k) :=
   fun j =>

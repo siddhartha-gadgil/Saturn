@@ -131,7 +131,7 @@ def contraSol{n dom: Nat}{clauses : Vector (Clause (n + 1)) dom}{j : Nat}{jw : j
                   SatSolution.unsat (ResolutionTree.assumption j jw _ eqn) 
                 
 def emptySol{n: Nat}(clauses : Vector (Clause (n + 1)) zero) : SatSolution clauses :=
-        SatSolution.sat (FinSeq.vec (fun k kw => true))  (fun k kw => nomatch kw)
+        SatSolution.sat (FinSeq.vec (fun _ _=> true))  (fun _ kw => nomatch kw)
 
 /-
 Solution for length one clauses
@@ -141,7 +141,7 @@ def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.coords zero (zero_lt_succ zero)
                             coords_eq_implies_vec_eq 
                             (funext (fun j =>
                                     match j with
-                                    | zero => funext (fun jw => eql)
+                                    | zero => funext (fun _ => eql)
                                     | i + 1 => funext (fun jw => nomatch jw)
                                     ))
 
@@ -171,7 +171,7 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
     | l + 1 =>
       fun cls =>
       match searchElem cls.coords (contradiction 1) with
-      | ExistsElem.exsts index bound eqn => contraSol eqn
+      | ExistsElem.exsts _ _  eqn => contraSol eqn
       | ExistsElem.notExst noContra =>
         let head := cls.coords (zero) (zero_lt_succ l) 
         if c : head.coords zero (zero_lt_succ zero) = none then   
@@ -180,7 +180,7 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
         else 
           if ct : head.coords zero (zero_lt_succ zero) = some true then
               match searchElem cls.coords (unitClause zero false zero (zero_lt_succ zero)) with
-              | ExistsElem.exsts index bound eqn => 
+              | ExistsElem.exsts _ _ eqn => 
                   let treePf2 := unitProof eqn 
                   let treePf1 : 
                     ResolutionTree cls (unitClause zero true zero (zero_lt_succ zero)) :=
@@ -196,14 +196,14 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
                         fun hyp => noContra k kw (lengthOneContra hyp)
                       let lem : (cls.coords k kw).coords zero (zero_lt_succ zero) = some true :=
                         match (cls.coords k kw).coords zero (zero_lt_succ zero), lem1, lem2 with
-                        | some true, l1, l2 => rfl
-                        | some false, l1, l2 => absurd (l1 rfl) id
-                        | none, l1, l2 => absurd (l2 rfl) id 
+                        | some true, _, _ => rfl
+                        | some false, l1, _ => absurd (l1 rfl) id
+                        | none, _, l2 => absurd (l2 rfl) id 
                       ⟨zero, zero_lt_succ _, lem⟩                      
           else 
             if cf : head.coords zero (zero_lt_succ zero) = some false then
               match searchElem cls.coords (unitClause zero true zero (zero_lt_succ zero)) with
-              | ExistsElem.exsts index bound eqn => 
+              | ExistsElem.exsts _ _ eqn => 
                   let treePf2 := unitProof eqn 
                   let treePf1 : 
                     ResolutionTree cls (unitClause zero false zero (zero_lt_succ zero)) :=
@@ -219,15 +219,15 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
                         fun hyp => noContra k kw (lengthOneContra hyp)
                       let lem : (cls.coords k kw).coords zero (zero_lt_succ zero) = some false :=
                         match (cls.coords k kw).coords zero (zero_lt_succ zero), lem1, lem2 with
-                        | some false, l1, l2 => rfl
-                        | some true, l1, l2 => False.elim (l1 rfl) 
-                        | none, l1, l2 => False.elim (l2 rfl)  
+                        | some false, _, _ => rfl
+                        | some true, l1, _ => False.elim (l1 rfl) 
+                        | none, _, l2 => False.elim (l2 rfl)  
                       ⟨zero, zero_lt_succ _, lem⟩
             else 
                 match head.coords zero (zero_lt_succ zero), c, ct, cf with
-                | some true, l1, l2, l3 => False.elim (l2 rfl)
-                | some false, l1, l2, l3 => False.elim (l3 rfl)
-                | none, l1, l2, l3 => False.elim (l1 rfl)
+                | some true, _, l2, _ => False.elim (l2 rfl)
+                | some false, _, _, l3 => False.elim (l3 rfl)
+                | none, l1, _, _ => False.elim (l1 rfl)
 
 -- a helper
 theorem notpure_cases(b: Bool): (x : Option Bool) → x = none ∨  x = some b  → 
@@ -243,7 +243,7 @@ theorem notpure_cases(b: Bool): (x : Option Bool) → x = none ∨  x = some b  
                 done
               let lem2 : true = false := by 
                   injection lem1
-                  assumption
+                  
               Bool.noConfusion lem2
      | false, Or.inr pf => 
               fun hyp =>
@@ -254,7 +254,7 @@ theorem notpure_cases(b: Bool): (x : Option Bool) → x = none ∨  x = some b  
                 done
               let lem2 : true = false := by 
                   injection lem1
-                  assumption
+                  
               Bool.noConfusion lem2
      | _ , Or.inl pf => fun hyp =>
         let w := Eq.trans (Eq.symm pf) hyp
@@ -309,18 +309,19 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
                     let valuationN := insert par _ index bd valuation.coords
                     SatSolution.sat valuationN.vec pb
-                  | SatSolution.unsat tree  => 
+                  | SatSolution.unsat tree  => by
                       let liftedProof :=
                         pullBackResTree  par index bd cls 
                             rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
                             tree
-                      match liftedProof with
-                      | LiftedResTree.contra pf => 
-                          SatSolution.unsat pf
-                      | LiftedResTree.unit tree => 
-                          let tree1 := unitProof eql
-                          let merged := mergeAlignUnitTrees tree1 tree
-                          SatSolution.unsat merged 
+                      
+                      cases liftedProof 
+                      case contra pf => 
+                        exact SatSolution.unsat pf
+                      case unit tree =>
+                        let tree1 := unitProof eql
+                        let merged := mergeAlignUnitTrees tree1 tree
+                        exact SatSolution.unsat merged 
               | none => 
                 match hasPure cls with 
                 | some ⟨index, bd, par, evid⟩=> 
@@ -333,15 +334,15 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
                     let valuationN := insert par _ index bd valuation.coords
                     SatSolution.sat valuationN.vec pb
-                  | SatSolution.unsat tree => 
+                  | SatSolution.unsat tree => by
                       let liftedProof :=
                         pullBackResTree  par index bd cls 
                             rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
                             tree
-                      match liftedProof with
-                      | LiftedResTree.contra pf => 
-                          SatSolution.unsat pf
-                      | LiftedResTree.unit tree => 
+                      cases liftedProof
+                      case contra pf => 
+                          exact SatSolution.unsat pf
+                      case unit tree => 
                           let base : (j : Nat) → (lt : j < cntn.codom) → 
                               Not ((cls.coords j lt).coords index bd = some (not par)) := 
                                 fun j jw => 
@@ -351,7 +352,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                                    (unitClause (m + 1) (!par) index bd)
                                    tree
                           let impure := unitDiag (m + 1) (not par) index bd 
-                          absurd impure pure
+                          exact absurd impure pure
                 | none =>  
                   let index := zero
                   let bd := zero_lt_succ (m + 1)
@@ -365,15 +366,15 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
                     let valuationN := insert false _ index bd valuation.coords
                     SatSolution.sat valuationN.vec pb
-                  | SatSolution.unsat tree => 
+                  | SatSolution.unsat tree => by
                       let liftedProof : LiftedResTree false zero bd cls :=
                         pullBackResTree  false index bd cls 
                             rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
                             tree
-                      match liftedProof with
-                      | LiftedResTree.contra pf => 
-                          SatSolution.unsat pf
-                      | LiftedResTree.unit tree1 => 
+                      cases liftedProof 
+                      case contra pf => 
+                          exact SatSolution.unsat pf
+                      case unit tree1 => 
                           let rd : ReductionData true zero bd cls 
                               := restrictionData true index bd cls
                           let subCls := rd.restrictionClauses.restClauses
@@ -383,18 +384,18 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                             let pb :=  pullBackSolution true index bd cls 
                                 rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
                             let valuationN := insert true _ index bd valuation.coords
-                            SatSolution.sat valuationN.vec pb
+                            exact SatSolution.sat valuationN.vec pb
                           | SatSolution.unsat tree  => 
                               let liftedProof :=
                                 pullBackResTree  true index bd cls 
                                     rd.restrictionClauses rd.nonPosReverse rd.reverseRelation 
                                     tree
-                              match liftedProof with
-                              | LiftedResTree.contra pf => 
-                                  SatSolution.unsat pf
-                              | LiftedResTree.unit tree2 => 
+                              cases liftedProof 
+                              case contra pf => 
+                                  exact SatSolution.unsat pf
+                              case unit tree2 => 
                                   let merged := mergeUnitTrees index bd tree2 tree1
-                                  SatSolution.unsat merged
+                                  exact SatSolution.unsat merged
         containmentLift clauses cntn solution
 
 /-

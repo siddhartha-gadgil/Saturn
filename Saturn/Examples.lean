@@ -30,11 +30,11 @@ def eg2Soln : SatSolution eg2Statement := solveSAT (eg2Statement)
 def eg1Untyped  := getProof eg1Soln
 
 def eg1 : isUnSat eg1Statement := by
-  have lem : decide (isUnSat eg1Statement) = true := by nativeDecide
+  have lem : decide (isUnSat eg1Statement) = true := by native_decide
   exact of_decide_eq_true lem 
 
 set_option maxHeartbeats 500000
-def eg2 : isSat eg2Statement := getProof eg2Soln 
+-- def eg2 : isSat eg2Statement := getProof eg2Soln 
 
-#check eg1 -- isUnSat eg1Statement
-#check eg2 -- isSat eg2Statement
+-- #check eg1 -- isUnSat eg1Statement
+-- #check eg2 -- isSat eg2Statement

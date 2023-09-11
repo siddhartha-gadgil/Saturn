@@ -37,7 +37,7 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
                   let lem1 := hyp b2 rfl
                   let lem2 : b1 = b2 := by
                       injection lem1
-                      assumption
+                      
                   c (lem2) 
             )
 

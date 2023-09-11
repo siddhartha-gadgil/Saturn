@@ -192,8 +192,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                         rw [triple.leftPivot]
                       have lem4 : true = false := by 
                         injection lem3
-                        assumption
-                        done
+                        
                       Bool.noConfusion lem4
                     else  
                       let i := skipInverse triple.pivot kl cc 
@@ -236,7 +235,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                         rw [triple.rightPivot]
                       have lem6 : false = true := by 
                         injection lem5
-                        assumption
+                        
                       Bool.noConfusion lem6
                     else  
                       let i := skipInverse triple.pivot kr ccc 
