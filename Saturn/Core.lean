@@ -22,6 +22,11 @@ def Vector.coords {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
   | m + 1, cons head tail, zero, lt => head
   | m + 1, cons head tail, j + 1, w =>  tail.coords j (Nat.le_of_succ_le_succ w)
 
+def Vector.toList {α : Type}{n : Nat}(v: Vector α n) : List α :=
+  match n, v with
+  | .(zero), nil => []
+  | _ + 1, cons head tail => head :: tail.toList
+
 abbrev Clause(n : Nat) : Type := Vector (Option Bool) n
 
 abbrev Valuation(n: Nat) : Type := Vector Bool n

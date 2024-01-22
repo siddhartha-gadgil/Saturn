@@ -123,7 +123,7 @@ structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
   parity: Bool
   equality : clause = unitClause n parity index bound
 
-def clauseUnit{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitClause clause) :=
+def unitClause?{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitClause clause) :=
   let f : Fin (n + 1) →   (Option (IsUnitClause clause)) :=
     fun ⟨k, w⟩ =>
       match deqSeq _ clause.coords ((unitClause n parity k w).coords) with
@@ -134,17 +134,17 @@ def clauseUnit{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitCla
   let seq : FinSeq (n + 1) (Fin (n + 1)) := fun k w => ⟨k, w⟩
   findSome? f seq
 
-structure SomeUnitClause{n : Nat}(clauses : Array  (Clause (n + 1))) where
+structure SomeUnitClause{n : Nat}(clauses : List  (Clause (n + 1))) where
   pos: Nat
-  posBound : pos < clauses.size
+  posBound : pos < clauses.length
   index: Nat
   bound : index < n + 1
   parity: Bool
   equality : clauses.get ⟨pos, posBound⟩ = unitClause n parity index bound
 
-def someUnitClauseAux {n : Nat}: (clauses : Array  (Clause (n + 1))) →
-  Vector Nat clauses.size →  Vector Nat clauses.size →
-  (cb: Nat) → (cbBound : cb ≤  clauses.size) → Option (SomeUnitClause clauses) →
+def someUnitClauseAux {n : Nat}: (clauses : List  (Clause (n + 1))) →
+  Vector Nat clauses.length →  Vector Nat clauses.length →
+  (cb: Nat) → (cbBound : cb ≤  clauses.length) → Option (SomeUnitClause clauses) →
   Option (SomeUnitClause clauses)  :=
     fun clauses posCount negCount cb =>
     match cb with
@@ -156,7 +156,7 @@ def someUnitClauseAux {n : Nat}: (clauses : Array  (Clause (n + 1))) →
       | none =>
         if (posCount.coords m cbBound) + (negCount.coords m cbBound) = 1 then
         let parity := (posCount.coords m cbBound) == 1
-        match clauseUnit (clauses.get ⟨m, cbBound⟩) parity with
+        match unitClause? (clauses.get ⟨m, cbBound⟩) parity with
         | some u => some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩
         | none =>
           someUnitClauseAux clauses
@@ -164,13 +164,13 @@ def someUnitClauseAux {n : Nat}: (clauses : Array  (Clause (n + 1))) →
         else none
 
 
-def someUnitClause  {n : Nat}: (clauses : Array  (Clause (n + 1))) →
-  Vector Nat clauses.size →
-  Vector Nat clauses.size →
+def someUnitClause  {n : Nat}: (clauses : List  (Clause (n + 1))) →
+  Vector Nat clauses.length →
+  Vector Nat clauses.length →
   Option (SomeUnitClause clauses)  :=
     fun clauses posCount negCount =>
-     someUnitClauseAux clauses posCount negCount clauses.size
-      (Nat.le_refl clauses.size) none
+     someUnitClauseAux clauses posCount negCount clauses.length
+      (Nat.le_refl clauses.length) none
 
 /-
 Pure variables: definitions and finding with proofs
