@@ -37,8 +37,6 @@ theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n,
   fun valuation => fun ⟨k, ⟨b, p⟩⟩ =>
     let lem1 : (contradiction n).get k b = none := by rw [contra_at_none n]
     let lem2 : varSat ((contradiction n).get k b) = varSat none := congrArg varSat lem1
-    let lem3 : varSat ((contradiction n).get k b) (valuation.get k b) =
-                varSat none (valuation.get k b) := congr lem2 rfl
     let lem4 : (varSat none (valuation.get k b)) = (none = some (valuation.get k b)) := rfl
     let lem5 : (none = some (valuation.get k b)) := by
       rw [← lem4]
@@ -150,7 +148,7 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : Vector (Clause (n + 1)) l)
   Option (SomeUnitClause clauses)  :=
     fun clauses posCount negCount cb =>
     match cb with
-    | zero => fun cbBound optCl => optCl
+    | zero => fun _ optCl => optCl
     | m + 1 =>
       fun cbBound optCl =>
       match optCl with

@@ -10,8 +10,8 @@ argument.
 def printSolution {n dom : Nat}: (clauses : Vector (Clause n) dom) → Nat →  IO Unit :=
   match n with
   | zero => fun _ _ => pure ()
-  | l + 1 => 
-    fun clauses q => 
+  | _ + 1 =>
+    fun clauses q =>
       do
         IO.println ""
         IO.println (s!"Solving the {q}-Queens problem (may take a while):")
@@ -19,13 +19,13 @@ def printSolution {n dom : Nat}: (clauses : Vector (Clause n) dom) → Nat →  
         return ()
 
 def main (args: List String) : IO UInt32 := do
-  let n : Nat := 
+  let n : Nat :=
     match args.head? with
-    | none => 0 
+    | none => 0
     | some s =>
       match s.toNat? with
-      | some n => n 
-      | none => 0  
+      | some n => n
+      | none => 0
   IO.println ""
   IO.println "SATurn: A SAT solver-prover in lean"
   IO.println ""

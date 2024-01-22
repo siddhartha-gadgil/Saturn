@@ -142,7 +142,7 @@ def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.get zero (zero_lt_succ zero) = 
                             (funext (fun j =>
                                     match j with
                                     | zero => funext (fun _ => eql)
-                                    | i + 1 => funext (fun jw => nomatch jw)
+                                    | _ + 1 => funext (fun jw => nomatch jw)
                                     ))
 
 def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.get zero (zero_lt_succ zero) = some b):

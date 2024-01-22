@@ -16,29 +16,29 @@ infix:65 "≥" => varContains
 
 def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 ≥  v2) :=
   fun v1 v2 =>
-  match v2 with 
-  | none => 
+  match v2 with
+  | none =>
      isTrue $ fun b hyp =>
           Option.noConfusion hyp
-  | some b2 => 
+  | some b2 =>
     match v1  with
-    | none => 
-      isFalse $ fun hyp => 
+    | none =>
+      isFalse $ fun hyp =>
           Option.noConfusion (hyp b2 rfl)
-    | some b1 => 
-          if c : b1 = b2 then 
+    | some b1 =>
+          if c : b1 = b2 then
             isTrue (by
                         intro b hyp
                         rw [c]
                         exact hyp)
-          else 
+          else
             isFalse (
               fun hyp =>
                   let lem1 := hyp b2 rfl
                   let lem2 : b1 = b2 := by
                       injection lem1
-                      
-                  c (lem2) 
+
+                  c (lem2)
             )
 
 def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
@@ -46,29 +46,29 @@ def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
 
 infix:65 " ⊇  " => contains
 
-theorem contains_refl{n: Nat} (cl : Clause n) :   
-  cl ⊇ cl := fun k w b hyp => hyp
+theorem contains_refl{n: Nat} (cl : Clause n) :
+  cl ⊇ cl := fun _ _ _ hyp => hyp
 
 theorem contains_trans{n: Nat} (cl1 cl2 cl3 : Clause n) :
         cl1 ⊇  cl2 → cl2 ⊇ cl3 →  cl1 ⊇ cl3 := by
-                intro hyp1 hyp2  k w b dHyp               
+                intro hyp1 hyp2  k w b dHyp
                 apply hyp1
                 apply hyp2
                 apply dHyp
 
 theorem contains_prepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
-          v1 ≥  v2 → cl1 ⊇  cl2 → 
+          v1 ≥  v2 → cl1 ⊇  cl2 →
                 (v1 +: cl1) ⊇ (v2 +: cl2) := by
             intro hyp1 hyp2 k
             match k with
-            | zero => 
+            | zero =>
               intro w b hb
               exact hyp1 b hb
-            | j + 1  =>  
+            | j + 1  =>
               intro kw b hb
-              have w : j < n := by 
+              have w : j < n := by
                   apply le_of_succ_le_succ
-                  exact kw              
+                  exact kw
               exact hyp2 j w b hb
 
 /-
@@ -79,9 +79,9 @@ abbrev containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
 
 theorem contains_implies_contains_beyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
   contains cl1 cl2 → containsBeyond cl1 cl2 m := by
-    intro h k kw ineq b
+    intro h k kw _ b
     exact h k kw b
-  
+
 theorem contains_beyond_zero_implies_contains {n: Nat} (cl1 cl2 : Clause n) :
   containsBeyond cl1 cl2 zero → contains cl1 cl2 := by
     intro h k kw b
@@ -89,9 +89,9 @@ theorem contains_beyond_zero_implies_contains {n: Nat} (cl1 cl2 : Clause n) :
 
 theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
   cl1 ⊇  cl2 → (valuation : Valuation n) → clauseSat cl2 valuation → clauseSat cl1 valuation := by
-    intro dom valuation  
-    intro ⟨j, jw, vs⟩ 
-    let lem0 :  cl2.get j jw = some (valuation.get j jw) := vs 
+    intro dom valuation
+    intro ⟨j, jw, vs⟩
+    let lem0 :  cl2.get j jw = some (valuation.get j jw) := vs
     let lem1 : get cl1 j jw = some (get valuation j jw) := dom j jw (valuation.get j jw) lem0
     exact ⟨j, jw, lem1⟩
 
@@ -105,7 +105,7 @@ theorem contains_beyond_vacuously{n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
 
 def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
         (m: Nat) → Decidable (containsBeyond cl1 cl2 m) → Decidable (contains cl1 cl2) :=
-        fun m dContainsBeyond => 
+        fun m dContainsBeyond =>
           match m, dContainsBeyond with
           | m, isFalse contra => isFalse (
               by
@@ -114,11 +114,11 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                 apply contains_implies_contains_beyond cl1 cl2 m hyp
                 )
           | zero, isTrue pf => isTrue (contains_beyond_zero_implies_contains cl1 cl2 pf)
-          | l + 1, isTrue pf => 
-            let accum: Decidable (containsBeyond cl1 cl2 l) := 
+          | l + 1, isTrue pf =>
+            let accum: Decidable (containsBeyond cl1 cl2 l) :=
               if lw : l < n then
                 match varDomDecide (cl1.get l lw) (cl2.get l lw) with
-                | isTrue pfHead =>                       
+                | isTrue pfHead =>
                       isTrue (
                         by
                           intro k kw ineq b
@@ -133,10 +133,10 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                             rw [← lem1]
                             rw [← lem2]
                             exact pfHead b
-                          | inr l2 => 
-                            exact pf k kw l2 b                     
+                          | inr l2 =>
+                            exact pf k kw l2 b
                       )
-                | isFalse contra => 
+                | isFalse contra =>
                     isFalse (fun hyp => contra (fun b => hyp l lw (Nat.le_refl _) b))
             else
                 let overshoot : n ≤ l := by
@@ -147,9 +147,9 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
         decideContainsRec cl1 cl2 l accum
 
 
-def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) → 
+def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) →
                                           Decidable (cl1 ⊇   cl2) :=
-    fun cl1 cl2 => decideContainsRec cl1 cl2 n 
+    fun cl1 cl2 => decideContainsRec cl1 cl2 n
         (isTrue (contains_beyond_vacuously cl1 cl2 n (Nat.le_refl _)))
 
 instance {n: Nat}{cl: Clause n} : DecidablePred (contains cl) :=
@@ -164,7 +164,7 @@ def parityCount{n: Nat}  (b: Bool) (cl : Clause n) : Nat :=
     cl.count p
 
 abbrev countBelow (p1 n1 p2 n2 : Nat) : Bool :=
-  (p1 ≤ p2) ∧ (n1 ≤ n2) ∧ ((p1 < p2) ∨ (n1 < n2)) 
+  (p1 ≤ p2) ∧ (n1 ≤ n2) ∧ ((p1 < p2) ∨ (n1 < n2))
 
 -- Simplification removing clauses that contain other clauses.
 
@@ -173,7 +173,7 @@ structure Containment{dom n : Nat}(base: Vector (Clause n) dom) where
     imageSeq : Vector (Clause n) codom
     forwardVec : Vector Nat dom
     forwardBound : (j : Nat) →  (jw : j < dom) → forwardVec.get j jw < codom
-    forwardEq : (j : Nat) →  (jw : j < dom) → 
+    forwardEq : (j : Nat) →  (jw : j < dom) →
               base.get j jw ⊇ imageSeq.get (forwardVec.get j jw) (forwardBound j jw)
     reverseVec : Vector Nat codom
     reverseBound : (j : Nat) →  (jw : j < codom) → reverseVec.get j jw < dom
@@ -182,11 +182,11 @@ structure Containment{dom n : Nat}(base: Vector (Clause n) dom) where
 
 namespace Containment
 abbrev forward {dom n : Nat}{base: Vector (Clause n) dom}
-      (cntn : Containment base) (j : Nat) (jw : j < dom) : 
+      (cntn : Containment base) (j : Nat) (jw : j < dom) :
                   ElemSeqPred cntn.imageSeq.get (contains (base.get j jw)) :=
-                ⟨cntn.forwardVec.get j jw, cntn.forwardBound j jw, 
+                ⟨cntn.forwardVec.get j jw, cntn.forwardBound j jw,
                     cntn.forwardEq j jw⟩
-                
+
 
 abbrev reverse {dom n : Nat}{base: Vector (Clause n) dom}
       (cntn : Containment base) (j : Nat) (jw : j < cntn.codom) :
@@ -195,7 +195,7 @@ abbrev reverse {dom n : Nat}{base: Vector (Clause n) dom}
                     cntn.reverseEq j jw⟩
 
 def identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment base :=
-    let idVec : Vector Nat dom := FinSeq.vec (fun j jw => j)
+    let idVec : Vector Nat dom := FinSeq.vec (fun j _ => j)
     let idAt : (j : Nat) → (jw : j < dom) → idVec.get j jw = j := by
       intro j jw
       rw [seq_to_vec_coords]
@@ -203,11 +203,6 @@ def identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment base :=
       intro j jw
       rw [idAt]
       exact jw
-    let idEqn : (j : Nat) → (jw : j < dom) → 
-          idVec.get (idVec.get j jw) (idBound j jw) = j := by
-          intro j jw
-          rw [idAt]
-          rw [idAt]
     let baseEqn : (j : Nat) → (jw : j < dom) →
           base.get (idVec.get j jw) (idBound j jw) = base.get j jw := by
           intro j jw
@@ -218,24 +213,24 @@ def identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment base :=
           intro j jw
           rw [baseEqn]
           exact contains_refl (base.get j jw)
-    ⟨dom, base, idVec, idBound, baseContains, idVec, idBound, 
-      by 
+    ⟨dom, base, idVec, idBound, baseContains, idVec, idBound,
+      by
       intro j jw
       apply witness_independent
       rw [idAt]⟩
 
 end Containment
 
-def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →  
-      (base : Vector (Clause n) (d + 1)) → Vector Nat (d + 1) → Vector Nat (d + 1) → 
-      Containment (base) → Containment (base) := 
+def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
+      (base : Vector (Clause n) (d + 1)) → Vector Nat (d + 1) → Vector Nat (d + 1) →
+      Containment (base) → Containment (base) :=
       fun cursorBound =>
       match cursorBound with
       | zero => fun _ _ _ => id
       | k + 1 =>
         fun base posCount negCount contn =>
-          let ⟨j, (ineq : j < contn.codom), _⟩ := contn.forward zero (zero_lt_succ _)      
-          let neZero : Not (0 = contn.codom) := fun hyp => 
+          let ⟨j, (ineq : j < contn.codom), _⟩ := contn.forward zero (zero_lt_succ _)
+          let neZero : Not (0 = contn.codom) := fun hyp =>
           let l0 : j < 0 := by
             rw [hyp]
             exact ineq
@@ -245,86 +240,86 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
         match contn.codom, leqn, contn.imageSeq, contn.forward, contn.reverse,
             contn.forwardVec, contn.forwardBound, contn.forwardEq,
             contn.reverseVec, contn.reverseBound, contn.reverseEq with
-        | .(l + 1), rfl, imageSeq, forward, reverse, 
-            forwardVec, forwardBound, forwardEq, 
+        | .(l + 1), rfl, imageSeq, forward, reverse,
+            forwardVec, forwardBound, forwardEq,
             reverseVec, reverseBound, revereseEq =>
          if lt : k < (l + 1) then
           let focus := imageSeq.get k lt
           let rest := delete k lt imageSeq.get
           let posFocus := posCount.get (reverseVec.get k lt) (reverseBound k lt)
           let negFocus := negCount.get (reverseVec.get k lt) (reverseBound k lt)
-          let filter : FinSeq l Bool := 
+          let filter : FinSeq l Bool :=
               delete k lt (fun j jw =>
                 countBelow (posCount.get (reverseVec.get j jw) (reverseBound j jw))
-                  (negCount.get (reverseVec.get j jw) (reverseBound j jw)) 
+                  (negCount.get (reverseVec.get j jw) (reverseBound j jw))
                     posFocus negFocus)
           let step  : Containment base :=
-            match findFiltered? filter (contains focus) rest with 
-            | none =>  
+            match findFiltered? filter (contains focus) rest with
+            | none =>
                 ⟨l + 1, imageSeq, forwardVec, forwardBound, forwardEq,
                    reverseVec, reverseBound, revereseEq⟩
             | some ⟨zi, zb, zc⟩ => -- clause at k contains clause at index zi in deleted sequence
               let codomN := l
               let imageSeqN := rest
               let domN := d + 1
-              let forwardN : (j : Nat) → (jw : j < domN) → 
-                    ElemSeqPred imageSeqN (contains (base.get j jw)) := 
-                    fun j jw => 
+              let forwardN : (j : Nat) → (jw : j < domN) →
+                    ElemSeqPred imageSeqN (contains (base.get j jw)) :=
+                    fun j jw =>
                       let ⟨i, iw , ict⟩ := forward j jw
                       if c : i = k then -- index i redirected
                           let lem1 : imageSeq.get i iw = imageSeq.get k lt := by
                                 apply witness_independent
                                 apply c
                           let lem2 : imageSeq.get i iw ⊇ imageSeqN zi zb := by
-                                rw [lem1] 
+                                rw [lem1]
                                 exact zc
                           ⟨zi, zb, contains_trans _ _ _ ict lem2⟩
-                      else 
+                      else
                         let ii := skipInverse k i c -- index in sequence before deletion
                         let eqn := skipInverse_eq k i c
                         let iiw := skip_preimage_lt lt iw eqn
-                        let lem1 : imageSeqN ii iiw = imageSeq.get (skip k ii) (skip_le_succ iiw)  := 
+                        let lem1 : imageSeqN ii iiw = imageSeq.get (skip k ii) (skip_le_succ iiw)  :=
                                 by rfl
-                        let lem2 : imageSeq.get (skip k ii) (skip_le_succ iiw) = imageSeq.get i iw := 
+                        let lem2 : imageSeq.get (skip k ii) (skip_le_succ iiw) = imageSeq.get i iw :=
                                 by
                                     apply witness_independent
                                     apply eqn
-                                    done 
-                        ⟨ii, iiw, by 
+                                    done
+                        ⟨ii, iiw, by
                                   rw [lem1]
                                   rw [lem2]
                                   exact ict⟩
               let forwardNVec := FinSeq.vec (fun j jw => (forwardN j jw).index)
-              have forwardNAt : (j : Nat) → (jw : j < domN) → 
-                      forwardNVec.get j jw = (forwardN j jw).index := 
+              have forwardNAt : (j : Nat) → (jw : j < domN) →
+                      forwardNVec.get j jw = (forwardN j jw).index :=
                       by
                         intro j jw
-                        rw [seq_to_vec_coords] 
+                        rw [seq_to_vec_coords]
               have forwardNBound : (j : Nat) → (jw : j < domN) →
                       forwardNVec.get j jw < codomN := by
                         intro j jw
                         rw [forwardNAt]
                         exact (forwardN j jw).bound
-              have forwardNEq : (j : Nat) → (jw : j < domN) → 
+              have forwardNEq : (j : Nat) → (jw : j < domN) →
                   (imageSeqN (forwardNVec.get j jw) (forwardNBound j jw)) =
-                      imageSeqN (forwardN j jw).index (forwardN j jw).bound := 
-                        by 
+                      imageSeqN (forwardN j jw).index (forwardN j jw).bound :=
+                        by
                           intro j jw
                           apply witness_independent
                           rw [forwardNAt]
               have forwardNPred : (j : Nat) → (jw : j < domN) →
-                    contains (base.get j jw) 
-                          (imageSeqN.vec.get (forwardNVec.get j jw) (forwardNBound j jw)) := 
-                        by 
+                    contains (base.get j jw)
+                          (imageSeqN.vec.get (forwardNVec.get j jw) (forwardNBound j jw)) :=
+                        by
                           intro j jw
-                          have se : 
+                          have se :
                             (imageSeqN.vec.get (forwardNVec.get j jw) (forwardNBound j jw)) =
                             (imageSeqN (forwardNVec.get j jw) (forwardNBound j jw)) := by
                               rw [seq_to_vec_coords]
                           rw [se, forwardNEq j jw]
                           exact (forwardN j jw).equation
-              let reverseN : (j : Nat) → (jw : j < codomN) → 
-                    ElemInSeq base.get (imageSeqN j jw) := 
+              let reverseN : (j : Nat) → (jw : j < codomN) →
+                    ElemInSeq base.get (imageSeqN j jw) :=
                     fun i iw =>
                         let ⟨ind, bd, eqn⟩ := reverse (skip k i) (skip_le_succ iw)
                         ⟨ind, bd, by exact eqn⟩
@@ -363,13 +358,13 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
         else ⟨l + 1, imageSeq, forwardVec, forwardBound, forwardEq,
                    reverseVec, reverseBound, revereseEq⟩
 
-def simplifiedContainment{dom n : Nat}: (clauses : Vector (Clause n) dom) → 
-                             Vector Nat dom → Vector Nat dom → 
-                              Containment clauses := 
+def simplifiedContainment{dom n : Nat}: (clauses : Vector (Clause n) dom) →
+                             Vector Nat dom → Vector Nat dom →
+                              Containment clauses :=
                     match dom with
-                    |zero => fun _ _ _ => 
-                      ⟨zero, Vector.nil, Vector.nil, fun j jw => nomatch jw, fun j jw => nomatch jw,
-                        Vector.nil, fun j jw => nomatch jw, fun j jw => nomatch jw⟩ 
-                    | m + 1 => fun clauses posCount negCount =>                                                          
+                    |zero => fun _ _ _ =>
+                      ⟨zero, Vector.nil, Vector.nil, fun _ jw => nomatch jw, fun _ jw => nomatch jw,
+                        Vector.nil, fun _ jw => nomatch jw, fun _ jw => nomatch jw⟩
+                    | m + 1 => fun clauses posCount negCount =>
                         simplifyNonEmptyContainment (m + 1) clauses
                             posCount negCount (Containment.identity clauses)

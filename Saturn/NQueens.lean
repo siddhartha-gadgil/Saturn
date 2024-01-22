@@ -1,16 +1,16 @@
 import Saturn.FinSeq
 import Saturn.Vector
-import Saturn.Clause 
+import Saturn.Clause
 import Saturn.DPLL
 
 /-
-The N-Queens problem as a SAT problem. 
+The N-Queens problem as a SAT problem.
 -/
 
-def pairs(n: Nat) : List (Nat × Nat) := 
-  List.bind 
-    (List.range n) 
-    (fun x => 
+def pairs(n: Nat) : List (Nat × Nat) :=
+  List.bind
+    (List.range n)
+    (fun x =>
       (List.range n).map (fun y => (x, y)))
 
 def row (index n: Nat) : Nat := index / n
@@ -27,21 +27,21 @@ def forbiddenPairs (n: Nat) : List (Nat × Nat) :=
 def forbidPairClauses (n: Nat) : List (Clause (n * n)) :=
   (forbiddenPairs n).map (
     fun (x, y) =>
-      FinSeq.vec (fun i w => 
+      FinSeq.vec (fun i _ =>
         if i == x || i == y then some false else none)
       )
 
-def rowClause(r n: Nat) : Clause (n * n) := 
+def rowClause(r n: Nat) : Clause (n * n) :=
   FinSeq.vec (fun index _ => if row index n == r then some true else none)
 
 def rowClauses (n: Nat) : List (Clause (n * n)) :=
-  (List.range n).map (fun r => rowClause r n) 
+  (List.range n).map (fun r => rowClause r n)
 
-def listToFinSeq{α : Type}(l : List α) : FinSeq (l.length) α := 
+def listToFinSeq{α : Type}(l : List α) : FinSeq (l.length) α :=
   fun j jw => l.get ⟨j, jw⟩
 
 def queensClauses(n: Nat) :=
-  FinSeq.vec 
+  FinSeq.vec
   ((listToFinSeq (rowClauses n)) ++| (listToFinSeq (forbidPairClauses n)))
 
 #check queensClauses 8
