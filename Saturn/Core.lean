@@ -8,9 +8,9 @@ exclusive.
 
 def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 
-inductive Vector (α : Type) : Nat → Type where 
+inductive Vector (α : Type) : Nat → Type where
   | nil : Vector α zero
-  | cons{n: Nat}(head: α) (tail: Vector  α n) : Vector α  (n + 1) 
+  | cons{n: Nat}(head: α) (tail: Vector  α n) : Vector α  (n + 1)
   deriving Repr
 
 infixr:66 "+:" => Vector.cons
@@ -28,21 +28,21 @@ abbrev Valuation(n: Nat) : Type := Vector Bool n
 
 abbrev varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
 
-abbrev clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) := 
+abbrev clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) :=
   ∃ (k : Nat), ∃ (b : k < n), varSat (clause.coords k b) (valuation.coords k b)
 
 def isSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
-          ∃ valuation : Valuation (n + 1),  
+          ∃ valuation : Valuation (n + 1),
            ∀ (p : Nat),
-            ∀ pw : p < dom, 
-              ∃ (k : Nat), ∃ (kw : k < n + 1), 
+            ∀ pw : p < dom,
+              ∃ (k : Nat), ∃ (kw : k < n + 1),
                 ((clauses.coords p pw).coords k kw) = some (valuation.coords k kw)
 
 def isUnSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) :=
-          ∀ valuation : Valuation (n + 1),  
+          ∀ valuation : Valuation (n + 1),
            Not (∀ (p : Nat),
-            ∀ pw : p < dom,   
-              ∃ (k : Nat), ∃ (kw : k < n + 1), 
+            ∀ pw : p < dom,
+              ∃ (k : Nat), ∃ (kw : k < n + 1),
                 ((clauses.coords p pw).coords k kw) = some (valuation.coords k kw))
 
 theorem not_sat_and_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
