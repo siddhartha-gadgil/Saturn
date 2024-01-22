@@ -7,3 +7,5 @@ package saturn {
 
 @[default_target]
 lean_lib Saturn
+
+lean_exe nqueens
