@@ -196,7 +196,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                       Bool.noConfusion lem4
                     else  
                       let i := skipInverse triple.pivot kl cc 
-                      let eql := skip_inverse_eq triple.pivot kl cc 
+                      let eql := skipInverse_eq triple.pivot kl cc 
                       let iw : i < n := skip_preimage_lt triple.pivotLt llt eql 
                       let jj := triple.joinRest i iw
                       let leftLem : 
@@ -239,7 +239,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                       Bool.noConfusion lem6
                     else  
                       let i := skipInverse triple.pivot kr ccc 
-                      let eql := skip_inverse_eq triple.pivot kr ccc
+                      let eql := skipInverse_eq triple.pivot kr ccc
                       let iw : i < n := skip_preimage_lt triple.pivotLt rlt eql 
                       let jj := triple.joinRest i iw
                       let leftLem : 
@@ -407,7 +407,7 @@ theorem trees_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 
                         rL (triple.rightPivot)
               else 
                   let j := skipInverse triple.pivot k c 
-                  let eqn  := skip_inverse_eq triple.pivot k c
+                  let eqn  := skipInverse_eq triple.pivot k c
                   let jw := skip_preimage_lt triple.pivotLt kw eqn
                   let joinIm := triple.joinRest j jw
                   match (skip triple.pivot j), eqn, (skip_le_succ jw), joinIm with 

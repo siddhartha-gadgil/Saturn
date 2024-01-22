@@ -130,7 +130,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
         exact focJoin                  
       else 
         let i := skipInverse k jj jj_eq_k
-        let skp_k_i_jj : skip k i = jj := skip_inverse_eq k jj jj_eq_k
+        let skp_k_i_jj : skip k i = jj := skipInverse_eq k jj jj_eq_k
         let iw : i < n + 1 := skip_preimage_lt lt jjw skp_k_i_jj
         if i_eq_pivot: i = rt.pivot then
           have lem1 : skip k i = skip k rt.pivot := congrArg (skip k) i_eq_pivot
@@ -141,7 +141,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
         else by
           let ii := skipInverse rt.pivot i i_eq_pivot 
           let skp_ii_eq_i : skip rt.pivot ii = i := 
-                    skip_inverse_eq rt.pivot i i_eq_pivot
+                    skipInverse_eq rt.pivot i i_eq_pivot
           let iiw : ii < n := skip_preimage_lt rt.pivotLt iw skp_ii_eq_i
           let leftLem : leftN jj jjw = leftN (skip k i) (skip_le_succ iw) := by
               apply witness_independent 

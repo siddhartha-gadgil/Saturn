@@ -183,7 +183,7 @@ def provedInsert{α : Type}(n: Nat)(value : α) (seq : FinSeq n α)
             ⟨result, checkImage, checkFocus⟩
           else  
             let ii := skipInverse k j c 
-            let eqn := skip_inverse_eq k j c  
+            let eqn := skipInverse_eq k j c  
             let bound : ii < n  := skip_preimage_lt kw jw eqn
             let result := seq ii bound
             let checkImage : 
@@ -225,7 +225,7 @@ theorem insert_delete_id{α : Type}{n: Nat}(k : Nat) (kw : k < (n + 1)) (seq : F
         else 
           by 
           let i := skipInverse k j c 
-          let eqn : skip k i = j  := skip_inverse_eq k j c
+          let eqn : skip k i = j  := skipInverse_eq k j c
           let iw : i < n := skip_preimage_lt kw jw eqn
           let lem1 : insert (seq k kw) n k kw (delete k kw seq) j jw
             = insert (seq k kw) n k kw (delete k kw seq) (skip k i) (skip_le_succ iw) := 

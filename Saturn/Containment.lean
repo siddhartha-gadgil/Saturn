@@ -281,7 +281,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                           ⟨zi, zb, contains_trans _ _ _ ict lem2⟩
                       else 
                         let ii := skipInverse k i c -- index in sequence before deletion
-                        let eqn := skip_inverse_eq k i c
+                        let eqn := skipInverse_eq k i c
                         let iiw := skip_preimage_lt lt iw eqn
                         let lem1 : imageSeqN ii iiw = imageSeq.coords (skip k ii) (skip_le_succ iiw)  := 
                                 by rfl

@@ -13,7 +13,7 @@ def skip: Nat → Nat → Nat
 
 -- equations for `skip` below and above the skipped value
 
-theorem skip_below_eq(n m : Nat) : m < n → (skip n m = m) := by
+theorem skip_below_eq{n m : Nat} : m < n → (skip n m = m) := by
   intro hyp
   rw [skip]
   by_cases c: m < n
@@ -57,7 +57,7 @@ structure SkipProvedInv(n m : Nat) where
 def provedSkipInverse : (n : Nat) → (m : Nat) → (m ≠ n) →  SkipProvedInv n m :=
   fun n m eqn =>
   if m_lt_n : m < n then
-    ⟨m, skip_below_eq n m m_lt_n⟩
+    ⟨m, skip_below_eq m_lt_n⟩
   else
     have n_lt_m : n < m :=
         match Nat.lt_or_ge m n with
@@ -84,17 +84,58 @@ def provedSkipInverse : (n : Nat) → (m : Nat) → (m ≠ n) →  SkipProvedInv
       exact (skip_above_eq n p n_le_p)
     ⟨p, imeq⟩
 
-def skipInverse (n m : Nat) : (m ≠ n) → Nat :=
+def skipInverse' (n m : Nat) : (m ≠ n) → Nat :=
         fun eqn =>  (provedSkipInverse n m eqn).k
 
-theorem skip_inverse_eq(n m : Nat)(eqn : m ≠ n): skip n (skipInverse n m eqn) = m  :=
+def skipInverse (n m : Nat) : (m ≠ n) → Nat := fun hyp =>
+        if c : n < m then
+          match m with
+          | zero => by
+            have _ := Nat.zero_le n
+            contradiction
+          | succ p => p
+        else m
+
+theorem skip_inverse_eq(n m : Nat)(eqn : m ≠ n): skip n (skipInverse' n m eqn) = m  :=
         (provedSkipInverse n m eqn).eqn
+
+#check Nat.gt_of_not_le
+
+theorem skipInverse_eq(n m : Nat)(eqn : m ≠ n): skip n (skipInverse n m eqn) = m := by
+        by_cases c : m < n
+        · rw [skipInverse]
+          simp [eqn, c]
+          have h' : ¬ (n < m) := by
+            apply Nat.not_le_of_gt
+            apply Nat.le_trans c
+            apply Nat.le_succ
+          simp [h']
+          exact skip_below_eq c
+        · rw [skipInverse]
+          have h' : n < m := by
+            apply Nat.lt_of_le_of_ne
+            · by_cases h'' : n ≤ m
+              · assumption
+              · let h''' := Nat.gt_of_not_le h''
+                contradiction
+            · intro contra
+              simp [contra] at eqn
+          simp [h']
+          match m with
+          | zero =>
+            have _ := Nat.zero_le n
+            contradiction
+          | succ p =>
+            apply skip_above_eq n p
+            apply Nat.le_of_succ_le_succ
+            apply Nat.le_trans h'
+            simp
 
 -- Various bounds on the `skip` function.
 theorem skip_lt: (k j: Nat) →  skip k j < j + 2 :=
     fun k j =>
       if c : j < k then
-        let eqn := skip_below_eq k j c
+        let eqn := skip_below_eq c
         by
           rw [eqn]
           apply Nat.le_step
@@ -108,7 +149,7 @@ theorem skip_lt: (k j: Nat) →  skip k j < j + 2 :=
 theorem skip_ge :(k j: Nat) →  j ≤ skip k j  :=
     fun k j =>
       if c : j < k then
-        let eqn := skip_below_eq k j c
+        let eqn := skip_below_eq c
           by
             rw [eqn]
             apply Nat.le_refl
@@ -159,10 +200,10 @@ theorem skip_injective: (n: Nat) → (j1 : Nat) → (j2 : Nat) →
       fun n j1 j2 hyp =>
         match Nat.lt_or_ge j1 n with
         | Or.inl p1 =>
-          let eq1 : skip n j1 = j1 := skip_below_eq n j1 p1
+          let eq1 : skip n j1 = j1 := skip_below_eq p1
           match Nat.lt_or_ge j2 n with
           | Or.inl p2 =>
-            let eq2 : skip n j2 = j2 := skip_below_eq n j2 p2
+            let eq2 : skip n j2 = j2 := skip_below_eq p2
             by
               rw [← eq1]
               rw [← eq2]
@@ -181,7 +222,7 @@ theorem skip_injective: (n: Nat) → (j1 : Nat) → (j2 : Nat) →
             let ineq1 : j2 < j1 := Nat.lt_of_lt_of_le p2 p1
             let ineq2 : j2 < skip n j1 := Nat.lt_of_lt_of_le ineq1 (skip_ge n j1)
             let ineq3 : j2 < skip n j2 := Nat.lt_of_lt_of_le ineq2 (Nat.le_of_eq (hyp))
-            let eq2 : skip n j2 = j2 := skip_below_eq n j2 p2
+            let eq2 : skip n j2 = j2 := skip_below_eq p2
             let ineq4 : j2 < j2 := Nat.lt_of_lt_of_le ineq3 (Nat.le_of_eq eq2)
             False.elim (Nat.lt_irrefl j2 ineq4)
           | Or.inr p2 =>
@@ -197,7 +238,7 @@ theorem skip_injective: (n: Nat) → (j1 : Nat) → (j2 : Nat) →
 theorem skip_no_fixedpoints (k: Nat) : (j: Nat) → Not (skip k j = k) :=
   fun j =>
     if c : j < k then
-      let eqn := skip_below_eq k j c
+      let eqn := skip_below_eq c
       fun hyp =>
         let lem1 : k ≤  j := by
           rw [←hyp]
