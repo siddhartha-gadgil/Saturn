@@ -50,42 +50,6 @@ def posSucc : (n : Nat) → Not (zero = n) → NatSucc n
   | zero, w => absurd rfl w
   | l + 1, _ => ⟨l, rfl⟩
 
-structure SkipProvedInv(n m : Nat) where
-  k : Nat
-  eqn : skip n k = m
-
-def provedSkipInverse : (n : Nat) → (m : Nat) → (m ≠ n) →  SkipProvedInv n m :=
-  fun n m eqn =>
-  if m_lt_n : m < n then
-    ⟨m, skip_below_eq m_lt_n⟩
-  else
-    have n_lt_m : n < m :=
-        match Nat.lt_or_ge m n with
-        | Or.inl p => absurd p m_lt_n
-        | Or.inr p =>
-          match Nat.eq_or_lt_of_le p with
-          | Or.inl q => absurd (Eq.symm q) eqn
-          | Or.inr q => q
-    have notZero : Not (zero = m) := by
-        intro hyp
-        let nLt0 : n < zero := by
-          rw [hyp]
-          exact n_lt_m
-        let n_lt_n : n < n :=
-          Nat.lt_of_lt_of_le nLt0 (Nat.zero_le _)
-        exact Nat.lt_irrefl n n_lt_n
-    let ⟨p, seq⟩ := posSucc m notZero
-    have n_le_p : n ≤ p :=
-      Nat.le_of_succ_le_succ (by
-        rw [← seq]
-        exact n_lt_m)
-    have imeq : skip n p = m := by
-      rw [seq]
-      exact (skip_above_eq n p n_le_p)
-    ⟨p, imeq⟩
-
-def skipInverse' (n m : Nat) : (m ≠ n) → Nat :=
-        fun eqn =>  (provedSkipInverse n m eqn).k
 
 def skipInverse (n m : Nat) : (m ≠ n) → Nat := fun hyp =>
         if c : n < m then
@@ -96,10 +60,6 @@ def skipInverse (n m : Nat) : (m ≠ n) → Nat := fun hyp =>
           | succ p => p
         else m
 
-theorem skip_inverse_eq(n m : Nat)(eqn : m ≠ n): skip n (skipInverse' n m eqn) = m  :=
-        (provedSkipInverse n m eqn).eqn
-
-#check Nat.gt_of_not_le
 
 theorem skipInverse_eq(n m : Nat)(eqn : m ≠ n): skip n (skipInverse n m eqn) = m := by
         by_cases c : m < n
