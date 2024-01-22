@@ -13,7 +13,7 @@ constructed.
 def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
       (rc: ReductionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) → 
+        (head : Clause (n + 1)) → (pos : head.get focus focusLt = some branch) → 
             ReductionClauses branch focus focusLt (head +: clauses) := 
           fun rc head pos => 
           let domN := dom + 1
@@ -26,7 +26,7 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
             | zero => fun _ => none
             | l + 1 => 
               fun w : l + 1 < domN   =>  rc.forward l (le_of_succ_le_succ w)
-          have forwardNEq : forwardVecN.coords = forwardN := by
+          have forwardNEq : forwardVecN.get = forwardN := by
                   apply funext
                   intro j
                   cases j with
@@ -37,8 +37,8 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                   | succ i =>
                     apply funext
                     intro jw
-                    have tl :forwardVecN.coords (succ i) jw = 
-                        forwardVecN.coords.tail i (Nat.le_of_succ_le_succ jw) := by rfl
+                    have tl :forwardVecN.get (succ i) jw = 
+                        forwardVecN.get.tail i (Nat.le_of_succ_le_succ jw) := by rfl
                     rw [tl]
                     rw [tail_commutes none rc.forwardVec]
           have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := 
@@ -60,7 +60,7 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
           let reverseVecN := rc.reverseVec.map (. + 1)
           let reverseN : (k : Nat) →  k < codomN → Nat := 
             fun k w => (rc.reverse k w) + 1
-          have reverseNEq : reverseVecN.coords = reverseN := by
+          have reverseNEq : reverseVecN.get = reverseN := by
                   apply funext
                   intro j
                   apply funext
@@ -80,7 +80,7 @@ namespace PosResClause
 def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
       (rc: ReductionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
+        (head : Clause (n + 1)) → (pos : head.get focus focusLt = some branch) →
           DroppedProof rc → 
           DroppedProof (addPositiveClause  branch focus focusLt clauses rc head pos) := 
         fun rc head pos drc =>
@@ -90,7 +90,7 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let clausesN := head +: clauses
           let droppedN : 
               (k : Nat) → (w: k < domN) → rcN.forward k w = none → 
-                  (clausesN.coords k w).coords focus focusLt = some branch := by
+                  (clausesN.get k w).get focus focusLt = some branch := by
                   intro k 
                   match k with
                   | zero => 
@@ -108,7 +108,7 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
 def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
       (rc: ReductionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
+        (head : Clause (n + 1)) → (pos : head.get focus focusLt = some branch) →
           ForwardRelation rc → 
           ForwardRelation (addPositiveClause  branch focus focusLt clauses rc head pos) := 
         fun rc head pos frc =>
@@ -117,8 +117,8 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let codomN := rc.codom
           let clausesN := head +: clauses
           have forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
-              (jw : j < codomN) →  delete focus focusLt ((clausesN.coords k w).coords) = 
-                (rcN.restClauses.coords j jw).coords := by
+              (jw : j < codomN) →  delete focus focusLt ((clausesN.get k w).get) = 
+                (rcN.restClauses.get j jw).get := by
                 intro k 
                 match k with
                 | zero => 
@@ -132,25 +132,25 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
 theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
       (rc: ReductionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : (head.coords focus focusLt = some branch)) →
+        (head : Clause (n + 1)) → (pos : (head.get focus focusLt = some branch)) →
         (l: Nat) → (w : l  < rc.codom ) → 
           (addPositiveClause  branch focus focusLt clauses rc head pos).reverse l w = 
             (rc.reverse l w) + 1 := by
             intro rc head neg l w 
             let rcN := addPositiveClause  branch focus focusLt clauses rc head neg 
             have res1 : rcN.reverse l w = 
-                                      rcN.reverseVec.coords l w := by rfl
+                                      rcN.reverseVec.get l w := by rfl
             have res2 : rc.reverse l w =
-                    rc.reverseVec.coords l w := by rfl
+                    rc.reverseVec.get l w := by rfl
             rw [res1]
             rw [res2]
             have res3 :rcN.reverseVec = 
               (rc.reverseVec.map (. + 1)) := by rfl
             rw [res3]
             have res4 :
-                ( (rc.reverseVec.map (. + 1)) ).coords l w =
+                ( (rc.reverseVec.map (. + 1)) ).get l w =
                   (zero +: 
-                  (rc.reverseVec.map (. + 1)) ).coords.tail 
+                  (rc.reverseVec.map (. + 1)) ).get.tail 
                   l w := by rfl
             rw [res4]
             rw [(tail_commutes 
@@ -160,7 +160,7 @@ theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
       (rc: ReductionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
+        (head : Clause (n + 1)) → (pos : head.get focus focusLt = some branch) →
           ReverseRelation rc → 
           ReverseRelation (addPositiveClause  branch focus focusLt clauses rc head pos) := 
         fun rc head pos rrc =>
@@ -169,20 +169,20 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           let codomN := rc.codom
           let clausesN := head +: clauses
           have relationN : (k : Nat) → (w: k < codomN) → 
-                 (rcN.restClauses.coords k w).coords = 
+                 (rcN.restClauses.get k w).get = 
                   delete focus focusLt 
-                    (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)).coords := 
+                    (clausesN.get (rcN.reverse k w) (rcN.reverseWit k w)).get := 
                   by
                     intro l
                     intro w 
-                    let lem1 : rcN.restClauses.coords l w = 
-                              rc.restClauses.coords l w := by rfl
+                    let lem1 : rcN.restClauses.get l w = 
+                              rc.restClauses.get l w := by rfl
                     let lem2 := rrc.relation l w               
                     rw [lem1]                          
                     rw [lem2]
-                    have rs0 : clausesN.coords (rcN.reverse l w) 
+                    have rs0 : clausesN.get (rcN.reverse l w) 
                                 (rcN.reverseWit l w) =
-                                  clausesN.coords 
+                                  clausesN.get 
                                     (rc.reverse l w + 1)
                                     (succ_le_succ
                                       (rc.reverseWit l w)) := by 
@@ -195,7 +195,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
 def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
       (rc: ReductionClauses branch focus focusLt clauses) → 
-        (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
+        (head : Clause (n + 1)) → (pos : head.get focus focusLt = some branch) →
           NonPosReverse rc → 
           NonPosReverse (addPositiveClause  branch focus focusLt clauses rc head pos) := 
         fun rc head pos prc =>
@@ -205,24 +205,24 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let clausesN := head +: clauses
           have pureN : (k : Nat) → (w: k < codomN)  → 
                 Not (
-                  (clausesN.coords (rcN.reverse k w) (rcN.reverseWit k w)).coords 
+                  (clausesN.get (rcN.reverse k w) (rcN.reverseWit k w)).get 
                      focus focusLt = some branch) :=
                   by
                     intro l w hyp 
-                    have rs0 : clausesN.coords (rcN.reverse l w) 
+                    have rs0 : clausesN.get (rcN.reverse l w) 
                                 (rcN.reverseWit l w) =
-                                  clausesN.coords 
+                                  clausesN.get 
                                     (rc.reverse l w + 1)
                                     (succ_le_succ
                                       (rc.reverseWit l w)) := by 
                                     apply witness_independent
                                     apply reverseResolve
                     rw [rs0] at hyp
-                    have rs1 : clausesN.coords 
+                    have rs1 : clausesN.get 
                                     (rc.reverse l w + 1)
                                     (succ_le_succ
                                       (rc.reverseWit l w)) =
-                                        clauses.coords (rc.reverse l w)
+                                        clauses.get (rc.reverse l w)
                                         (rc.reverseWit l w) := by rfl
                     rw [rs1] at hyp
                     let prev := prc.nonPosRev l w
@@ -232,7 +232,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
 
 def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom): 
-        (head : Clause (n + 1)) → (pos : head.coords focus focusLt = some branch) →
+        (head : Clause (n + 1)) → (pos : head.get focus focusLt = some branch) →
         (rd : ReductionData branch focus focusLt clauses) → 
         ReductionData branch focus focusLt (head +: clauses) := 
           fun head pos rd =>

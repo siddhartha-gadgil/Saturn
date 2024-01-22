@@ -12,12 +12,12 @@ inductive SatSolution{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) where
   | unsat : (tree : ResolutionTree clauses (contradiction (n + 1))) → 
           SatSolution clauses
   | sat : (valuation : Valuation (n + 1)) → ((k : Nat) → (kw : k < dom) 
-        → clauseSat (clauses.coords k kw) valuation) → SatSolution clauses 
+        → clauseSat (clauses.get k kw) valuation) → SatSolution clauses 
 
 def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
         (sol: SatSolution clauses) →  String 
       | unsat tree => "unsat: " ++ tree.toString 
-      | sat valuation _ => "sat: " ++ (valuation.coords.list).toString
+      | sat valuation _ => "sat: " ++ (valuation.get.list).toString
 
 def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
                   (sol : SatSolution clauses) →  Prop 

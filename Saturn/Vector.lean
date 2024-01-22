@@ -83,14 +83,14 @@ theorem seq_vec_cons_eq {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) :
                   seq_vec_cons_aux _ seq Vector.nil
 
 theorem coords_eq_implies_vec_eq{α: Type}{n : Nat}{v1 v2 : Vector α n}: 
-    v1.coords = v2.coords → v1 = v2 := 
+    v1.get = v2.get → v1 = v2 := 
     match n, v1, v2 with
     | zero, nil, nil => fun _ => rfl
     | m + 1, cons head1 tail1, cons head2 tail2 =>
       by
         intro hyp
-        have h1 : head1 = (cons head1 tail1).coords zero (Nat.zero_lt_succ m) := by rfl
-        have h2 : head2 = (cons head2 tail2).coords zero (Nat.zero_lt_succ m) := by rfl
+        have h1 : head1 = (cons head1 tail1).get zero (Nat.zero_lt_succ m) := by rfl
+        have h2 : head2 = (cons head2 tail2).get zero (Nat.zero_lt_succ m) := by rfl
         have hypHead : head1 = head2 :=
           by 
             rw [h1, h2, hyp]            
@@ -102,13 +102,13 @@ theorem coords_eq_implies_vec_eq{α: Type}{n : Nat}{v1 v2 : Vector α n}:
         intro k
         apply funext
         intro kw
-        have t1 : tail1.coords k kw = 
-          (cons head1 tail1).coords (k + 1) (Nat.succ_lt_succ kw) := by rfl
-        have t2 : tail2.coords k kw = 
-          (cons head2 tail2).coords (k + 1) (Nat.succ_lt_succ kw) := by rfl
+        have t1 : tail1.get k kw = 
+          (cons head1 tail1).get (k + 1) (Nat.succ_lt_succ kw) := by rfl
+        have t2 : tail2.get k kw = 
+          (cons head2 tail2).get (k + 1) (Nat.succ_lt_succ kw) := by rfl
         rw [t1, t2, hyp]
 
-theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.coords = seq := 
+theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.get = seq := 
   match n with
   | zero => by
     intro seq
@@ -131,8 +131,8 @@ theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.
     | succ k' => 
       apply funext
       intro kw
-      have tl :(FinSeq.vec seq).coords (succ k') kw = 
-          (FinSeq.vec (seq.tail)).coords k' (Nat.le_of_succ_le_succ kw) := by
+      have tl :(FinSeq.vec seq).get (succ k') kw = 
+          (FinSeq.vec (seq.tail)).get k' (Nat.le_of_succ_le_succ kw) := by
               rw [(seq_vec_cons_eq seq)] 
               rfl 
       let base := seq_to_vec_coords (seq.tail)
@@ -141,7 +141,7 @@ theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →   seq.vec.
       rfl
 
 theorem cons_commutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
-          (head +: tail).coords = head +| tail.coords := by
+          (head +: tail).get = head +| tail.get := by
             apply funext
             intro k
             induction k with
@@ -155,18 +155,18 @@ theorem cons_commutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
               rfl
 
 theorem tail_commutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
-      (x +: ys).coords.tail = ys.coords := 
+      (x +: ys).get.tail = ys.get := 
         by
         apply funext
         intro kw
         rfl 
 
 def Vector.map {α β : Type}{n: Nat}(vec: Vector α n) (f : α → β) : Vector β n :=
-    FinSeq.vec (fun j jw => f (vec.coords j jw))
+    FinSeq.vec (fun j jw => f (vec.get j jw))
 
 theorem map_coords_commute{α β : Type}{n : Nat}(vec: Vector α n) (f : α → β) (j : Nat) (jw : Nat.lt j n) :
-          (Vector.map vec f).coords j jw = f (vec.coords j jw) := by
-          have resolve: (map vec f).coords j jw = 
-                (FinSeq.vec (fun j jw => f (vec.coords j jw)) ).coords j jw := rfl
+          (Vector.map vec f).get j jw = f (vec.get j jw) := by
+          have resolve: (map vec f).get j jw = 
+                (FinSeq.vec (fun j jw => f (vec.get j jw)) ).get j jw := rfl
           rw [resolve]
           rw [seq_to_vec_coords]
