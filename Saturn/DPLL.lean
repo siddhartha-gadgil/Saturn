@@ -298,7 +298,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
           let posCount  := cls.map (parityCount true)
           let negCount  := cls.map (parityCount false)
           let solution : SatSolution cls :=
-              match someUnitClause cls.coords posCount negCount with
+              match someUnitClause cls posCount negCount with
               | some ⟨i, iw, index, bd, par, eql⟩ =>
                   let rd := restrictionData par index bd cls
                   let subCls := rd.restrictionClauses.restClauses

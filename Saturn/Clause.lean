@@ -136,15 +136,15 @@ def clauseUnit{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitCla
   let seq : FinSeq (n + 1) (Fin (n + 1)) := fun k w => ⟨k, w⟩
   findSome? f seq
 
-structure SomeUnitClause{l n : Nat}(clauses : FinSeq l  (Clause (n + 1))) where
+structure SomeUnitClause{l n : Nat}(clauses : Vector (Clause (n + 1)) l) where
   pos: Nat
   posBound : pos < l
   index: Nat
   bound : index < n + 1
   parity: Bool
-  equality : clauses pos posBound = unitClause n parity index bound
+  equality : clauses.coords pos posBound = unitClause n parity index bound
 
-def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))) →
+def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : Vector (Clause (n + 1)) l) →
   Vector Nat l →  Vector Nat l →
   (cb: Nat) → (cbBound : cb ≤  l) → Option (SomeUnitClause clauses) →
   Option (SomeUnitClause clauses)  :=
@@ -158,7 +158,7 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))
       | none =>
         if (posCount.coords m cbBound) + (negCount.coords m cbBound) = 1 then
         let parity := (posCount.coords m cbBound) == 1
-        match clauseUnit (clauses m cbBound) parity with
+        match clauseUnit (clauses.coords m cbBound) parity with
         | some u => some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩
         | none =>
           someUnitClauseAux clauses
@@ -166,7 +166,7 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))
         else none
 
 
-def someUnitClause {l : Nat} {n : Nat}: (clauses : FinSeq l  (Clause (n + 1))) →
+def someUnitClause {l : Nat} {n : Nat}: (clauses : Vector  (Clause (n + 1)) l) →
   Vector Nat l →
   Vector Nat l →
   Option (SomeUnitClause clauses)  :=
