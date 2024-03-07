@@ -29,8 +29,6 @@ theorem skip_above_eq(n m : Nat) : n ≤ m → (skip n m = m + 1):= by
     contradiction
   · simp [c]
 
-#check Nat.not_le_of_gt
-
 theorem skip_not_below_eq(n m : Nat) : Not (m < n) → (skip n m = m + 1)
   | hyp =>
     let lem : n ≤ m :=
@@ -51,8 +49,8 @@ def posSucc : (n : Nat) → Not (zero = n) → NatSucc n
   | l + 1, _ => ⟨l, rfl⟩
 
 
-def skipInverse (n m : Nat) : (m ≠ n) → Nat := fun hyp =>
-        if c : n < m then
+def skipInverse (n m : Nat) : (m ≠ n) → Nat := fun _ =>
+        if _ : n < m then
           match m with
           | zero => by
             have _ := Nat.zero_le n

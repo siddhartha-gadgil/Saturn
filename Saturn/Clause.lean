@@ -85,8 +85,8 @@ theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1)
 def Clause.toString {n: Nat}: Clause n → String :=
   fun (cls : Clause n) => (cls.get.list).toString
 
-instance {n: Nat} : ToString (Clause n) :=
-  ⟨fun (cls : Clause n) => (cls.get.list).toString⟩
+instance {n: Nat} : Repr (Clause n) :=
+  ⟨fun (cls : Clause n) => fun n => reprPrec (cls.toString) n⟩
 
 /-
 Unit clauses: definitions and finding with proofs

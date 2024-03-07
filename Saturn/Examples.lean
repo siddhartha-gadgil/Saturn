@@ -1,6 +1,6 @@
 import Saturn.FinSeq
 import Saturn.Vector
-import Saturn.Clause 
+import Saturn.Clause
 import Saturn.Solverstep
 import Saturn.DPLL
 open Nat
@@ -29,12 +29,13 @@ def eg2Soln : SatSolution eg2Statement := solveSAT (eg2Statement)
 
 def eg1Untyped  := getProof eg1Soln
 
-def eg1 : isUnSat eg1Statement := by
-  have lem : decide (isUnSat eg1Statement) = true := by native_decide
-  exact of_decide_eq_true lem 
-
 set_option maxHeartbeats 500000
--- def eg2 : isSat eg2Statement := getProof eg2Soln 
+def eg1 : isUnSat eg1Statement := getProof eg1Soln
+  -- by
+  -- have lem : decide (isUnSat eg1Statement) = true := by native_decide
+  -- exact of_decide_eq_true lem
 
--- #check eg1 -- isUnSat eg1Statement
--- #check eg2 -- isSat eg2Statement
+def eg2 : isSat eg2Statement := getProof eg2Soln
+
+#check eg1 -- isUnSat eg1Statement
+#check eg2 -- isSat eg2Statement
