@@ -40,7 +40,7 @@ def seqVecAux {α: Type}{n m l: Nat}: (s : n + m = l) →
 def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n :=
     fun seq => seqVecAux (Nat.add_zero n) seq Vector.nil
 
-def Vector.ofFn {α : Type}{n: Nat} : ((k : Nat) → k < n → α) → Vector α n :=
+def Vector.ofFn' {α : Type}{n: Nat} : ((k : Nat) → k < n → α) → Vector α n :=
     fun f => seqVecAux (Nat.add_zero n) f Vector.nil
 
 theorem prevsum{n m l: Nat}: n + 1 + m = l + 1 → n + m = l :=
@@ -82,18 +82,18 @@ theorem seq_vec_cons_aux {α: Type}{n m l: Nat}(s : (n + 1) + m = l + 1) (seq1 :
 
 
 theorem seq_vec_cons_eq {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) :
-          Vector.ofFn seq  = (seq.head) +: (seq.tail.vec) :=
+          Vector.ofFn' seq  = (seq.head) +: (seq.tail.vec) :=
                   seq_vec_cons_aux _ seq Vector.nil
 
 theorem coords_eq_implies_vec_eq{α: Type}{n : Nat}{v1 v2 : Vector α n}:
-    v1.get = v2.get → v1 = v2 :=
+    v1.get' = v2.get' → v1 = v2 :=
     match n, v1, v2 with
     | zero, nil, nil => fun _ => rfl
     | m + 1, cons head1 tail1, cons head2 tail2 =>
       by
         intro hyp
-        have h1 : head1 = (cons head1 tail1).get zero (Nat.zero_lt_succ m) := by rfl
-        have h2 : head2 = (cons head2 tail2).get zero (Nat.zero_lt_succ m) := by rfl
+        have h1 : head1 = (cons head1 tail1).get' zero (Nat.zero_lt_succ m) := by rfl
+        have h2 : head2 = (cons head2 tail2).get' zero (Nat.zero_lt_succ m) := by rfl
         have hypHead : head1 = head2 :=
           by
             rw [h1, h2, hyp]
@@ -105,14 +105,14 @@ theorem coords_eq_implies_vec_eq{α: Type}{n : Nat}{v1 v2 : Vector α n}:
         intro k
         apply funext
         intro kw
-        have t1 : tail1.get k kw =
-          (cons head1 tail1).get (k + 1) (Nat.succ_lt_succ kw) := by rfl
-        have t2 : tail2.get k kw =
-          (cons head2 tail2).get (k + 1) (Nat.succ_lt_succ kw) := by rfl
+        have t1 : tail1.get' k kw =
+          (cons head1 tail1).get' (k + 1) (Nat.succ_lt_succ kw) := by rfl
+        have t2 : tail2.get' k kw =
+          (cons head2 tail2).get' (k + 1) (Nat.succ_lt_succ kw) := by rfl
         rw [t1, t2, hyp]
 
 theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →
-  (Vector.ofFn seq).get = seq :=
+  (Vector.ofFn' seq).get' = seq :=
   match n with
   | zero => by
     intro seq
@@ -129,14 +129,14 @@ theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →
     | zero =>
       apply funext
       intro kw
-      have resolve : Vector.ofFn seq = cons (seq.head) (Vector.ofFn (seq.tail)) := by apply seq_vec_cons_eq
+      have resolve : Vector.ofFn' seq = cons (seq.head) (Vector.ofFn' (seq.tail)) := by apply seq_vec_cons_eq
       rw [resolve]
       rfl
     | succ k' =>
       apply funext
       intro kw
-      have tl :(Vector.ofFn seq).get (succ k') kw =
-          (Vector.ofFn (seq.tail)).get k' (Nat.le_of_succ_le_succ kw) := by
+      have tl :(Vector.ofFn' seq).get' (succ k') kw =
+          (Vector.ofFn' (seq.tail)).get' k' (Nat.le_of_succ_le_succ kw) := by
               rw [(seq_vec_cons_eq seq)]
               rfl
       let base := seq_to_vec_coords (seq.tail)
@@ -145,7 +145,7 @@ theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →
       rfl
 
 theorem cons_commutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
-          (head +: tail).get = head +| tail.get := by
+          (head +: tail).get' = head +| tail.get' := by
             apply funext
             intro k
             induction k with
@@ -159,18 +159,18 @@ theorem cons_commutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
               rfl
 
 theorem tail_commutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
-      (x +: ys).get.tail = ys.get :=
+      (x +: ys).get'.tail = ys.get' :=
         by
         apply funext
         intro kw
         rfl
 
 def Vector.map {α β : Type}{n: Nat}(vec: Vector α n) (f : α → β) : Vector β n :=
-    FinSeq.vec (fun j jw => f (vec.get j jw))
+    FinSeq.vec (fun j jw => f (vec.get' j jw))
 
 theorem map_coords_commute{α β : Type}{n : Nat}(vec: Vector α n) (f : α → β) (j : Nat) (jw : Nat.lt j n) :
-          (Vector.map vec f).get j jw = f (vec.get j jw) := by
-          have resolve: (map vec f).get j jw =
-                (Vector.ofFn (fun j jw => f (vec.get j jw)) ).get j jw := rfl
+          (Vector.map vec f).get' j jw = f (vec.get' j jw) := by
+          have resolve: (map vec f).get' j jw =
+                (Vector.ofFn' (fun j jw => f (vec.get' j jw)) ).get' j jw := rfl
           rw [resolve]
           rw [seq_to_vec_coords]

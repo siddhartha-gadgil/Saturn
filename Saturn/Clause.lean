@@ -26,19 +26,19 @@ with proofs.
 Contradictions and basic properties
 -/
 abbrev contradiction(n: Nat) : Clause n :=
-  Vector.ofFn (fun _ _ => none)
+  Vector.ofFn' (fun _ _ => none)
 
-theorem contra_at_none(n: Nat) : (contradiction n).get = (fun _ _ => none) :=
+theorem contra_at_none(n: Nat) : (contradiction n).get' = (fun _ _ => none) :=
               by apply seq_to_vec_coords
 
 
 theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n,
           Not (clauseSat (contradiction n) valuation) :=
   fun valuation => fun ⟨k, ⟨b, p⟩⟩ =>
-    let lem1 : (contradiction n).get k b = none := by rw [contra_at_none n]
-    let lem2 : varSat ((contradiction n).get k b) = varSat none := congrArg varSat lem1
-    let lem4 : (varSat none (valuation.get k b)) = (none = some (valuation.get k b)) := rfl
-    let lem5 : (none = some (valuation.get k b)) := by
+    let lem1 : (contradiction n).get' k b = none := by rw [contra_at_none n]
+    let lem2 : varSat ((contradiction n).get' k b) = varSat none := congrArg varSat lem1
+    let lem4 : (varSat none (valuation.get' k b)) = (none = some (valuation.get' k b)) := rfl
+    let lem5 : (none = some (valuation.get' k b)) := by
       rw [← lem4]
       rw [← lem2]
       exact p
@@ -46,13 +46,13 @@ theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n,
     Option.noConfusion lem5
 
 theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
-      insert none n focus focusLt ((contradiction n).get) =
-                          (contradiction (n + 1)).get :=
+      insert none n focus focusLt ((contradiction n).get') =
+                          (contradiction (n + 1)).get' :=
       let lem0 : (j: Nat) → (jw : j < n + 1) →
-            insert none n focus focusLt ((contradiction n).get) j jw  =
-                      (contradiction (n + 1)).get j jw :=
+            insert none n focus focusLt ((contradiction n).get') j jw  =
+                      (contradiction (n + 1)).get' j jw :=
                       fun j jw =>
-                      let lem0 : (contradiction (n + 1)).get j jw = none :=
+                      let lem0 : (contradiction (n + 1)).get' j jw = none :=
                           by rw [contra_at_none]
                       if c : j= focus then
                         match focus, c, focusLt with
@@ -70,7 +70,7 @@ theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1)
                           by
                             rw [lem1]
                             rw [insert_at_image
-                               none n focus focusLt ((contradiction n).get)
+                               none n focus focusLt ((contradiction n).get')
                                i iw]
                             rw [contra_at_none]
                             done
@@ -83,7 +83,7 @@ theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1)
                     done
 
 def Clause.toString {n: Nat}: Clause n → String :=
-  fun (cls : Clause n) => (cls.get.list).toString
+  fun (cls : Clause n) => (cls.get'.list).toString
 
 instance {n: Nat} : Repr (Clause n) :=
   ⟨fun (cls : Clause n) => fun n => reprPrec (cls.toString) n⟩
@@ -93,26 +93,26 @@ Unit clauses: definitions and finding with proofs
 -/
 
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
-  Vector.ofFn (insert (some b) n k w ((contradiction n).get))
+  Vector.ofFn' (insert (some b) n k w ((contradiction n).get'))
 
 theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
-          (unitClause n b k w).get k w = b := by
+          (unitClause n b k w).get' k w = b := by
             have resolve  : unitClause n b k w =
-                Vector.ofFn (insert (some b) n k w ((contradiction n).get)) := rfl
+                Vector.ofFn' (insert (some b) n k w ((contradiction n).get')) := rfl
             rw [resolve]
             rw [seq_to_vec_coords]
-            apply insert_at_focus (some b) n k w ((contradiction n).get)
+            apply insert_at_focus (some b) n k w ((contradiction n).get')
             done
 
 theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
-          (i: Nat) → (iw : i < n) → (unitClause n b k w).get (skip k i)
+          (i: Nat) → (iw : i < n) → (unitClause n b k w).get' (skip k i)
                   (skip_le_succ iw) = none := by
                   intros i iw
                   have resolve  : unitClause n b k w =
-                        Vector.ofFn (insert (some b) n k w ((contradiction n).get)) := rfl
+                        Vector.ofFn' (insert (some b) n k w ((contradiction n).get')) := rfl
                   rw [resolve]
                   rw [seq_to_vec_coords]
-                  let ins := insert_at_image (some b) n k w ((contradiction n).get) i iw
+                  let ins := insert_at_image (some b) n k w ((contradiction n).get') i iw
                   rw [ins]
                   rw [contra_at_none]
                   done
@@ -126,7 +126,7 @@ structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
 def clauseUnit{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitClause clause) :=
   let f : Fin (n + 1) →   (Option (IsUnitClause clause)) :=
     fun ⟨k, w⟩ =>
-      match deqSeq _ clause.get ((unitClause n parity k w).get) with
+      match deqSeq _ clause.get' ((unitClause n parity k w).get') with
       | isTrue pf =>
         let cl : IsUnitClause clause := IsUnitClause.mk k w parity (coords_eq_implies_vec_eq pf)
         some (cl)
@@ -140,7 +140,7 @@ structure SomeUnitClause{l n : Nat}(clauses : Vector (Clause (n + 1)) l) where
   index: Nat
   bound : index < n + 1
   parity: Bool
-  equality : clauses.get pos posBound = unitClause n parity index bound
+  equality : clauses.get' pos posBound = unitClause n parity index bound
 
 def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : Vector (Clause (n + 1)) l) →
   Vector Nat l →  Vector Nat l →
@@ -154,9 +154,9 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : Vector (Clause (n + 1)) l)
       match optCl with
       | some scl => some scl
       | none =>
-        if (posCount.get m cbBound) + (negCount.get m cbBound) = 1 then
-        let parity := (posCount.get m cbBound) == 1
-        match clauseUnit (clauses.get m cbBound) parity with
+        if (posCount.get' m cbBound) + (negCount.get' m cbBound) = 1 then
+        let parity := (posCount.get' m cbBound) == 1
+        match clauseUnit (clauses.get' m cbBound) parity with
         | some u => some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩
         | none =>
           someUnitClauseAux clauses
@@ -180,25 +180,25 @@ structure HasPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom) where
   bound : index < n
   parity : Bool
   evidence : (k : Nat) → (lt : k < dom) →
-          ((clauses.get k lt).get index bound = none) ∨
-            ((clauses.get k lt).get index bound = some parity)
+          ((clauses.get' k lt).get' index bound = none) ∨
+            ((clauses.get' k lt).get' index bound = some parity)
 
 structure IsPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom)
                       (index: Nat)(bound : index < n)(parity : Bool) where
-  evidence : (k : Nat) → (lt : k < dom) → ((clauses.get k lt).get index bound = none) ∨
-                                ((clauses.get k lt).get index bound = some parity)
+  evidence : (k : Nat) → (lt : k < dom) → ((clauses.get' k lt).get' index bound = none) ∨
+                                ((clauses.get' k lt).get' index bound = some parity)
 
 def pureEvidence {dom n : Nat}(clauses : Vector  (Clause n) dom)
                   (index: Nat)(bound : index < n)(parity : Bool): Prop :=
                   (k : Nat) → (lt : k < dom) →
-          ((clauses.get k lt).get index bound = none) ∨
-          ((clauses.get k lt).get index bound = some parity)
+          ((clauses.get' k lt).get' index bound = none) ∨
+          ((clauses.get' k lt).get' index bound = some parity)
 
 def pureBeyond{dom n : Nat}(clauses : Vector  (Clause n) dom)
                   (index: Nat)(bound : index < n)(parity : Bool)(m: Nat): Prop :=
                   (k : Nat) → (lt : k < dom) → (m ≤ k) →
-          ((clauses.get k lt).get index bound = none) ∨
-          ((clauses.get k lt).get index bound = some parity)
+          ((clauses.get' k lt).get' index bound = none) ∨
+          ((clauses.get' k lt).get' index bound = some parity)
 
 def pureBeyondZero{dom n : Nat}(clauses : Vector  (Clause n) dom)
                 (index: Nat)(bound : index < n)(parity : Bool) :
@@ -239,7 +239,7 @@ def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
         | none => none
         | some pureBeyondEv =>
           if pw : p < dom then
-            let head := (clauses.get p pw).get index bound
+            let head := (clauses.get' p pw).get' index bound
               if pf : (head = none) ∨  (head = some parity) then
                 let evidence : pureBeyond clauses index bound parity p :=
                   by
@@ -248,7 +248,7 @@ def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
                     intro ineq
                     cases Nat.eq_or_lt_of_le ineq with
                     | inl eql =>
-                      let lem1 : clauses.get p pw = clauses.get k kw := by
+                      let lem1 : clauses.get' p pw = clauses.get' k kw := by
                         apply witness_independent
                         exact eql
                         done

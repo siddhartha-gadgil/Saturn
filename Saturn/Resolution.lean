@@ -115,13 +115,13 @@ theorem var_resolution_step {left right top : Option Bool}(join: Join left right
 structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
   pivot : Nat
   pivotLt : pivot < n + 1
-  leftPivot : left.get pivot pivotLt = some false
-  rightPivot : right.get pivot pivotLt = some true
-  topPivot : top.get pivot pivotLt = none
+  leftPivot : left.get' pivot pivotLt = some false
+  rightPivot : right.get' pivot pivotLt = some true
+  topPivot : top.get' pivot pivotLt = none
   joinRest : (k : Nat) → (w : k < n) →
-    Join  (left.get (skip pivot k) (skip_le_succ w))
-          (right.get (skip pivot k) (skip_le_succ w))
-          (top.get (skip pivot k) (skip_le_succ w))
+    Join  (left.get' (skip pivot k) (skip_le_succ w))
+          (right.get' (skip pivot k) (skip_le_succ w))
+          (top.get' (skip pivot k) (skip_le_succ w))
 deriving Repr
 
 -- opposite units resolve to a contradiction
@@ -147,15 +147,15 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
           fun valuation =>
             fun ⟨kl, ⟨llt, wl⟩⟩ =>
               fun ⟨kr, ⟨rlt, wr⟩⟩ =>
-                if c : valuation.get (triple.pivot) (triple.pivotLt)  then
+                if c : valuation.get' (triple.pivot) (triple.pivotLt)  then
                     -- the left branch survives
                     if cc : kl = triple.pivot then by
-                      have lem1 : left.get kl llt =
-                        left.get triple.pivot triple.pivotLt := by
+                      have lem1 : left.get' kl llt =
+                        left.get' triple.pivot triple.pivotLt := by
                         apply witness_independent
                         apply cc
-                      have lem2 : valuation.get kl llt =
-                        valuation.get triple.pivot triple.pivotLt := by
+                      have lem2 : valuation.get' kl llt =
+                        valuation.get' triple.pivot triple.pivotLt := by
                         apply witness_independent
                         apply cc
                       have lem3 : some true = some false := by
@@ -166,32 +166,32 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                       let eql := skipInverse_eq triple.pivot kl cc
                       let iw : i < n := skip_preimage_lt triple.pivotLt llt eql
                       let leftLem :
-                        left.get kl llt = left.get (skip triple.pivot i) (skip_le_succ iw) := by
+                        left.get' kl llt = left.get' (skip triple.pivot i) (skip_le_succ iw) := by
                           apply witness_independent
                           rw [← eql]
                       let rightLem :
-                        right.get kl llt = right.get (skip triple.pivot i) (skip_le_succ iw) := by
+                        right.get' kl llt = right.get' (skip triple.pivot i) (skip_le_succ iw) := by
                           apply witness_independent
                           rw [← eql]
                       let topLem :
-                        top.get kl llt = top.get (skip triple.pivot i) (skip_le_succ iw) := by
+                        top.get' kl llt = top.get' (skip triple.pivot i) (skip_le_succ iw) := by
                           apply witness_independent
                           rw [← eql]
-                      let join : Join (left.get kl llt) (right.get kl llt) (top.get kl llt)  := by
+                      let join : Join (left.get' kl llt) (right.get' kl llt) (top.get' kl llt)  := by
                         rw [leftLem, rightLem, topLem]
                         exact triple.joinRest i iw
                         done
-                      ⟨kl, ⟨llt, var_resolution_step join (valuation.get kl llt) (Or.inl (wl))⟩⟩
+                      ⟨kl, ⟨llt, var_resolution_step join (valuation.get' kl llt) (Or.inl (wl))⟩⟩
                 else
                     let cc := eq_false_of_ne_true c
                     if ccc : kr = triple.pivot then
                       by
-                      have lem1 : right.get kr rlt =
-                            right.get triple.pivot triple.pivotLt := by
+                      have lem1 : right.get' kr rlt =
+                            right.get' triple.pivot triple.pivotLt := by
                             apply witness_independent
                             apply ccc
-                      have lem2 : valuation.get kr rlt =
-                            valuation.get triple.pivot triple.pivotLt := by
+                      have lem2 : valuation.get' kr rlt =
+                            valuation.get' triple.pivot triple.pivotLt := by
                             apply witness_independent
                             apply ccc
                       have lem5 : some false = some true := by
@@ -202,21 +202,21 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                       let eql := skipInverse_eq triple.pivot kr ccc
                       let iw : i < n := skip_preimage_lt triple.pivotLt rlt eql
                       let leftLem :
-                        left.get kr rlt = left.get (skip triple.pivot i) (skip_le_succ iw) := by
+                        left.get' kr rlt = left.get' (skip triple.pivot i) (skip_le_succ iw) := by
                           apply witness_independent
                           rw [← eql]
                       let rightLem :
-                        right.get kr rlt = right.get (skip triple.pivot i) (skip_le_succ iw) := by
+                        right.get' kr rlt = right.get' (skip triple.pivot i) (skip_le_succ iw) := by
                           apply witness_independent
                           rw [← eql]
                       let topLem :
-                        top.get kr rlt = top.get (skip triple.pivot i) (skip_le_succ iw) := by
+                        top.get' kr rlt = top.get' (skip triple.pivot i) (skip_le_succ iw) := by
                           apply witness_independent
                           rw [← eql]
-                      let join : Join (left.get kr rlt) (right.get kr rlt) (top.get kr rlt)  := by
+                      let join : Join (left.get' kr rlt) (right.get' kr rlt) (top.get' kr rlt)  := by
                         rw [leftLem, rightLem, topLem]
                         exact triple.joinRest i iw
-                      ⟨kr, ⟨rlt, var_resolution_step join (valuation.get kr rlt) (Or.inr (wr))⟩⟩
+                      ⟨kr, ⟨rlt, var_resolution_step join (valuation.get' kr rlt) (Or.inr (wr))⟩⟩
 
 
 /--
@@ -226,7 +226,7 @@ We show that the apex is satisfied by a valuation if the given clauses are satis
 inductive ResolutionTree{dom n: Nat}
       (clauses : Vector   (Clause (n + 1)) dom) : (Clause (n + 1)) → Type  where
   | assumption : (index : Nat) → (indexBound : index < dom ) → (top : Clause (n + 1)) →
-          clauses.get index indexBound = top →
+          clauses.get' index indexBound = top →
           ResolutionTree clauses top
   | resolve : (left right top : Clause (n + 1)) →
                 (leftTree : ResolutionTree clauses left) →
@@ -240,7 +240,7 @@ def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
         (rt: ResolutionTree clauses top) : String :=
       match rt with
       | ResolutionTree.assumption i iw _ _  =>
-          (clauses.get i iw).get.list.toString
+          (clauses.get' i iw).get'.list.toString
       | ResolutionTree.resolve left right .(top) leftTree rightTree _ =>
                 top.toString ++ " from " ++ left.toString ++ " & " ++ right.toString  ++
                 "; using: {" ++
@@ -249,14 +249,14 @@ def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
 /-- proof of the apex from the assumptions as propositions -/
 theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):
   (tree : ResolutionTree clauses top) →  (valuation :Valuation (n + 1))→
-    ((j : Nat) → (jw : j < dom) → clauseSat (clauses.get j jw) valuation) →
+    ((j : Nat) → (jw : j < dom) → clauseSat (clauses.get' j jw) valuation) →
             clauseSat top valuation :=
       fun tree  =>
         match tree with
         | ResolutionTree.assumption j jw .(top) eqn  =>
           fun valuation base  =>
-            have lem0 : clauses.get j jw = top := eqn
-            have lem1 : clauseSat (clauses.get j jw) valuation := base j jw
+            have lem0 : clauses.get' j jw = top := eqn
+            have lem1 : clauseSat (clauses.get' j jw) valuation := base j jw
           by
             rw [←  lem0]
             exact lem1
@@ -307,7 +307,7 @@ def mergeAlignUnitTrees{dom n: Nat}{branch : Bool}{clauses : Vector (Clause (n +
 
 def unitProof{dom n: Nat}{branch : Bool}{clauses : Vector (Clause (n + 1)) dom}
                 {focus : Nat}{focusLt : focus < n + 1}{j : Nat}{jw : j < dom}
-                (eqn: clauses.get j jw = unitClause n branch focus focusLt):
+                (eqn: clauses.get' j jw = unitClause n branch focus focusLt):
                 ResolutionTree clauses (unitClause n branch focus focusLt) :=
                   ResolutionTree.assumption j jw (unitClause n branch focus focusLt) eqn
 
@@ -316,7 +316,7 @@ structure BranchResolutionProof{dom n: Nat}(bf: Bool)(focus : Nat)(focusLt : foc
   (clauses : Vector (Clause (n + 1)) dom)(top : Clause (n))  where
     topFocus : Option Bool
     nonPos : Not (topFocus = some bf)
-    provedTree : ResolutionTree clauses (Vector.ofFn (insert topFocus n focus focusLt top.get))
+    provedTree : ResolutionTree clauses (Vector.ofFn' (insert topFocus n focus focusLt top.get'))
 
 /-
 Lift of a resolution tree with apex a contradiction, i.e., a resolution proof of unsat,
@@ -339,16 +339,16 @@ theorem not_eq_implies_eq_not(b: Bool){x : Bool} : Not (x = b) → x = (not b) :
 theorem trees_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
         (bf: Bool)(k : Nat)(kw : k < n + 1)
         (base : (j : Nat) → (lt : j < dom) →
-          Not ((clauses.get j lt).get k kw = some bf)) :
+          Not ((clauses.get' j lt).get' k kw = some bf)) :
         (top : Clause (n + 1)) →
         (tree : ResolutionTree clauses top) →
-        Not (top.get k kw = some bf) :=
+        Not (top.get' k kw = some bf) :=
           fun top tree =>
           match tree with
           | ResolutionTree.assumption ind  bd .(top) chk =>
             fun  hyp =>
-              have lem0 : clauses.get ind bd = top := chk
-              have lem1 : Not (top.get k kw = some bf) := by
+              have lem0 : clauses.get' ind bd = top := chk
+              have lem1 : Not (top.get' k kw = some bf) := by
                       rw [←  lem0]
                       exact (base ind bd)
               absurd hyp lem1
@@ -373,6 +373,6 @@ theorem trees_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 
                   | .(k), rfl, .(kw), join =>
                     let lem :=
                       top_of_join_not_positive bf
-                        (left.get k kw) (right.get k kw) (top.get k kw) join
+                        (left.get' k kw) (right.get' k kw) (top.get' k kw) join
                           leftLem rightLem
                     lem hyp
