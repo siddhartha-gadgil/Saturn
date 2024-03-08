@@ -28,25 +28,25 @@ The structure `Join` corresponds to the values of a literal in the three clauses
 by resolution, with the literal not the literal being resolved, i.e., the one that appears
 with opposite signs.
 -/
-inductive Join : Option Bool → Option Bool → Option Bool → Prop  where
-  | noneNone : Join none none none
-  | noneSome : (b : Bool) → Join none (some b) (some b)
-  | someNone : (b : Bool) → Join (some b) none (some b)
-  | someSome : (b : Bool) →  Join (some b) (some b) (some b)
+inductive IsJoin : Option Bool → Option Bool → Option Bool → Prop  where
+  | noneNone : IsJoin none none none
+  | noneSome : (b : Bool) → IsJoin none (some b) (some b)
+  | someNone : (b : Bool) → IsJoin (some b) none (some b)
+  | someSome : (b : Bool) →  IsJoin (some b) (some b) (some b)
 
 -- Join given the bottom literals and consistency
 def getJoin (bf : Bool)(left right : Option Bool) :
   Not (left = some bf) → Not (right = some bf) →
-    Σ' (top : Option Bool),  Join left right top :=
+    Σ' (top : Option Bool),  IsJoin left right top :=
       match left with
       | none =>
         match right with
-        | none => fun _ _ => ⟨none, Join.noneNone ⟩
+        | none => fun _ _ => ⟨none, .noneNone ⟩
         | some b => fun _ w =>
           if c: b = bf then
             by simp [c] at w
           else
-            ⟨some b, Join.noneSome b⟩
+            ⟨some b, .noneSome b⟩
       | some b =>
         fun w =>
           if c: b = bf then
@@ -54,7 +54,7 @@ def getJoin (bf : Bool)(left right : Option Bool) :
           else
             match right with
             | none =>
-              fun _ => ⟨some b, Join.someNone b⟩
+              fun _ => ⟨some b, .someNone b⟩
             | some bb =>
               fun wr =>
                 have lem1 : Not (bb = bf) := by
@@ -63,10 +63,10 @@ def getJoin (bf : Bool)(left right : Option Bool) :
                 have lem2 : bb = b := not_not_eq lem1 c
                 ⟨some b, by
                   rw [lem2]
-                  exact Join.someSome b⟩
+                  exact .someSome b⟩
 
 -- deduction that the top of the join is not `some bf` if the bottom ones are not
-theorem top_of_join_not_positive(bf : Bool)(left right top: Option Bool): Join left right top →
+theorem top_of_join_not_positive(bf : Bool)(left right top: Option Bool): IsJoin left right top →
     Not (left = some bf) → Not (right = some bf) →
        Not (top = some bf) := by
       intro join
@@ -83,7 +83,7 @@ theorem top_of_join_not_positive(bf : Bool)(left right top: Option Bool): Join l
         assumption
 
 -- valuations at a literal satisy the top of a join if they satisfy the bottom literals
-theorem var_resolution_step {left right top : Option Bool}(join: Join left right top)
+theorem var_resolution_step {left right top : Option Bool}(join: IsJoin left right top)
       (valuationVal : Bool) : Or (varSat left valuationVal) (varSat right valuationVal) →
           (varSat top valuationVal)  := by
         intro hyp
@@ -119,7 +119,7 @@ structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
   rightPivot : right.get' pivot pivotLt = some true
   topPivot : top.get' pivot pivotLt = none
   joinRest : (k : Nat) → (w : k < n) →
-    Join  (left.get' (skip pivot k) (skip_le_succ w))
+    IsJoin  (left.get' (skip pivot k) (skip_le_succ w))
           (right.get' (skip pivot k) (skip_le_succ w))
           (top.get' (skip pivot k) (skip_le_succ w))
 deriving Repr
@@ -136,7 +136,7 @@ def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
             fun j jw => by
               rw [unitSkip n false k lt j jw, unitSkip n true k lt j jw]
               simp [contra_at_none]
-              apply Join.noneNone
+              apply IsJoin.noneNone
                       ⟩
 
 -- if a valuation satisfies the bottom two clauses, it satisfies the top clause as a proposition
@@ -177,7 +177,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                         top.get' kl llt = top.get' (skip triple.pivot i) (skip_le_succ iw) := by
                           apply witness_independent
                           rw [← eql]
-                      let join : Join (left.get' kl llt) (right.get' kl llt) (top.get' kl llt)  := by
+                      let join : IsJoin (left.get' kl llt) (right.get' kl llt) (top.get' kl llt)  := by
                         rw [leftLem, rightLem, topLem]
                         exact triple.joinRest i iw
                         done
@@ -213,7 +213,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                         top.get' kr rlt = top.get' (skip triple.pivot i) (skip_le_succ iw) := by
                           apply witness_independent
                           rw [← eql]
-                      let join : Join (left.get' kr rlt) (right.get' kr rlt) (top.get' kr rlt)  := by
+                      let join : IsJoin (left.get' kr rlt) (right.get' kr rlt) (top.get' kr rlt)  := by
                         rw [leftLem, rightLem, topLem]
                         exact triple.joinRest i iw
                       ⟨kr, ⟨rlt, var_resolution_step join (valuation.get' kr rlt) (Or.inr (wr))⟩⟩
@@ -234,7 +234,7 @@ inductive ResolutionTree{dom n: Nat}
                 ResolutionTriple left right top
                 → ResolutionTree clauses top
 
-
+#check Std.Format
 def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
       {top : Clause (n + 1)}
         (rt: ResolutionTree clauses top) : String :=

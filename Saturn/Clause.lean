@@ -47,40 +47,29 @@ theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n,
 
 theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
       insert none n focus focusLt ((contradiction n).get') =
-                          (contradiction (n + 1)).get' :=
-      let lem0 : (j: Nat) → (jw : j < n + 1) →
-            insert none n focus focusLt ((contradiction n).get') j jw  =
-                      (contradiction (n + 1)).get' j jw :=
-                      fun j jw =>
-                      let lem0 : (contradiction (n + 1)).get' j jw = none :=
-                          by rw [contra_at_none]
-                      if c : j= focus then
-                        match focus, c, focusLt with
-                        | .(j), rfl, .(jw) =>
-                          by
-                            rw [insert_at_focus]
-                            rw [contra_at_none]
-                            done
-                      else
-                        let i := skipInverse focus j c
-                        let eqn : skip focus i = j := skipInverse_eq focus j c
-                        let iw := skip_preimage_lt focusLt jw eqn
-                        match j, eqn, jw, lem0 with
-                        | .(skip focus i), rfl, .(skip_le_succ iw), lem1 =>
-                          by
-                            rw [lem1]
-                            rw [insert_at_image
-                               none n focus focusLt ((contradiction n).get')
-                               i iw]
-                            rw [contra_at_none]
-                            done
-                 by
-                    apply funext
-                    intro j
-                    apply funext
-                    intro jw
-                    apply lem0
-                    done
+                          (contradiction (n + 1)).get' := by
+    apply funext
+    intro j
+    apply funext
+    intro jw
+    let lem0 : (contradiction (n + 1)).get' j jw = none :=
+        by rw [contra_at_none]
+    exact if c : j = focus then
+      match focus, c, focusLt with
+      | .(j), rfl, .(jw) =>
+        by
+          rw [insert_at_focus, contra_at_none]
+    else
+      let i := skipInverse focus j c
+      let eqn : skip focus i = j := skipInverse_eq focus j c
+      let iw := skip_preimage_lt focusLt jw eqn
+      match j, eqn, jw, lem0 with
+      | .(skip focus i), rfl, .(skip_le_succ iw), lem1 =>
+        by
+          rw [lem1, insert_at_image
+              none n focus focusLt ((contradiction n).get')
+              i iw, contra_at_none]
+          done
 
 def Clause.toString {n: Nat}: Clause n → String :=
   fun (cls : Clause n) => (cls.get'.list).toString
@@ -99,10 +88,8 @@ theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           (unitClause n b k w).get' k w = b := by
             have resolve  : unitClause n b k w =
                 Vector.ofFn' (insert (some b) n k w ((contradiction n).get')) := rfl
-            rw [resolve]
-            rw [seq_to_vec_coords]
+            rw [resolve, seq_to_vec_coords]
             apply insert_at_focus (some b) n k w ((contradiction n).get')
-            done
 
 theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           (i: Nat) → (iw : i < n) → (unitClause n b k w).get' (skip k i)
@@ -110,12 +97,9 @@ theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
                   intros i iw
                   have resolve  : unitClause n b k w =
                         Vector.ofFn' (insert (some b) n k w ((contradiction n).get')) := rfl
-                  rw [resolve]
-                  rw [seq_to_vec_coords]
+                  rw [resolve, seq_to_vec_coords]
                   let ins := insert_at_image (some b) n k w ((contradiction n).get') i iw
-                  rw [ins]
-                  rw [contra_at_none]
-                  done
+                  rw [ins, contra_at_none]
 
 structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
   index: Nat

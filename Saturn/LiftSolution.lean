@@ -105,7 +105,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
         rw [← rt.topPivot]
         apply insert_at_image
     let joinRestN : (j : Nat) → (jw : j < n + 1) →
-      Join  (leftN (skip pivotN j) (skip_le_succ jw))
+      IsJoin  (leftN (skip pivotN j) (skip_le_succ jw))
             (rightN (skip pivotN j) (skip_le_succ jw))
             (topN (skip pivotN j) (skip_le_succ jw)) :=
       fun j jw =>
