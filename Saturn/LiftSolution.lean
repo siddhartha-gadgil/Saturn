@@ -1,7 +1,7 @@
 import Saturn.FinSeq
 import Saturn.Vector
 import Saturn.Clause
-import Saturn.Solverstep 
+import Saturn.Solverstep
 import Saturn.Resolution
 open Nat
 open Vector
@@ -16,31 +16,31 @@ or a specifc unit clause determined by the branch.
 
 -- pull back of a solution
 def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom)(rc: ReductionClauses branch focus focusLt clauses) 
-    (dp : DroppedProof rc) (fr: ForwardRelation rc): 
-      (valuation : Valuation n) → 
-        ((j : Nat) → (jw : j < rc.codom) → clauseSat (rc.restClauses.get j jw) valuation) → 
-        (j : Nat) → (jw : j < dom) →  
-          clauseSat (clauses.get j jw) (FinSeq.vec (insert branch n focus focusLt valuation.get)) := 
+    (clauses: Vector (Clause (n + 1)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+    (dp : DroppedProof rc) (fr: ForwardRelation rc):
+      (valuation : Valuation n) →
+        ((j : Nat) → (jw : j < rc.codom) → clauseSat (rc.restClauses.get j jw) valuation) →
+        (j : Nat) → (jw : j < dom) →
+          clauseSat (clauses.get j jw) (FinSeq.vec (insert branch n focus focusLt valuation.get)) :=
         by
-          intro valuation pf k w  
+          intro valuation pf k w
           let fwdOpt := (rc.forward k w)
           match eq:fwdOpt with
-          | none => 
+          | none =>
             simp [clauseSat]
             apply Exists.intro focus
             apply Exists.intro focusLt
             let resolve : (clauses.get k w).get focus focusLt = some branch := dp.dropped k w eq
             rw [resolve]
-            let insfoc : insert branch n focus focusLt valuation.get focus focusLt = branch := by 
+            let insfoc : insert branch n focus focusLt valuation.get focus focusLt = branch := by
               apply insert_at_focus
             let sv : get (vec (insert branch n focus focusLt (get valuation))) =
                   insert branch n focus focusLt valuation.get := by
                     apply seq_to_vec_coords
             rw [sv]
             rw [insfoc]
-          | some j => 
-            let bound := rc.forwardWit k w 
+          | some j =>
+            let bound := rc.forwardWit k w
             let jWitAux : boundOpt rc.codom (some j) := by
               rw [←  eq]
               exact bound
@@ -50,11 +50,11 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             simp [clauseSat]
             apply Exists.intro (skip focus i)
             apply Exists.intro (skip_le_succ iw)
-            let sv : get (vec (insert branch n focus focusLt valuation.get)) = 
+            let sv : get (vec (insert branch n focus focusLt valuation.get)) =
                             insert branch n focus focusLt (valuation.get) := by
                               apply seq_to_vec_coords
-            rw [sv] 
-            let insImage : insert branch n focus focusLt valuation.get 
+            rw [sv]
+            let insImage : insert branch n focus focusLt valuation.get
                             (skip focus i) (skip_le_succ iw) =
                                 valuation.get i iw := by
                                   apply insert_at_image
@@ -64,51 +64,51 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
                 rfl
             rw [← delSkip]
             rw [fwdEq]
-            exact vs                      
+            exact vs
 
 
 -- lift of a resolution triple from a branch: definition and implementation
-structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
+structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
   (left right top : Clause (n + 1))(k: Nat)(lt : k < succ (n + 1)) where
     topFoc : Option Bool
-    triple : ResolutionTriple 
-          (FinSeq.vec (insert  leftFoc (n + 1) k lt   left.get)) 
-          (FinSeq.vec (insert  rightFoc (n + 1) k lt right.get)) 
+    triple : ResolutionTriple
+          (FinSeq.vec (insert  leftFoc (n + 1) k lt   left.get))
+          (FinSeq.vec (insert  rightFoc (n + 1) k lt right.get))
           (FinSeq.vec (insert  topFoc (n + 1) k lt top.get))
-    topNonPos : Not (topFoc = some bf) 
+    topNonPos : Not (topFoc = some bf)
 
-def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool) 
-  (left right top : Clause (n + 1)) : (k: Nat) → 
-    (lt : k < succ (n + 1)) → (lbf : Not (leftFoc = some bf)) → (rbf :Not (rightFoc = some bf)) → 
-       ResolutionTriple left right top → 
-        LiftedTriple bf leftFoc rightFoc left right top k lt  := 
+def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
+  (left right top : Clause (n + 1)) : (k: Nat) →
+    (lt : k < succ (n + 1)) → (lbf : Not (leftFoc = some bf)) → (rbf :Not (rightFoc = some bf)) →
+       ResolutionTriple left right top →
+        LiftedTriple bf leftFoc rightFoc left right top k lt  :=
   fun k lt lbf rbf rt =>
-    let ⟨topFoc, focJoin⟩ := 
+    let ⟨topFoc, focJoin⟩ :=
       getJoin bf leftFoc rightFoc lbf rbf
-    let topNonPos : Not (topFoc = some bf) := 
+    let topNonPos : Not (topFoc = some bf) :=
       top_of_join_not_positive bf leftFoc rightFoc topFoc focJoin lbf rbf
     let pivotN := skip k  rt.pivot
     let pivotNLt : pivotN < n + 2 := skip_le_succ rt.pivotLt
     let leftN := insert leftFoc (n + 1) k lt left.get
     let rightN := insert rightFoc (n + 1) k lt right.get
     let topN := insert topFoc (n + 1) k lt top.get
-    let leftPivotN : leftN pivotN pivotNLt = some false := 
+    let leftPivotN : leftN pivotN pivotNLt = some false :=
       by
         rw [← rt.leftPivot]
-        apply insert_at_image 
-    let rightPivotN : rightN pivotN pivotNLt = some true := 
+        apply insert_at_image
+    let rightPivotN : rightN pivotN pivotNLt = some true :=
       by
         rw [← rt.rightPivot]
-        apply insert_at_image 
-    let topPivotN : topN pivotN pivotNLt = none := 
+        apply insert_at_image
+    let topPivotN : topN pivotN pivotNLt = none :=
       by
         rw [← rt.topPivot]
-        apply insert_at_image 
-    let joinRestN : (j : Nat) → (jw : j < n + 1) →  
-      Join  (leftN (skip pivotN j) (skip_le_succ jw)) 
-            (rightN (skip pivotN j) (skip_le_succ jw)) 
-            (topN (skip pivotN j) (skip_le_succ jw)) := 
-      fun j jw => 
+        apply insert_at_image
+    let joinRestN : (j : Nat) → (jw : j < n + 1) →
+      Join  (leftN (skip pivotN j) (skip_le_succ jw))
+            (rightN (skip pivotN j) (skip_le_succ jw))
+            (topN (skip pivotN j) (skip_le_succ jw)) :=
+      fun j jw =>
       let jj := skip pivotN j
       let jjw : jj < n + 2 := skip_le_succ jw
       let notPivot : Not (jj = pivotN) := skip_no_fixedpoints pivotN j
@@ -121,44 +121,44 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
           assumption
         let topLem : topN jj jjw = topN k lt := by
           apply witness_independent
-          assumption                   
+          assumption
         rw [leftLem, rightLem, topLem]
-        let eqL : leftN k lt = leftFoc := by apply insert_at_focus 
+        let eqL : leftN k lt = leftFoc := by apply insert_at_focus
         let eqR : rightN k lt = rightFoc := by apply insert_at_focus
         let eqT : topN k lt = topFoc := by apply insert_at_focus
         rw [eqL, eqR, eqT]
-        exact focJoin                  
-      else 
+        exact focJoin
+      else
         let i := skipInverse k jj jj_eq_k
         let skp_k_i_jj : skip k i = jj := skipInverse_eq k jj jj_eq_k
         let iw : i < n + 1 := skip_preimage_lt lt jjw skp_k_i_jj
         if i_eq_pivot: i = rt.pivot then
           have lem1 : skip k i = skip k rt.pivot := congrArg (skip k) i_eq_pivot
-          have lem2 : skip k  rt.pivot = jj := by 
+          have lem2 : skip k  rt.pivot = jj := by
                 rw [←  lem1]
                 exact skp_k_i_jj
           absurd (Eq.symm lem2) notPivot
         else by
-          let ii := skipInverse rt.pivot i i_eq_pivot 
-          let skp_ii_eq_i : skip rt.pivot ii = i := 
+          let ii := skipInverse rt.pivot i i_eq_pivot
+          let skp_ii_eq_i : skip rt.pivot ii = i :=
                     skipInverse_eq rt.pivot i i_eq_pivot
           let iiw : ii < n := skip_preimage_lt rt.pivotLt iw skp_ii_eq_i
           let leftLem : leftN jj jjw = leftN (skip k i) (skip_le_succ iw) := by
-              apply witness_independent 
+              apply witness_independent
               rw [← skp_k_i_jj]
           let rightLem : rightN jj jjw = rightN (skip k i) (skip_le_succ iw) := by
-              apply witness_independent 
+              apply witness_independent
               rw [← skp_k_i_jj]
           let topLem : topN jj jjw = topN (skip k i) (skip_le_succ iw) := by
-              apply witness_independent 
+              apply witness_independent
               rw [← skp_k_i_jj]
           rw [leftLem, rightLem, topLem]
           let eqL : leftN (skip k i) (skip_le_succ iw) = left.get i iw := by
-              apply insert_at_image 
+              apply insert_at_image
           let eqR : rightN (skip k i) (skip_le_succ iw) = right.get i iw := by
-              apply insert_at_image              
+              apply insert_at_image
           let eqT : topN (skip k i) (skip_le_succ iw) = top.get i iw := by
-              apply insert_at_image 
+              apply insert_at_image
           rw [eqL, eqR, eqT]
           let leftLem2 : left.get (skip rt.pivot ii) (skip_le_succ iiw) = left.get i iw := by
               apply witness_independent
@@ -172,9 +172,9 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
           rw [← leftLem2, ← rightLem2, ← topLem2]
           exact rt.joinRest ii iiw
   ⟨topFoc, ⟨pivotN, pivotNLt,
-                  (by rw [seq_to_vec_coords]; rw [← leftPivotN]), 
-                  (by rw [seq_to_vec_coords]; rw [← rightPivotN]), 
-                  (by rw [seq_to_vec_coords]; rw [← topPivotN]), 
+                  (by rw [seq_to_vec_coords]; rw [← leftPivotN]),
+                  (by rw [seq_to_vec_coords]; rw [← rightPivotN]),
+                  (by rw [seq_to_vec_coords]; rw [← topPivotN]),
                   (by
                       rw [seq_to_vec_coords]
                       intro k1
@@ -187,7 +187,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                         insert topFoc (n + 1) k lt top.get := by rfl
                       rw [← lp, ← rp, ← tp]
                       have rn:  (FinSeq.vec rightN).get = rightN :=
-                        by rw [seq_to_vec_coords] 
+                        by rw [seq_to_vec_coords]
                       have tn: (FinSeq.vec topN).get = topN :=
                         by rw [seq_to_vec_coords]
                       rw [rn,  tn]
@@ -198,51 +198,51 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
 
 -- pulling back a tree
 def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
-    (clauses: Vector (Clause (n + 2)) dom)(rc: ReductionClauses branch focus focusLt clauses) 
-    (np : NonPosReverse rc) (rr: ReverseRelation rc): (top : Clause (n + 1)) → 
-      (tree : ResolutionTree (rc.restClauses) top) 
-       → BranchResolutionProof branch focus focusLt clauses top  := 
+    (clauses: Vector (Clause (n + 2)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+    (np : NonPosReverse rc) (rr: ReverseRelation rc): (top : Clause (n + 1)) →
+      (tree : ResolutionTree (rc.restClauses) top)
+       → BranchResolutionProof branch focus focusLt clauses top  :=
       fun top tree =>
         match tree with
-        | ResolutionTree.assumption j jw .(top) ttp => 
+        | ResolutionTree.assumption j jw .(top) ttp =>
             let k := rc.reverse j jw
             let kw : k < dom := rc.reverseWit j jw
             let cl := clauses.get k kw
             let topFocus := cl.get focus focusLt
-            let nonPosLem : Not (topFocus = some branch)  := 
+            let nonPosLem : Not (topFocus = some branch)  :=
                 np.nonPosRev j jw
-            have lem1 : (rc.restClauses.get j jw).get = 
-                  delete focus focusLt (clauses.get k kw).get 
+            have lem1 : (rc.restClauses.get j jw).get =
+                  delete focus focusLt (clauses.get k kw).get
                        := by
                        apply rr.relation
                        done
-            have lem3 : insert (cl.get focus focusLt) (n + 1) focus focusLt 
-                          (delete focus focusLt cl.get) = cl.get 
+            have lem3 : insert (cl.get focus focusLt) (n + 1) focus focusLt
+                          (delete focus focusLt cl.get) = cl.get
                           := insert_delete_id focus focusLt cl.get
             have lem : insert topFocus (n + 1) focus focusLt top.get = cl.get := by
                       rw [← ttp]
                       rw [lem1]
                       rw [lem3]
-                      done 
+                      done
             ⟨topFocus, nonPosLem,
               ResolutionTree.assumption k kw  _ (by
                     rw [lem]
-                    have lc : FinSeq.vec (cl.get) = cl := by 
+                    have lc : FinSeq.vec (cl.get) = cl := by
                       apply coords_eq_implies_vec_eq
                       apply seq_to_vec_coords
                       done
                     rw [lc]
                     done)⟩
-        | ResolutionTree.resolve left right  .(top) leftTree rightTree triple  =>             
-              let leftBase : BranchResolutionProof branch focus focusLt clauses left := 
-                        pullBackTree branch focus focusLt clauses rc np rr left leftTree                         
-              let rightBase : BranchResolutionProof branch focus focusLt clauses right := 
-                        pullBackTree branch focus focusLt clauses rc np rr right rightTree 
+        | ResolutionTree.resolve left right  .(top) leftTree rightTree triple  =>
+              let leftBase : BranchResolutionProof branch focus focusLt clauses left :=
+                        pullBackTree branch focus focusLt clauses rc np rr left leftTree
+              let rightBase : BranchResolutionProof branch focus focusLt clauses right :=
+                        pullBackTree branch focus focusLt clauses rc np rr right rightTree
 
               let ⟨leftFoc, leftNP, leftLiftTree⟩ := leftBase
               let ⟨rightFoc, rightNP, rightLiftTree⟩ := rightBase
-              let liftedTriple := 
-                    liftResolutionTriple branch leftFoc rightFoc left right top 
+              let liftedTriple :=
+                    liftResolutionTriple branch leftFoc rightFoc left right top
                           focus focusLt leftNP rightNP triple
               let ⟨topFoc, liftTriple, topNonPos⟩ := liftedTriple
               let tree := ResolutionTree.resolve
@@ -254,17 +254,17 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
 
 -- pulling back a proof of unsat by resolution to a contradiction or a proof of a unit clause.
 def pullBackResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
-    (clauses: Vector (Clause (n + 2)) dom)(rc: ReductionClauses branch focus focusLt clauses) 
-    (np : NonPosReverse rc) (rr: ReverseRelation rc) : 
-        ResolutionTree rc.restClauses (contradiction (n + 1)) → 
+    (clauses: Vector (Clause (n + 2)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+    (np : NonPosReverse rc) (rr: ReverseRelation rc) :
+        ResolutionTree rc.restClauses (contradiction (n + 1)) →
             LiftedResTree branch focus focusLt clauses := by
             intro rpf
-            let pbt := pullBackTree branch focus focusLt clauses rc np rr 
-                                (contradiction (n + 1)) rpf 
-            match pbt.topFocus, pbt.nonPos, pbt.provedTree with 
-            | none, _, tree => 
+            let pbt := pullBackTree branch focus focusLt clauses rc np rr
+                                (contradiction (n + 1)) rpf
+            match pbt.topFocus, pbt.nonPos, pbt.provedTree with
+            | none, _, tree =>
                 have lem :
-                  vec (insert none (Nat.add n 1) focus focusLt 
+                  vec (insert none (Nat.add n 1) focus focusLt
                     (contradiction (n + 1)).get) =
                     contradiction (n + 2) := by
                       rw [contradiction_insert_none focus focusLt]
@@ -282,21 +282,20 @@ def pullBackResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n
 def transportResTree{l1 l2 n : Nat}(clauses1 : Vector (Clause (n + 1)) l1)
                   (clauses2: Vector (Clause (n + 1)) l2)
                   (embed: (j : Nat) → (jw : j < l1) → ElemInSeq clauses2.get (clauses1.get j jw))
-                  (top: Clause (n + 1)): 
-                  (tree : ResolutionTree clauses1 top) → 
-                              ResolutionTree clauses2 top := 
-                      fun tree => 
+                  (top: Clause (n + 1)):
+                  (tree : ResolutionTree clauses1 top) →
+                              ResolutionTree clauses2 top :=
+                      fun tree =>
                       match tree with
                       | ResolutionTree.assumption ind  bd .(top) te =>
-                          let ⟨i, iw, eqn⟩ := embed ind bd                        
-                          ResolutionTree.assumption i iw _ (by 
+                          let ⟨i, iw, eqn⟩ := embed ind bd
+                          ResolutionTree.assumption i iw _ (by
                             rw [eqn]
                             exact te)
                       | ResolutionTree.resolve left right .(top) leftTree rightTree join =>
                           let leftPf2 := transportResTree clauses1 clauses2 embed left
-                              leftTree 
+                              leftTree
                           let rightPf2 := transportResTree clauses1 clauses2 embed right
-                              rightTree  
+                              rightTree
                           ResolutionTree.resolve left right top
                                       leftPf2 rightPf2 join
-

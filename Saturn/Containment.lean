@@ -5,14 +5,16 @@ open Nat
 open Vector
 open FinSeq
 
-/-
+/-!
 Containment of clauses and basic properties
 -/
 
 abbrev varContains (v1 v2 : Option Bool) : Prop :=
   ∀ b : Bool, v2 = some b → v1  = some b
 
-infix:65 "≥" => varContains
+
+instance : LE (Option Bool) :=
+  ⟨fun v₁ v₂ => varContains v₂ v₁⟩
 
 def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 ≥  v2) :=
   fun v1 v2 =>

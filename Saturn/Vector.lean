@@ -40,6 +40,9 @@ def seqVecAux {α: Type}{n m l: Nat}: (s : n + m = l) →
 def FinSeq.vec {α : Type}{n: Nat} : FinSeq n α  →  Vector α n :=
     fun seq => seqVecAux (Nat.add_zero n) seq Vector.nil
 
+def Vector.ofFn {α : Type}{n: Nat} : ((k : Nat) → k < n → α) → Vector α n :=
+    fun f => seqVecAux (Nat.add_zero n) f Vector.nil
+
 theorem prevsum{n m l: Nat}: n + 1 + m = l + 1 → n + m = l :=
   by
     intro hyp

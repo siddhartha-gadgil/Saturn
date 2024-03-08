@@ -5,8 +5,9 @@ import Saturn.Clause
 open Nat
 open FinSeq
 
-/-
+/-!
 If a SAT problem is not satisfiable, then there is a resolution tree that proves it.
+
 Here we define the resolution tree as a structure, building up from resolution triples,
 which are proofs of a clause by resolution from other clauses. The apex of the tree is the
 empty clause, which is a contradiction.
@@ -15,7 +16,7 @@ We also construct lifts of a resolution tree from a branch. The lift is either a
 or the proof of a unit clause associated to a branch.
 -/
 
-theorem not_not_eq(bf b bb : Bool) : Not (b = bf) → Not (bb = bf) → b = bb :=
+theorem not_not_eq{bf b bb : Bool} : Not (b = bf) → Not (bb = bf) → b = bb :=
   match bf with
   | true => fun w ww =>
     Eq.trans (eq_false_of_ne_true w) (Eq.symm (eq_false_of_ne_true ww))
@@ -27,114 +28,86 @@ The structure `Join` corresponds to the values of a literal in the three clauses
 by resolution, with the literal not the literal being resolved, i.e., the one that appears
 with opposite signs.
 -/
-inductive Join (left right top : Option Bool) where
-  | noneNone : (left = none) → (right = none) → (top = none)→ Join left right top
-  | noneSome : (b : Bool) → (left = none) → (right = some b) → (top = some b)→ Join left right top
-  | someNone : (b : Bool) → (left = some b) → (right = none) → (top = some b)→ Join left right top
-  | someSome : (b : Bool) → (left = some b) → (right = some b) → (top = some b)→ Join left right top
+inductive Join : Option Bool → Option Bool → Option Bool → Prop  where
+  | noneNone : Join none none none
+  | noneSome : (b : Bool) → Join none (some b) (some b)
+  | someNone : (b : Bool) → Join (some b) none (some b)
+  | someSome : (b : Bool) →  Join (some b) (some b) (some b)
 
 -- Join given the bottom literals and consistency
 def getJoin (bf : Bool)(left right : Option Bool) :
   Not (left = some bf) → Not (right = some bf) →
-    Σ (top : Option Bool),  Join left right top :=
+    Σ' (top : Option Bool),  Join left right top :=
       match left with
       | none =>
         match right with
-        | none => fun _ _ => ⟨none, Join.noneNone rfl rfl rfl⟩
+        | none => fun _ _ => ⟨none, Join.noneNone ⟩
         | some b => fun _ w =>
           if c: b = bf then
-            absurd (congrArg some c) w
+            by simp [c] at w
           else
-            ⟨some b, Join.noneSome b rfl rfl rfl⟩
+            ⟨some b, Join.noneSome b⟩
       | some b =>
         fun w =>
           if c: b = bf then
-            absurd (congrArg some c) w
+            by simp [c] at w
           else
             match right with
             | none =>
-              fun _ => ⟨some b, Join.someNone b rfl rfl rfl⟩
+              fun _ => ⟨some b, Join.someNone b⟩
             | some bb =>
               fun wr =>
                 have lem1 : Not (bb = bf) := by
                   intro hyp
                   exact (wr (congrArg some hyp))
-                have lem2 : bb = b := not_not_eq bf bb b lem1 c
-                ⟨some b, Join.someSome b rfl (congrArg some lem2) rfl⟩
+                have lem2 : bb = b := not_not_eq lem1 c
+                ⟨some b, by
+                  rw [lem2]
+                  exact Join.someSome b⟩
 
 -- deduction that the top of the join is not `some bf` if the bottom ones are not
 theorem top_of_join_not_positive(bf : Bool)(left right top: Option Bool): Join left right top →
     Not (left = some bf) → Not (right = some bf) →
-       Not (top = some bf) :=
-        fun join =>
-          match join with
-          | Join.noneNone _ _ wt => fun _ _ hyp =>
-            let lem := Eq.trans (Eq.symm hyp) wt
-            Option.noConfusion lem
-          | Join.someNone b wl _ wt =>
-            fun nwl _  hyp =>
-              have lem : left = some bf := by
-                rw [wl]
-                rw [← wt]
-                assumption
-                done
-              nwl lem
-          | Join.noneSome b _ wr wt =>
-            fun _ nwr  hyp =>
-              have lem : right = some bf := by
-                rw [wr]
-                rw [← wt]
-                assumption
-                done
-              nwr lem
-          | Join.someSome b wl _ wt =>
-            fun nwl _  hyp =>
-              have lem : left = some bf := by
-                rw [wl]
-                rw [← wt]
-                assumption
-                done
-              nwl lem
+       Not (top = some bf) := by
+      intro join
+      induction join with
+      | noneNone => intros; simp
+      | noneSome b =>
+        intros
+        assumption
+      | someNone b =>
+        intros
+        assumption
+      | someSome b =>
+        intros
+        assumption
 
 -- valuations at a literal satisy the top of a join if they satisfy the bottom literals
 theorem var_resolution_step {left right top : Option Bool}(join: Join left right top)
       (valuationVal : Bool) : Or (varSat left valuationVal) (varSat right valuationVal) →
-          (varSat top valuationVal)  :=
-  fun hyp  =>
-    match join with
-    | Join.noneNone pl pr _ =>
-      match hyp with
-      | Or.inl heq =>
-        let contra: none = some (valuationVal) := Eq.trans (Eq.symm pl) heq
-        Option.noConfusion contra
-      | Or.inr heq =>
-        let contra: none = some (valuationVal) := Eq.trans (Eq.symm pr) heq
-        Option.noConfusion contra
-    | Join.someNone _ pl pr pt =>
-      match hyp with
-      | Or.inl (heq : left = some valuationVal) =>
-        have lem : top = left := Eq.trans pt (Eq.symm pl)
-        Eq.trans lem heq
-      | Or.inr heq =>
-        let contra: none = some (valuationVal) := Eq.trans (Eq.symm pr) heq
-        Option.noConfusion contra
-    | Join.noneSome _ pl pr pt =>
-      match hyp with
-      | Or.inl heq =>
-        let contra: none = some (valuationVal) := Eq.trans (Eq.symm pl) heq
-        Option.noConfusion contra
-      | Or.inr heq =>
-        have lem : top = right := Eq.trans pt (Eq.symm pr)
-        Eq.trans lem heq
-    | Join.someSome _ pl pr pt =>
-      match hyp with
-      | Or.inl heq =>
-        have lem : top = left := Eq.trans pt (Eq.symm pl)
-        Eq.trans lem heq
-      | Or.inr heq =>
-        have lem : top = right := Eq.trans pt (Eq.symm pr)
-        Eq.trans lem heq
-
+          (varSat top valuationVal)  := by
+        intro hyp
+        cases hyp with
+        | inl heq =>
+          induction join with
+          | noneNone =>
+            assumption
+          | noneSome b =>
+            injection heq
+          | someNone b =>
+            assumption
+          | someSome b =>
+            assumption
+        | inr heq =>
+          induction join with
+          | noneNone =>
+            assumption
+          | noneSome b =>
+            assumption
+          | someNone b =>
+            injection heq
+          | someSome b =>
+            assumption
 
 /- the resolution triple. the `pivot` is where we have `¬ P` on the left and `P` on the right.
  at the rest of the literals we have joins.
@@ -149,6 +122,7 @@ structure ResolutionTriple{n: Nat}(left right top : Clause (n + 1)) where
     Join  (left.get (skip pivot k) (skip_le_succ w))
           (right.get (skip pivot k) (skip_le_succ w))
           (top.get (skip pivot k) (skip_le_succ w))
+deriving Repr
 
 -- opposite units resolve to a contradiction
 def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
@@ -159,10 +133,10 @@ def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
             by
               rw [contra_at_none]
               done,
-            fun j jw => Join.noneNone
-                      (unitSkip n false k lt j jw)
-                      (unitSkip n true k lt j jw)
-                      (by rw [contra_at_none])
+            fun j jw => by
+              rw [unitSkip n false k lt j jw, unitSkip n true k lt j jw]
+              simp [contra_at_none]
+              apply Join.noneNone
                       ⟩
 
 -- if a valuation satisfies the bottom two clauses, it satisfies the top clause as a proposition
@@ -175,7 +149,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
               fun ⟨kr, ⟨rlt, wr⟩⟩ =>
                 if c : valuation.get (triple.pivot) (triple.pivotLt)  then
                     -- the left branch survives
-                    if cc : kl = triple.pivot then
+                    if cc : kl = triple.pivot then by
                       have lem1 : left.get kl llt =
                         left.get triple.pivot triple.pivotLt := by
                         apply witness_independent
@@ -185,15 +159,8 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                         apply witness_independent
                         apply cc
                       have lem3 : some true = some false := by
-                        rw [← c]
-                        rw [← lem2]
-                        rw [← wl]
-                        rw [lem1]
-                        rw [triple.leftPivot]
-                      have lem4 : true = false := by
-                        injection lem3
-
-                      Bool.noConfusion lem4
+                        rw [← c, ← lem2, ← wl, lem1, triple.leftPivot]
+                      simp at lem3
                     else
                       let i := skipInverse triple.pivot kl cc
                       let eql := skipInverse_eq triple.pivot kl cc
@@ -218,6 +185,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                 else
                     let cc := eq_false_of_ne_true c
                     if ccc : kr = triple.pivot then
+                      by
                       have lem1 : right.get kr rlt =
                             right.get triple.pivot triple.pivotLt := by
                             apply witness_independent
@@ -227,15 +195,8 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                             apply witness_independent
                             apply ccc
                       have lem5 : some false = some true := by
-                        rw [← cc]
-                        rw [← lem2]
-                        rw [← wr]
-                        rw [lem1]
-                        rw [triple.rightPivot]
-                      have lem6 : false = true := by
-                        injection lem5
-
-                      Bool.noConfusion lem6
+                        rw [← cc, ← lem2, ← wr, lem1, triple.rightPivot]
+                      simp at lem5
                     else
                       let i := skipInverse triple.pivot kr ccc
                       let eql := skipInverse_eq triple.pivot kr ccc
@@ -258,7 +219,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                       ⟨kr, ⟨rlt, var_resolution_step join (valuation.get kr rlt) (Or.inr (wr))⟩⟩
 
 
-/-
+/--
 A resolution tree, with leaves given clauses assumed to be satisfied and nodes resolution steps.
 We show that the apex is satisfied by a valuation if the given clauses are satisfied.
 -/
@@ -285,7 +246,7 @@ def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
                 "; using: {" ++
                 leftTree.toString ++ "} and {" ++ rightTree.toString ++ "}"
 
--- proof of the apex from the assumptions as propositions
+/-- proof of the apex from the assumptions as propositions -/
 theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):
   (tree : ResolutionTree clauses top) →  (valuation :Valuation (n + 1))→
     ((j : Nat) → (jw : j < dom) → clauseSat (clauses.get j jw) valuation) →
@@ -317,7 +278,7 @@ theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
     contradiction_is_false _ valuation $
       resolutionToProof clauses (contradiction (n + 1)) tree valuation hyp
 
-/-
+/-!
 Pieces for building trees.
 -/
 
