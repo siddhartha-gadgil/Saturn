@@ -131,11 +131,11 @@ def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
             unitDiag n false k lt ,
             unitDiag n true k lt,
             by
-              rw [contra_at_none]
+              rw [get'_contradiction]
               done,
             fun j jw => by
               rw [unitSkip n false k lt j jw, unitSkip n true k lt j jw]
-              simp [contra_at_none]
+              simp [get'_contradiction]
               apply IsJoin.noneNone
                       ⟩
 
@@ -250,26 +250,20 @@ def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
 theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):
   (tree : ResolutionTree clauses top) →  (valuation :Valuation (n + 1))→
     ((j : Nat) → (jw : j < dom) → clauseSat (clauses.get' j jw) valuation) →
-            clauseSat top valuation :=
-      fun tree  =>
-        match tree with
-        | ResolutionTree.assumption j jw .(top) eqn  =>
-          fun valuation base  =>
-            have lem0 : clauses.get' j jw = top := eqn
-            have lem1 : clauseSat (clauses.get' j jw) valuation := base j jw
-          by
-            rw [←  lem0]
-            exact lem1
-        | ResolutionTree.resolve left right  .(top) leftTree rightTree triple  =>
-          fun valuation base =>
-              let leftBase : clauseSat left valuation :=
-                resolutionToProof clauses left leftTree valuation base
-              let rightBase : clauseSat right valuation :=
-                resolutionToProof clauses right rightTree  valuation base
-              let lemStep := triple_step left right top triple valuation leftBase rightBase
-            by
-              exact lemStep
-              done
+            clauseSat top valuation := by
+      intro tree
+      induction tree
+      case assumption j jw top eqn =>
+        intro valuation base
+        rw [← eqn]
+        apply base
+      case resolve left right top' _ _ triple lih rih  =>
+        intro valuation base
+        let leftBase : clauseSat left valuation := by
+          apply lih valuation base
+        let rightBase : clauseSat right valuation := by
+          apply rih valuation base
+        exact triple_step left right top' triple valuation leftBase rightBase
 
 -- unsat from a resolution tree
 theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
@@ -346,12 +340,11 @@ theorem trees_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 
           fun top tree =>
           match tree with
           | ResolutionTree.assumption ind  bd .(top) chk =>
-            fun  hyp =>
-              have lem0 : clauses.get' ind bd = top := chk
+            fun  hyp => by
               have lem1 : Not (top.get' k kw = some bf) := by
-                      rw [←  lem0]
+                      rw [←  chk]
                       exact (base ind bd)
-              absurd hyp lem1
+              contradiction
           | ResolutionTree.resolve left right .(top) leftTree rightTree triple =>
             fun hyp =>
               let leftLem :=
@@ -364,15 +357,14 @@ theorem trees_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 
                         lL (triple.leftPivot)
                   | true, .(triple.pivot), rfl, .(triple.pivotLt), _, rL =>
                         rL (triple.rightPivot)
-              else
+              else by
                   let j := skipInverse triple.pivot k c
                   let eqn  := skipInverse_eq triple.pivot k c
                   let jw := skip_preimage_lt triple.pivotLt kw eqn
                   let joinIm := triple.joinRest j jw
                   match (skip triple.pivot j), eqn, (skip_le_succ jw), joinIm with
                   | .(k), rfl, .(kw), join =>
-                    let lem :=
-                      top_of_join_not_positive bf
+                    apply top_of_join_not_positive bf
                         (left.get' k kw) (right.get' k kw) (top.get' k kw) join
                           leftLem rightLem
-                    lem hyp
+                    exact hyp

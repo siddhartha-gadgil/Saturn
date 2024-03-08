@@ -12,7 +12,7 @@ import Saturn.LiftSolution
 open Nat
 open FinSeq
 
-/-
+/-!
 The DPLL algorithm with proofs. Here we implement:
   - restricting to a branch.
   - the simple cases of having contradictions or no clauses.
@@ -24,10 +24,10 @@ instance {n: Nat} : DecidableEq (Clause n) :=
   fun c1 c2 =>
   match decEq c1.get' c2.get' with
   | isTrue pf => isTrue (coords_eq_implies_vec_eq pf)
-  | isFalse contra => isFalse (
-      fun hyp =>
-        contra (congrArg Vector.get' hyp)
-  )
+  | isFalse contra => by
+    apply isFalse
+    intro hyp
+    simp [hyp] at contra
 
 /-
 We map to branches inductively. The main work is done earlier.
@@ -232,33 +232,18 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
 -- a helper
 theorem notpure_cases(b: Bool): (x : Option Bool) → x = none ∨  x = some b  →
         Not (x = some (not b)) :=
-  fun x eqn  =>
+  fun x eqn  => by
      match b, eqn  with
      | true, Or.inr pf =>
-            fun hyp =>
-              let lem1 : some true = some false := by
-                rw [← pf]
-                rw [hyp]
-                rfl
-                done
-              let lem2 : true = false := by
-                  injection lem1
-
-              Bool.noConfusion lem2
+        intro hyp
+        simp [pf] at hyp
      | false, Or.inr pf =>
-              fun hyp =>
-              let lem1 : some true = some false := by
-                rw [← pf]
-                rw [hyp]
-                rfl
-                done
-              let lem2 : true = false := by
-                  injection lem1
-
-              Bool.noConfusion lem2
-     | _ , Or.inl pf => fun hyp =>
+        intro hyp
+        simp [pf] at hyp
+     | _ , Or.inl pf =>
+        intro hyp
         let w := Eq.trans (Eq.symm pf) hyp
-        Option.noConfusion w
+        exact Option.noConfusion w
 
 /-
 Lifting under containment and from branches and putting together lifts

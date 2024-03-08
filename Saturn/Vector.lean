@@ -158,6 +158,13 @@ theorem cons_commutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
               intro kw
               rfl
 
+theorem Vector.get'_of_Fn' {α : Type}{n : Nat} (f : (k : Nat) → k < n → α) (k : Nat) (kw : k < n) :
+      (Vector.ofFn' f).get' k kw = f k kw :=
+      by
+      let lem := seq_to_vec_coords f
+      let lem' := congrFun lem k
+      apply congrFun lem'
+
 theorem tail_commutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
       (x +: ys).get'.tail = ys.get' :=
         by

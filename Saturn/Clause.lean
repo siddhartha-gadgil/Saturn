@@ -6,7 +6,7 @@ open Nat
 open Vector
 open FinSeq
 
-/- A SAT problem is a set of clauses. Here we define structures corresponding to clauses,
+/-! A SAT problem is a set of clauses. Here we define structures corresponding to clauses,
 and prove their basic properties.
 
 Variables are assumed to correspond to integers. Literals correspond to associating to each variable
@@ -22,28 +22,20 @@ with proofs.
 -/
 
 
-/-
-Contradictions and basic properties
+/--
+Contradiction clause
 -/
-abbrev contradiction(n: Nat) : Clause n :=
+def contradiction(n: Nat) : Clause n :=
   Vector.ofFn' (fun _ _ => none)
 
-theorem contra_at_none(n: Nat) : (contradiction n).get' = (fun _ _ => none) :=
-              by apply seq_to_vec_coords
 
+theorem get'_contradiction(n: Nat)(k: Nat)(w: k < n) : (contradiction n).get' k w = none :=
+  by rw [contradiction, Vector.get'_of_Fn']
 
 theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n,
-          Not (clauseSat (contradiction n) valuation) :=
-  fun valuation => fun ⟨k, ⟨b, p⟩⟩ =>
-    let lem1 : (contradiction n).get' k b = none := by rw [contra_at_none n]
-    let lem2 : varSat ((contradiction n).get' k b) = varSat none := congrArg varSat lem1
-    let lem4 : (varSat none (valuation.get' k b)) = (none = some (valuation.get' k b)) := rfl
-    let lem5 : (none = some (valuation.get' k b)) := by
-      rw [← lem4]
-      rw [← lem2]
-      exact p
-      done
-    Option.noConfusion lem5
+          Not (clauseSat (contradiction n) valuation) := by
+    intro valuation ⟨k, ⟨b, p⟩⟩
+    simp [get'_contradiction, varSat] at p
 
 theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
       insert none n focus focusLt ((contradiction n).get') =
@@ -52,30 +44,29 @@ theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1)
     intro j
     apply funext
     intro jw
-    let lem0 : (contradiction (n + 1)).get' j jw = none :=
-        by rw [contra_at_none]
+    rw [get'_contradiction]
     exact if c : j = focus then
       match focus, c, focusLt with
       | .(j), rfl, .(jw) =>
         by
-          rw [insert_at_focus, contra_at_none]
-    else
+          rw [insert_at_focus]
+    else by
       let i := skipInverse focus j c
       let eqn : skip focus i = j := skipInverse_eq focus j c
       let iw := skip_preimage_lt focusLt jw eqn
-      match j, eqn, jw, lem0 with
-      | .(skip focus i), rfl, .(skip_le_succ iw), lem1 =>
-        by
-          rw [lem1, insert_at_image
-              none n focus focusLt ((contradiction n).get')
-              i iw, contra_at_none]
-          done
+      match j, eqn, jw with
+      | .(skip focus i), rfl, .(skip_le_succ iw) =>
+        rw [insert_at_image
+            none n focus focusLt ((contradiction n).get')
+            i iw, get'_contradiction]
 
-def Clause.toString {n: Nat}: Clause n → String :=
-  fun (cls : Clause n) => (cls.get'.list).toString
 
 instance {n: Nat} : Repr (Clause n) :=
-  ⟨fun (cls : Clause n) => fun n => reprPrec (cls.toString) n⟩
+  ⟨fun (cls : Clause n) => fun n => reprPrec (cls.get'.list) n⟩
+
+def Clause.toString {n: Nat}: Clause n → String :=
+  fun (cls : Clause n) => (repr cls).pretty
+
 
 /-
 Unit clauses: definitions and finding with proofs
@@ -86,20 +77,16 @@ def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
 
 theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           (unitClause n b k w).get' k w = b := by
-            have resolve  : unitClause n b k w =
-                Vector.ofFn' (insert (some b) n k w ((contradiction n).get')) := rfl
-            rw [resolve, seq_to_vec_coords]
-            apply insert_at_focus (some b) n k w ((contradiction n).get')
+            rw [unitClause, seq_to_vec_coords]
+            apply insert_at_focus
 
 theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           (i: Nat) → (iw : i < n) → (unitClause n b k w).get' (skip k i)
                   (skip_le_succ iw) = none := by
-                  intros i iw
-                  have resolve  : unitClause n b k w =
-                        Vector.ofFn' (insert (some b) n k w ((contradiction n).get')) := rfl
-                  rw [resolve, seq_to_vec_coords]
+                  intro i iw
+                  rw [unitClause, seq_to_vec_coords]
                   let ins := insert_at_image (some b) n k w ((contradiction n).get') i iw
-                  rw [ins, contra_at_none]
+                  rw [ins, get'_contradiction]
 
 structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
   index: Nat
@@ -141,7 +128,8 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : Vector (Clause (n + 1)) l)
         if (posCount.get' m cbBound) + (negCount.get' m cbBound) = 1 then
         let parity := (posCount.get' m cbBound) == 1
         match clauseUnit (clauses.get' m cbBound) parity with
-        | some u => some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩
+        | some u =>
+            some ⟨m, cbBound, u.index, u.bound, u.parity, u.equality⟩
         | none =>
           someUnitClauseAux clauses
             posCount negCount m (Nat.le_trans (Nat.le_succ m) cbBound) none
@@ -235,13 +223,10 @@ def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
                       let lem1 : clauses.get' p pw = clauses.get' k kw := by
                         apply witness_independent
                         exact eql
-                        done
                       rw [← lem1]
                       exact pf
-                      done
                     | inr l2 =>
                       exact pureBeyondEv.evidence k kw l2
-                      done
                 varIsPureRec index bound parity dom clauses p (some ⟨evidence⟩)
               else none
           else

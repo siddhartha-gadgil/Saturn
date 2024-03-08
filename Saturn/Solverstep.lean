@@ -46,7 +46,8 @@ abbrev ReductionClauses.reverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : 
 /- The condition that if a clause is mapped to `none` (i.e., dropped), then the value at
   the `focus` index is `some bf` for the chosen branch `bf`, i.e., the clause holds.
 -/
-structure DroppedProof{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
+structure DroppedProof
+  {dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}(
         rc: ReductionClauses branch focus focusLt clauses)  where
     dropped : (k : Nat) → (w: k < dom) → rc.forward k w =

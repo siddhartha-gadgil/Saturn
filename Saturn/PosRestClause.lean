@@ -40,22 +40,16 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                         forwardVecN.get'.tail i (Nat.le_of_succ_le_succ jw) := by rfl
                     rw [tl]
                     rw [tail_commutes none rc.forwardVec]
-          have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) :=
-            fun k  =>
+          have forwardWitN : (k: Nat) → (w: k < domN) →
+              boundOpt codomN (forwardN k w) := by
+            intro k
             match k with
-            | zero => fun w =>
-              let resolve : forwardN zero w = none := by rfl
-              by
-                rw [resolve]
-                exact True.intro
-                done
+            | zero =>
+                intros
+                simp [forwardN, boundOpt]
             | l + 1 =>
-              fun w : l + 1 < domN   =>
-                let lem : forwardN (l + 1) w = rc.forward l (le_of_succ_le_succ w) := by rfl
-                by
-                  rw [lem]
-                  exact (rc.forwardWit l (le_of_succ_le_succ w))
-                  done
+                intros
+                apply rc.forwardWit
           let reverseVecN := rc.reverseVec.map (. + 1)
           let reverseN : (k : Nat) →  k < codomN → Nat :=
             fun k w => (rc.reverse k w) + 1
@@ -65,9 +59,9 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                   apply funext
                   intro jw
                   apply map_coords_commute
-                  done
-          have reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
-            fun k w => succ_le_succ (rc.reverseWit k  w)
+          have reverseWitN : (k : Nat) → (w : k < codomN) →
+            reverseN k w < domN :=
+              fun k w => succ_le_succ (rc.reverseWit k  w)
           ReductionClauses.mk codomN rc.restClauses
                     (forwardVecN)
                     (forwardNEq ▸ forwardWitN)
@@ -83,25 +77,16 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           DroppedProof rc →
           DroppedProof (addPositiveClause  branch focus focusLt clauses rc head pos) :=
         fun rc head pos drc =>
-          let rcN := addPositiveClause  branch focus focusLt clauses rc head pos
-          let domN := dom + 1
-          let clausesN := head +: clauses
-          let droppedN :
-              (k : Nat) → (w: k < domN) → rcN.forward k w = none →
-                  (clausesN.get' k w).get' focus focusLt = some branch := by
-                  intro k
-                  match k with
-                  | zero =>
-                    intro _ _
-                    exact pos
-                  | l + 1 =>
-                      intro w nw
-                      let resolve : rcN.forward (l + 1) w =
-                        rc.forward l (le_of_succ_le_succ w) := by rfl
-                      rw [resolve] at nw
-                      let lem3 := drc.dropped l (le_of_succ_le_succ w) nw
-                      exact lem3
-          ⟨droppedN⟩
+          ⟨by
+            intro k
+            match k with
+            | zero =>
+              intros
+              exact pos
+            | l + 1 =>
+                intro w nw
+                exact drc.dropped l (le_of_succ_le_succ w) nw
+          ⟩
 
 def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
