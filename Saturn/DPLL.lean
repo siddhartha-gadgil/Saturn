@@ -62,7 +62,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
           done
         have sf : FinSeq dom (Clause (n + 1))  = FinSeq domAccum (Clause (n + 1)):= by
           rw [ss]
-        have clSeq : clauses = clauses.get.vec := by
+        have clSeq : clauses = Vector.ofFn clauses.get := by
           apply coords_eq_implies_vec_eq
           rw [seq_to_vec_coords]
         have resolve : concatSeqAux s clausesHead.get clausesAccum.get =
@@ -72,7 +72,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
         rw [resolve]
         match dom , domAccum, ss, sf, clausesAccum, restAccum with
         | d, .(d), rfl, rfl, cls,  ra =>
-          have sm : FinSeq.vec (cls.get) = cls := by
+          have sm : Vector.ofFn  (cls.get) = cls := by
             apply coords_eq_implies_vec_eq
             rw [seq_to_vec_coords]
           rw [← sm] at ra
@@ -88,10 +88,10 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
         concatSeqAux ss (clausesHead.get.init) ((clausesHead.get.last) +| clausesAccum.get) := rfl
       let recRestAccum :=
         prependResData branch focus focusLt clausesAccum restAccum (last clausesHead.get)
-      restrictionDataAux branch focus focusLt (FinSeq.vec (init clausesHead.get))
+      restrictionDataAux branch focus focusLt (Vector.ofFn  (init clausesHead.get))
           ((last clausesHead.get) +: clausesAccum) ss recRestAccum clauses
           (by
-            have sm : (FinSeq.vec (init clausesHead.get)).get =
+            have sm : (Vector.ofFn  (init clausesHead.get)).get =
                 init (clausesHead.get) := by rw [seq_to_vec_coords]
             rw [sm,
                (cons_commutes (last (clausesHead.get)) clausesAccum),
@@ -131,7 +131,7 @@ def contraSol{n dom: Nat}{clauses : Vector (Clause (n + 1)) dom}{j : Nat}{jw : j
                   SatSolution.unsat (ResolutionTree.assumption j jw _ eqn)
 
 def emptySol{n: Nat}(clauses : Vector (Clause (n + 1)) zero) : SatSolution clauses :=
-        SatSolution.sat (FinSeq.vec (fun _ _=> true))  (fun _ kw => nomatch kw)
+        SatSolution.sat (Vector.ofFn  (fun _ _=> true))  (fun _ kw => nomatch kw)
 
 /-
 Solution for length one clauses
@@ -188,7 +188,7 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
                   let tree := mergeAlignUnitTrees treePf1 treePf2
                   SatSolution.unsat tree
               | ExistsElem.notExst noNeg =>
-                 SatSolution.sat (FinSeq.vec (fun _ _ => true))
+                 SatSolution.sat (Vector.ofFn  (fun _ _ => true))
                     fun k kw =>
                       let lem1 : Not ((cls.get k kw).get zero (zero_lt_succ zero) = some false) :=
                         fun hyp => noNeg k kw (lengthOneUnit hyp)
@@ -211,7 +211,7 @@ def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolu
                   let tree := mergeAlignUnitTrees treePf1 treePf2
                   SatSolution.unsat tree
               | ExistsElem.notExst noNeg =>
-                 SatSolution.sat (FinSeq.vec (fun _ _ => false))
+                 SatSolution.sat (Vector.ofFn  (fun _ _ => false))
                     fun k kw =>
                       let lem1 : Not ((cls.get k kw).get zero (zero_lt_succ zero) = some true) :=
                         fun hyp => noNeg k kw (lengthOneUnit hyp)
@@ -308,7 +308,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                     let pb :=  pullBackSolution par index bd cls
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
                     let valuationN := insert par _ index bd valuation.get
-                    SatSolution.sat valuationN.vec pb
+                    SatSolution.sat (Vector.ofFn valuationN) pb
                   | SatSolution.unsat tree  => by
                       let liftedProof :=
                         pullBackResTree  par index bd cls
@@ -333,7 +333,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                     let pb :=  pullBackSolution par index bd cls
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
                     let valuationN := insert par _ index bd valuation.get
-                    SatSolution.sat valuationN.vec pb
+                    SatSolution.sat (Vector.ofFn valuationN) pb
                   | SatSolution.unsat tree => by
                       let liftedProof :=
                         pullBackResTree  par index bd cls
@@ -365,7 +365,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                     let pb :=  pullBackSolution false index bd cls
                         rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
                     let valuationN := insert false _ index bd valuation.get
-                    SatSolution.sat valuationN.vec pb
+                    SatSolution.sat (Vector.ofFn valuationN) pb
                   | SatSolution.unsat tree => by
                       let liftedProof : LiftedResTree false zero bd cls :=
                         pullBackResTree  false index bd cls
@@ -384,7 +384,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                             let pb :=  pullBackSolution true index bd cls
                                 rd.restrictionClauses rd.droppedProof rd.forwardRelation valuation pf
                             let valuationN := insert true _ index bd valuation.get
-                            exact SatSolution.sat valuationN.vec pb
+                            exact SatSolution.sat (Vector.ofFn valuationN) pb
                           | SatSolution.unsat tree  =>
                               let liftedProof :=
                                 pullBackResTree  true index bd cls

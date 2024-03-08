@@ -197,7 +197,7 @@ abbrev reverse {dom n : Nat}{base: Vector (Clause n) dom}
                     cntn.reverseEq j jw⟩
 
 def identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment base :=
-    let idVec : Vector Nat dom := FinSeq.vec (fun j _ => j)
+    let idVec : Vector Nat dom := Vector.ofFn (fun j _ => j)
     let idAt : (j : Nat) → (jw : j < dom) → idVec.get j jw = j := by
       intro j jw
       rw [seq_to_vec_coords]
@@ -291,7 +291,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                                   rw [lem1]
                                   rw [lem2]
                                   exact ict⟩
-              let forwardNVec := FinSeq.vec (fun j jw => (forwardN j jw).index)
+              let forwardNVec := Vector.ofFn (fun j jw => (forwardN j jw).index)
               have forwardNAt : (j : Nat) → (jw : j < domN) →
                       forwardNVec.get j jw = (forwardN j jw).index :=
                       by
@@ -311,11 +311,11 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                           rw [forwardNAt]
               have forwardNPred : (j : Nat) → (jw : j < domN) →
                     contains (base.get j jw)
-                          (imageSeqN.vec.get (forwardNVec.get j jw) (forwardNBound j jw)) :=
+                          ((Vector.ofFn imageSeqN).get (forwardNVec.get j jw) (forwardNBound j jw)) :=
                         by
                           intro j jw
                           have se :
-                            (imageSeqN.vec.get (forwardNVec.get j jw) (forwardNBound j jw)) =
+                            ((Vector.ofFn imageSeqN).get (forwardNVec.get j jw) (forwardNBound j jw)) =
                             (imageSeqN (forwardNVec.get j jw) (forwardNBound j jw)) := by
                               rw [seq_to_vec_coords]
                           rw [se, forwardNEq j jw]
@@ -325,7 +325,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                     fun i iw =>
                         let ⟨ind, bd, eqn⟩ := reverse (skip k i) (skip_le_succ iw)
                         ⟨ind, bd, by exact eqn⟩
-              let reverseNVec := FinSeq.vec (fun j jw => (reverseN j jw).index)
+              let reverseNVec := Vector.ofFn (fun j jw => (reverseN j jw).index)
               have reverseNAt : (j : Nat) → (jw : j < codomN) →
                       reverseNVec.get j jw = (reverseN j jw).index :=
                       by
@@ -337,7 +337,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                         rw [reverseNAt]
                         exact (reverseN j jw).bound
               have reverseNAtImage : (j : Nat) → (jw : j < l) →
-                      imageSeqN.vec.get j jw = imageSeqN j jw :=
+                      (Vector.ofFn imageSeqN).get j jw = imageSeqN j jw :=
                       by
                         intro j jw
                         rw [seq_to_vec_coords]
@@ -349,12 +349,12 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                         rw [reverseNAt]
               have reverseNPred : (j : Nat) → (jw : j < codomN) →
                   base.get (reverseNVec.get j jw) (reverseNBound j jw) =
-                    imageSeqN.vec.get j jw := by
+                    (Vector.ofFn imageSeqN).get j jw := by
                         intro j jw
                         rw [reverseNAtImage j jw]
                         rw [reverseNEq j jw]
                         exact (reverseN j jw).equation
-             ⟨codomN, imageSeqN.vec, forwardNVec, forwardNBound, forwardNPred,
+             ⟨codomN, (Vector.ofFn imageSeqN), forwardNVec, forwardNBound, forwardNPred,
                 reverseNVec, reverseNBound, reverseNPred⟩
           simplifyNonEmptyContainment k base posCount negCount step
         else ⟨l + 1, imageSeq, forwardVec, forwardBound, forwardEq,

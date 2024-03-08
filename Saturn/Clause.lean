@@ -26,7 +26,7 @@ with proofs.
 Contradictions and basic properties
 -/
 abbrev contradiction(n: Nat) : Clause n :=
-  FinSeq.vec (fun _ _ => none)
+  Vector.ofFn (fun _ _ => none)
 
 theorem contra_at_none(n: Nat) : (contradiction n).get = (fun _ _ => none) :=
               by apply seq_to_vec_coords
@@ -93,12 +93,12 @@ Unit clauses: definitions and finding with proofs
 -/
 
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
-  FinSeq.vec (insert (some b) n k w ((contradiction n).get))
+  Vector.ofFn (insert (some b) n k w ((contradiction n).get))
 
 theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           (unitClause n b k w).get k w = b := by
             have resolve  : unitClause n b k w =
-                FinSeq.vec (insert (some b) n k w ((contradiction n).get)) := rfl
+                Vector.ofFn (insert (some b) n k w ((contradiction n).get)) := rfl
             rw [resolve]
             rw [seq_to_vec_coords]
             apply insert_at_focus (some b) n k w ((contradiction n).get)
@@ -109,7 +109,7 @@ theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
                   (skip_le_succ iw) = none := by
                   intros i iw
                   have resolve  : unitClause n b k w =
-                        FinSeq.vec (insert (some b) n k w ((contradiction n).get)) := rfl
+                        Vector.ofFn (insert (some b) n k w ((contradiction n).get)) := rfl
                   rw [resolve]
                   rw [seq_to_vec_coords]
                   let ins := insert_at_image (some b) n k w ((contradiction n).get) i iw

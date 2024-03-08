@@ -316,7 +316,7 @@ structure BranchResolutionProof{dom n: Nat}(bf: Bool)(focus : Nat)(focusLt : foc
   (clauses : Vector (Clause (n + 1)) dom)(top : Clause (n))  where
     topFocus : Option Bool
     nonPos : Not (topFocus = some bf)
-    provedTree : ResolutionTree clauses (FinSeq.vec (insert topFocus n focus focusLt top.get))
+    provedTree : ResolutionTree clauses (Vector.ofFn (insert topFocus n focus focusLt top.get))
 
 /-
 Lift of a resolution tree with apex a contradiction, i.e., a resolution proof of unsat,

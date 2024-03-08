@@ -21,7 +21,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
       (valuation : Valuation n) →
         ((j : Nat) → (jw : j < rc.codom) → clauseSat (rc.restClauses.get j jw) valuation) →
         (j : Nat) → (jw : j < dom) →
-          clauseSat (clauses.get j jw) (FinSeq.vec (insert branch n focus focusLt valuation.get)) :=
+          clauseSat (clauses.get j jw) (Vector.ofFn (insert branch n focus focusLt valuation.get)) :=
         by
           intro valuation pf k w
           let fwdOpt := (rc.forward k w)
@@ -34,7 +34,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             rw [resolve]
             let insfoc : insert branch n focus focusLt valuation.get focus focusLt = branch := by
               apply insert_at_focus
-            let sv : get (vec (insert branch n focus focusLt (get valuation))) =
+            let sv : get (Vector.ofFn (insert branch n focus focusLt (get valuation))) =
                   insert branch n focus focusLt valuation.get := by
                     apply seq_to_vec_coords
             rw [sv]
@@ -50,7 +50,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             simp [clauseSat]
             apply Exists.intro (skip focus i)
             apply Exists.intro (skip_le_succ iw)
-            let sv : get (vec (insert branch n focus focusLt valuation.get)) =
+            let sv : get (Vector.ofFn (insert branch n focus focusLt valuation.get)) =
                             insert branch n focus focusLt (valuation.get) := by
                               apply seq_to_vec_coords
             rw [sv]
@@ -72,9 +72,9 @@ structure LiftedTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
   (left right top : Clause (n + 1))(k: Nat)(lt : k < succ (n + 1)) where
     topFoc : Option Bool
     triple : ResolutionTriple
-          (FinSeq.vec (insert  leftFoc (n + 1) k lt   left.get))
-          (FinSeq.vec (insert  rightFoc (n + 1) k lt right.get))
-          (FinSeq.vec (insert  topFoc (n + 1) k lt top.get))
+          (Vector.ofFn (insert  leftFoc (n + 1) k lt   left.get))
+          (Vector.ofFn (insert  rightFoc (n + 1) k lt right.get))
+          (Vector.ofFn (insert  topFoc (n + 1) k lt top.get))
     topNonPos : Not (topFoc = some bf)
 
 def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
@@ -186,9 +186,9 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                       have tp : topN =
                         insert topFoc (n + 1) k lt top.get := by rfl
                       rw [← lp, ← rp, ← tp]
-                      have rn:  (FinSeq.vec rightN).get = rightN :=
+                      have rn:  (Vector.ofFn rightN).get = rightN :=
                         by rw [seq_to_vec_coords]
-                      have tn: (FinSeq.vec topN).get = topN :=
+                      have tn: (Vector.ofFn topN).get = topN :=
                         by rw [seq_to_vec_coords]
                       rw [rn,  tn]
                       apply joinRestN
@@ -227,7 +227,7 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
             ⟨topFocus, nonPosLem,
               ResolutionTree.assumption k kw  _ (by
                     rw [lem]
-                    have lc : FinSeq.vec (cl.get) = cl := by
+                    have lc : Vector.ofFn (cl.get) = cl := by
                       apply coords_eq_implies_vec_eq
                       apply seq_to_vec_coords
                       done
@@ -246,9 +246,9 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
                           focus focusLt leftNP rightNP triple
               let ⟨topFoc, liftTriple, topNonPos⟩ := liftedTriple
               let tree := ResolutionTree.resolve
-                              (FinSeq.vec (insert leftFoc _ focus focusLt left.get))
-                              (FinSeq.vec (insert rightFoc _ focus focusLt right.get))
-                              (FinSeq.vec (insert topFoc _ focus focusLt top.get))
+                              (Vector.ofFn (insert leftFoc _ focus focusLt left.get))
+                              (Vector.ofFn (insert rightFoc _ focus focusLt right.get))
+                              (Vector.ofFn (insert topFoc _ focus focusLt top.get))
                               leftLiftTree rightLiftTree liftTriple
               ⟨topFoc, topNonPos, tree⟩
 
@@ -264,7 +264,7 @@ def pullBackResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n
             match pbt.topFocus, pbt.nonPos, pbt.provedTree with
             | none, _, tree =>
                 have lem :
-                  vec (insert none (Nat.add n 1) focus focusLt
+                  Vector.ofFn (insert none (Nat.add n 1) focus focusLt
                     (contradiction (n + 1)).get) =
                     contradiction (n + 2) := by
                       rw [contradiction_insert_none focus focusLt]

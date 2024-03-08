@@ -17,7 +17,7 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
         (head : Clause (n + 1)) → (neg : Not (head.get focus focusLt = some branch)) →
             ReductionClauses branch focus focusLt (head +: clauses) :=
           fun rc head _ =>
-            let headImage := (delete focus focusLt head.get).vec
+            let headImage := Vector.ofFn (delete focus focusLt head.get)
             let domN := dom + 1
             let codomN := rc.codom + 1
             let restClausesN := headImage +: rc.restClauses
@@ -225,7 +225,7 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     have hl1 : clausesN.get zero w = head := by rfl
                     rw [hl1]
                     have hl2 : rcN.restClauses.get zero jw =
-                         (delete focus focusLt (head.get)).vec := by rfl
+                         Vector.ofFn (delete focus focusLt (head.get)) := by rfl
                     rw [hl2]
                     apply Eq.symm
                     apply seq_to_vec_coords
@@ -308,7 +308,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     | zero =>
                       intro w
                       have resRHS : rcN.restClauses.get zero w
-                                = (delete focus focusLt head.get).vec := by rfl
+                                = Vector.ofFn (delete focus focusLt head.get) := by rfl
                       rw [resRHS]
                       rw [seq_to_vec_coords]
                       rfl
