@@ -32,13 +32,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             apply Exists.intro focusLt
             let resolve : (clauses.get' k w).get' focus focusLt = some branch := dp.dropped k w eq
             rw [resolve]
-            let insfoc : insert branch n focus focusLt valuation.get' focus focusLt = branch := by
-              apply insert_at_focus
-            let sv : get' (Vector.ofFn' (insert branch n focus focusLt (get' valuation))) =
-                  insert branch n focus focusLt valuation.get' := by
-                    apply seq_to_vec_coords
-            rw [sv]
-            rw [insfoc]
+            simp [Vector.get', seq_to_vec_coords, insert_at_focus]
           | some j =>
             let bound := rc.forwardWit k w
             let jWitAux : boundOpt rc.codom (some j) := by
@@ -50,15 +44,8 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             simp [clauseSat]
             apply Exists.intro (skip focus i)
             apply Exists.intro (skip_le_succ iw)
-            let sv : get' (Vector.ofFn' (insert branch n focus focusLt valuation.get')) =
-                            insert branch n focus focusLt (valuation.get') := by
-                              apply seq_to_vec_coords
-            rw [sv]
-            let insImage : insert branch n focus focusLt valuation.get'
-                            (skip focus i) (skip_le_succ iw) =
-                                valuation.get' i iw := by
-                                  apply insert_at_image
-            rw [insImage]
+            simp [Vector.get', seq_to_vec_coords]
+            rw [insert_at_image]
             let delSkip : delete focus focusLt ((clauses.get' k w).get') i iw =
               ((clauses.get' k w).get') (skip focus i) (skip_le_succ iw) := by
                 rfl
@@ -123,27 +110,23 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
           apply witness_independent
           assumption
         rw [leftLem, rightLem, topLem]
-        let eqL : leftN k lt = leftFoc := by apply insert_at_focus
-        let eqR : rightN k lt = rightFoc := by apply insert_at_focus
-        let eqT : topN k lt = topFoc := by apply insert_at_focus
-        rw [eqL, eqR, eqT]
+        simp [insert_at_focus]
         exact focJoin
       else
         let i := skipInverse k jj jj_eq_k
         let skp_k_i_jj : skip k i = jj := skipInverse_eq k jj jj_eq_k
         let iw : i < n + 1 := skip_preimage_lt lt jjw skp_k_i_jj
-        if i_eq_pivot: i = rt.pivot then
-          have lem1 : skip k i = skip k rt.pivot := congrArg (skip k) i_eq_pivot
+        if i_eq_pivot: i = rt.pivot then by
           have lem2 : skip k  rt.pivot = jj := by
-                rw [←  lem1]
-                exact skp_k_i_jj
-          absurd (Eq.symm lem2) notPivot
+                rw [← i_eq_pivot, skipInverse_eq]
+          simp [ ← lem2] at notPivot
         else by
           let ii := skipInverse rt.pivot i i_eq_pivot
           let skp_ii_eq_i : skip rt.pivot ii = i :=
                     skipInverse_eq rt.pivot i i_eq_pivot
           let iiw : ii < n := skip_preimage_lt rt.pivotLt iw skp_ii_eq_i
-          let leftLem : leftN jj jjw = leftN (skip k i) (skip_le_succ iw) := by
+          let leftLem : leftN jj jjw =
+            leftN (skip k i) (skip_le_succ iw) := by
               apply witness_independent
               rw [← skp_k_i_jj]
           let rightLem : rightN jj jjw = rightN (skip k i) (skip_le_succ iw) := by
