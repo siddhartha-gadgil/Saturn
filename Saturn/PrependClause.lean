@@ -6,7 +6,7 @@ open Nat
 open Vector
 open FinSeq
 
-/-
+/--
 The inductive step for adding a new clause when it is not dropped. The new clauses and maps
 are defined. All the witnesses for the relations between the old and new clauses are also
 constructed.
@@ -44,26 +44,19 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     rw [tl,
                       tail_commutes (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1))),
                       map_coords_commute]
-            have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) :=
-              fun k  =>
+            have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := by
+              intro k
               match k with
-              | zero => fun w =>
-                let lem1 : forwardN zero w = some zero := by rfl
-                by
-                  rw [lem1]
+              | zero =>
+                  intro w
+                  simp [forwardN]
                   apply zero_lt_succ
-                  done
               | l + 1 =>
-                fun w : l + 1 < domN   =>
-                  let lem : forwardN (l + 1) w =
-                    (rc.forward l (le_of_succ_le_succ w)).map (. + 1) := by rfl
-                  let lem2 := boundOptSucc rc.codom
+                  intro w
+                  simp [forwardN]
+                  exact boundOptSucc rc.codom
                             (rc.forward l (le_of_succ_le_succ w))
                             (rc.forwardWit l (le_of_succ_le_succ w))
-                  by
-                    rw [lem]
-                    exact lem2
-                    done
             let reverseVecN := zero +: (rc.reverseVec.map (. + 1))
             let reverseN : (k : Nat) →  k < codomN → Nat :=
               fun k =>
@@ -86,7 +79,8 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     rw [tl,
                        tail_commutes zero (rc.reverseVec.map (. + 1)),
                         map_coords_commute]
-            have reverseWitN : (k : Nat) → (w : k < codomN) → reverseN k w < domN :=
+            have reverseWitN : (k : Nat) → (w : k < codomN) →
+                reverseN k w < domN :=
               fun k =>
               match k with
               | zero => fun _ => zero_lt_succ _
@@ -140,30 +134,8 @@ theorem forwardResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n
         (l: Nat) → (w : l + 1 < dom + 1) →
           (prependClause  branch focus focusLt clauses rc head neg).forward (l + 1) w =
             (rc.forward l (le_of_succ_le_succ w)).map (. + 1) := by
-                  intro rc head neg l w
-                  let rcN := prependClause  branch focus focusLt clauses rc head neg
-                  have res1 : rcN.forward (l + 1) w =
-                      rcN.forwardVec.get' (l + 1) w := by rfl
-                  have res2 : rc.forward l (le_of_succ_le_succ w) =
-                      rc.forwardVec.get' l (le_of_succ_le_succ w) := by rfl
-                  rw [res1]
-                  rw [res2]
-                  have res3 :rcN.forwardVec =
-                    (some zero) +: (rc.forwardVec.map (fun nop => nop.map (. + 1)) )
-                      := by rfl
-                  rw [res3]
-                  have res4 :
-                      ((some zero) +:
-                        (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).get'
-                          (l + 1) w =
-                      (
-                        ((some zero) +:
-                        (rc.forwardVec.map (fun nop => nop.map (. + 1)) )).get'.tail
-                      ) l (Nat.le_of_succ_le_succ w) := by rfl
-                  rw [res4]
-                  rw [(tail_commutes
-                      (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1)) ))]
-                  rw [map_coords_commute]
+                  intro rc head _ l w
+                  simp [ReductionClauses.forward, ReductionClauses.forwardVec, prependClause, Vector.get', map_coords_commute]
 
 
 def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
@@ -234,28 +206,22 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     match c:rcN.forward (l + 1) w with
                     | none =>
                       intro j sw jw
-                      exact Option.noConfusion sw
+                      simp at sw
                     | some zero =>
                       rw [forwardResolve] at c
-                      let contra:= map_plusone_not_somezero c
-                      exact False.elim contra
+                      have contra:= map_plusone_not_somezero c
+                      contradiction
                     | some (j + 1) =>
                       intro j1 eq1
                       have eq2 : j + 1 = j1 := by
                         injection eq1
-
                       rw [← eq2]
                       intro jw
-                      have clres: clausesN.get' (l + 1) w =
-                        clauses.get' l (le_of_succ_le_succ w) := by rfl
-                      rw [clres]
+                      simp [Vector.get']
                       rw [forwardResolve] at c
                       let cc:= map_plusone_pred c
-                      have prev :=
-                          frc.forwardRelation l (le_of_succ_le_succ w) j cc
-                            (le_of_succ_le_succ jw)
-                      rw [prev]
-                      rfl
+                      rw [frc.forwardRelation l (le_of_succ_le_succ w) j cc
+                            (le_of_succ_le_succ jw)]
           ⟨forwardRelationN⟩
 
 
@@ -266,27 +232,8 @@ theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n
         (l: Nat) → (w : l + 1 < rc.codom + 1) →
           (prependClause  branch focus focusLt clauses rc head neg).reverse (l + 1) w =
             (rc.reverse l (le_of_succ_le_succ w)) + 1 := by
-            intro rc head neg l w
-            let rcN := prependClause  branch focus focusLt clauses rc head neg
-            have res1 : rcN.reverse (l + 1) w =
-                                      rcN.reverseVec.get' (l + 1) w := by rfl
-            have res2 : rc.reverse l (le_of_succ_le_succ w) =
-                    rc.reverseVec.get' l (le_of_succ_le_succ w) := by rfl
-            rw [res1]
-            rw [res2]
-            have res3 :rcN.reverseVec =
-              zero +: (rc.reverseVec.map (. + 1)) := by rfl
-            rw [res3]
-            have res4 :
-                (zero +:
-                  (rc.reverseVec.map (. + 1)) ).get' (l + 1) w =
-                  (zero +:
-                  (rc.reverseVec.map (. + 1)) ).get'.tail
-                  l (Nat.le_of_succ_le_succ w) := by rfl
-            rw [res4]
-            rw [(tail_commutes
-                zero (rc.reverseVec.map (. + 1)))]
-            rw [map_coords_commute]
+            intro rc head _ l w
+            simp [ReductionClauses.reverse, ReductionClauses.reverseVec, prependClause, Vector.get', map_coords_commute]
 
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
@@ -306,18 +253,12 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     intro k
                     match k with
                     | zero =>
-                      intro w
-                      have resRHS : rcN.restClauses.get' zero w
-                                = Vector.ofFn' (delete focus focusLt head.get') := by rfl
-                      rw [resRHS]
-                      rw [seq_to_vec_coords]
-                      rfl
+                      intros
+                      simp [Vector.get', seq_to_vec_coords]
                     | l + 1 =>
                       intro w
-                      let lem1 : rcN.restClauses.get' (l + 1) w =
-                              rc.restClauses.get' l (le_of_succ_le_succ w) := by rfl
                       let lem2 := rrc.relation l (le_of_succ_le_succ w)
-                      rw [lem1]
+                      simp [Vector.get', ReverseRelation.relation]
                       rw [lem2]
                       have rs0 : clausesN.get' (rcN.reverse (l + 1) w)
                                 (rcN.reverseWit (l + 1) w) =
@@ -327,6 +268,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                                       (rc.reverseWit l (Nat.le_of_succ_le_succ w))) := by
                                     apply witness_independent
                                     apply reverseResolve
+
                       rw [rs0]
                       rfl
           ⟨relationN⟩
@@ -374,7 +316,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                                         (rc.reverseWit l (Nat.le_of_succ_le_succ w)) := by rfl
                     rw [rs1] at hyp
                     let prev := prc.nonPosRev l (Nat.le_of_succ_le_succ w)
-                    exact absurd hyp prev
+                    simp [hyp] at prev
           ⟨pureN⟩
 
 
