@@ -106,8 +106,8 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
         fun clauses =>
           let rc : ReductionClauses branch focus focusLt Vector.nil :=
               ⟨0, Vector.nil, Vector.nil,
-                fun k w => nomatch w,
-                Vector.nil, fun k w => nomatch w⟩
+                fun ⟨k, w⟩ => nomatch w,
+                Vector.nil, fun ⟨k, w⟩ => nomatch w⟩
           let rd : ReductionData branch focus focusLt Vector.nil := ⟨rc,
             ⟨fun k w => nomatch w⟩,
             ⟨fun k w => nomatch w⟩,

@@ -29,9 +29,10 @@ structure ReductionClauses{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus
   codom : Nat
   restClauses : Vector  (Clause n) codom
   forwardVec : Vector (Option Nat) dom
-  forwardWit : (k: Nat) → (w: k < dom) → boundOpt codom (forwardVec.get' k w)
+  forwardWit : (k : Fin dom) → boundOpt codom (forwardVec.get' k.val k.isLt)
   reverseVec : Vector Nat codom
-  reverseWit : (k : Nat) → (w : k < codom) → reverseVec.get' k w < dom
+  reverseWit : (k : Fin codom) →
+    reverseVec.get' k.val k.isLt < dom
 
 abbrev ReductionClauses.forward{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
     {clauses: Vector (Clause (n + 1)) dom}
@@ -67,7 +68,7 @@ structure ReverseRelation{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus 
         rc: ReductionClauses branch focus focusLt clauses)  where
     relation : (k : Nat) → (w: k < rc.codom) →
       (rc.restClauses.get' k w).get' = delete focus focusLt
-        (clauses.get' (rc.reverse k w) (rc.reverseWit k w)).get'
+        (clauses.get' (rc.reverse k w) (rc.reverseWit ⟨k, w⟩)).get'
 
 -- the image of a new clause under the reverse map is not `some bf` at the `focus` index.
 structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < n + 1}
@@ -75,7 +76,7 @@ structure NonPosReverse{dom n: Nat}{branch: Bool}{focus: Nat}{focusLt : focus < 
         rc: ReductionClauses branch focus focusLt clauses)  where
     nonPosRev : (k : Nat) → (w: k < rc.codom)  →
       Not (
-        (clauses.get' (rc.reverse k w) (rc.reverseWit k w)).get' focus focusLt = some branch)
+        (clauses.get' (rc.reverse k w) (rc.reverseWit ⟨k, w⟩)).get' focus focusLt = some branch)
 
 -- the maps and conditions for the new clauses
 structure ReductionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)

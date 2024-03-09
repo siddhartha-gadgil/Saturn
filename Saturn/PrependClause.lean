@@ -44,19 +44,18 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     rw [tl,
                       tail_commutes (some zero) (rc.forwardVec.map (fun nop => nop.map (. + 1))),
                       map_coords_commute]
-            have forwardWitN : (k: Nat) → (w: k < domN) → boundOpt codomN (forwardN k w) := by
-              intro k
+            have forwardWitN : (k: Fin domN) →
+                boundOpt codomN (forwardN k.val k.isLt) := by
+              intro ⟨k, w⟩
               match k with
               | zero =>
-                  intro w
                   simp [forwardN]
                   apply zero_lt_succ
               | l + 1 =>
-                  intro w
                   simp [forwardN]
                   exact boundOptSucc rc.codom
                             (rc.forward l (le_of_succ_le_succ w))
-                            (rc.forwardWit l (le_of_succ_le_succ w))
+                            (rc.forwardWit ⟨ l, (le_of_succ_le_succ w)⟩)
             let reverseVecN := zero +: (rc.reverseVec.map (. + 1))
             let reverseN : (k : Nat) →  k < codomN → Nat :=
               fun k =>
@@ -79,14 +78,14 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     rw [tl,
                        tail_commutes zero (rc.reverseVec.map (. + 1)),
                         map_coords_commute]
-            have reverseWitN : (k : Nat) → (w : k < codomN) →
-                reverseN k w < domN :=
-              fun k =>
+            have reverseWitN : (k : Fin codomN) →
+                reverseN k.val k.isLt < domN :=
+              fun ⟨k, w⟩ =>
               match k with
-              | zero => fun _ => zero_lt_succ _
-              | l + 1 => fun w => by
+              | zero => zero_lt_succ _
+              | l + 1 => by
                   apply succ_le_succ
-                  exact rc.reverseWit l (le_of_succ_le_succ w)
+                  exact rc.reverseWit ⟨l, (le_of_succ_le_succ w)⟩
                   done
             ReductionClauses.mk codomN restClausesN
                     forwardVecN
@@ -248,7 +247,8 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           have relationN : (k : Nat) → (w: k < codomN) →
                  (rcN.restClauses.get' k w).get' =
                   delete focus focusLt
-                      (clausesN.get' (rcN.reverse k w) (rcN.reverseWit k w)).get' :=
+                      (clausesN.get' (rcN.reverse k w)
+                      (rcN.reverseWit ⟨ k, w⟩ )).get' :=
                     by
                     intro k
                     match k with
@@ -261,11 +261,11 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                       simp [Vector.get', ReverseRelation.relation]
                       rw [lem2]
                       have rs0 : clausesN.get' (rcN.reverse (l + 1) w)
-                                (rcN.reverseWit (l + 1) w) =
+                                (rcN.reverseWit ⟨(l + 1), w⟩) =
                                   clausesN.get'
                                     (rc.reverse l (Nat.le_of_succ_le_succ w) + 1)
                                     (succ_le_succ
-                                      (rc.reverseWit l (Nat.le_of_succ_le_succ w))) := by
+                                      (rc.reverseWit ⟨l, (Nat.le_of_succ_le_succ w)⟩)) := by
                                     apply witness_independent
                                     apply reverseResolve
 
@@ -285,7 +285,7 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let clausesN := head +: clauses
           have pureN : (k : Nat) → (w: k < codomN)  →
                 Not (
-                  (clausesN.get' (rcN.reverse k w) (rcN.reverseWit k w)).get'
+                  (clausesN.get' (rcN.reverse k w) (rcN.reverseWit ⟨k, w⟩)).get'
                     (focus) focusLt = some branch) := by
                 intro k
                 match k with
@@ -293,27 +293,27 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                       intro w hyp
                       apply neg
                       let lem :
-                         (clausesN.get' (rcN.reverse zero w) (rcN.reverseWit zero w)).get'
+                         (clausesN.get' (rcN.reverse zero w) (rcN.reverseWit ⟨zero, w⟩ )).get'
                           focus focusLt = head.get' focus focusLt := by rfl
                       rw [← lem]
                       exact hyp
                 | l + 1 =>
                     intro w hyp
                     have rs0 : clausesN.get' (rcN.reverse (l + 1) w)
-                                (rcN.reverseWit (l + 1) w) =
+                                (rcN.reverseWit ⟨ (l + 1), w⟩) =
                                   clausesN.get'
                                     (rc.reverse l (Nat.le_of_succ_le_succ w) + 1)
                                     (succ_le_succ
-                                      (rc.reverseWit l (Nat.le_of_succ_le_succ w))) := by
+                                      (rc.reverseWit ⟨l, (Nat.le_of_succ_le_succ w)⟩ )) := by
                                     apply witness_independent
                                     apply reverseResolve
                     rw [rs0] at hyp
                     have rs1 : clausesN.get'
                                     (rc.reverse l (Nat.le_of_succ_le_succ w) + 1)
                                     (succ_le_succ
-                                      (rc.reverseWit l (Nat.le_of_succ_le_succ w))) =
+                                      (rc.reverseWit ⟨l, (Nat.le_of_succ_le_succ w)⟩)) =
                                         clauses.get' (rc.reverse l (Nat.le_of_succ_le_succ w))
-                                        (rc.reverseWit l (Nat.le_of_succ_le_succ w)) := by rfl
+                                        (rc.reverseWit ⟨l, (Nat.le_of_succ_le_succ w)⟩) := by rfl
                     rw [rs1] at hyp
                     let prev := prc.nonPosRev l (Nat.le_of_succ_le_succ w)
                     simp [hyp] at prev

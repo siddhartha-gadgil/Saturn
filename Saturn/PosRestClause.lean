@@ -40,16 +40,15 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                         forwardVecN.get'.tail i (Nat.le_of_succ_le_succ jw) := by rfl
                     rw [tl]
                     rw [tail_commutes none rc.forwardVec]
-          have forwardWitN : (k: Nat) → (w: k < domN) →
-              boundOpt codomN (forwardN k w) := by
-            intro k
+          have forwardWitN : (k: Fin domN) →
+              boundOpt rc.codom (forwardN k.val k.isLt) := by
+            intro ⟨k, w⟩
             match k with
             | zero =>
                 intros
                 simp [forwardN, boundOpt]
             | l + 1 =>
-                intros
-                apply rc.forwardWit
+                apply rc.forwardWit ⟨l, Nat.le_of_succ_le_succ w⟩
           let reverseVecN := rc.reverseVec.map (. + 1)
           let reverseN : (k : Nat) →  k < codomN → Nat :=
             fun k w => (rc.reverse k w) + 1
@@ -59,9 +58,9 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                   apply funext
                   intro jw
                   apply map_coords_commute
-          have reverseWitN : (k : Nat) → (w : k < codomN) →
-            reverseN k w < domN :=
-              fun k w => succ_le_succ (rc.reverseWit k  w)
+          have reverseWitN : (k : Fin codomN) →
+            reverseN k.val k.isLt < domN :=
+              fun ⟨k, w⟩  => succ_le_succ (rc.reverseWit ⟨k,  w⟩)
           ReductionClauses.mk codomN rc.restClauses
                     (forwardVecN)
                     (forwardNEq ▸ forwardWitN)
@@ -153,7 +152,7 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           have relationN : (k : Nat) → (w: k < codomN) →
                  (rcN.restClauses.get' k w).get' =
                   delete focus focusLt
-                    (clausesN.get' (rcN.reverse k w) (rcN.reverseWit k w)).get' :=
+                    (clausesN.get' (rcN.reverse k w) (rcN.reverseWit ⟨k, w⟩ )).get' :=
                   by
                     intro l
                     intro w
@@ -163,11 +162,11 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     rw [lem1]
                     rw [lem2]
                     have rs0 : clausesN.get' (rcN.reverse l w)
-                                (rcN.reverseWit l w) =
+                                (rcN.reverseWit ⟨l, w⟩) =
                                   clausesN.get'
                                     (rc.reverse l w + 1)
                                     (succ_le_succ
-                                      (rc.reverseWit l w)) := by
+                                      (rc.reverseWit ⟨l, w⟩)) := by
                                     apply witness_independent
                                     apply reverseResolve
                     rw [rs0]
@@ -186,25 +185,25 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           let clausesN := head +: clauses
           have pureN : (k : Nat) → (w: k < codomN)  →
                 Not (
-                  (clausesN.get' (rcN.reverse k w) (rcN.reverseWit k w)).get'
+                  (clausesN.get' (rcN.reverse k w) (rcN.reverseWit ⟨k, w⟩ )).get'
                      focus focusLt = some branch) :=
                   by
                     intro l w hyp
                     have rs0 : clausesN.get' (rcN.reverse l w)
-                                (rcN.reverseWit l w) =
+                                (rcN.reverseWit ⟨l, w⟩) =
                                   clausesN.get'
                                     (rc.reverse l w + 1)
                                     (succ_le_succ
-                                      (rc.reverseWit l w)) := by
+                                      (rc.reverseWit ⟨l, w⟩)) := by
                                     apply witness_independent
                                     apply reverseResolve
                     rw [rs0] at hyp
                     have rs1 : clausesN.get'
                                     (rc.reverse l w + 1)
                                     (succ_le_succ
-                                      (rc.reverseWit l w)) =
+                                      (rc.reverseWit ⟨l, w⟩)) =
                                         clauses.get' (rc.reverse l w)
-                                        (rc.reverseWit l w) := by rfl
+                                        (rc.reverseWit ⟨l, w⟩) := by rfl
                     rw [rs1] at hyp
                     let prev := prc.nonPosRev l w
                     exact absurd hyp prev

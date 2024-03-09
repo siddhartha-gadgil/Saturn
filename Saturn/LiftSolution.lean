@@ -34,7 +34,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             rw [resolve]
             simp [Vector.get', seq_to_vec_coords, insert_at_focus]
           | some j =>
-            let bound := rc.forwardWit k w
+            let bound := rc.forwardWit ⟨k, w⟩
             let jWitAux : boundOpt rc.codom (some j) := by
               rw [←  eq]
               exact bound
@@ -189,7 +189,7 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
         match tree with
         | ResolutionTree.assumption j jw .(top) ttp =>
             let k := rc.reverse j jw
-            let kw : k < dom := rc.reverseWit j jw
+            let kw : k < dom := rc.reverseWit ⟨j, jw⟩
             let cl := clauses.get' k kw
             let topFocus := cl.get' focus focusLt
             let nonPosLem : Not (topFocus = some branch)  :=
