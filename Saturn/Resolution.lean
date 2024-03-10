@@ -240,7 +240,7 @@ def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
         (rt: ResolutionTree clauses top) : String :=
       match rt with
       | ResolutionTree.assumption i iw _ _  =>
-          (clauses.get' i iw).get'.list.toString
+          (clauses.get' i iw).toList.toString
       | ResolutionTree.resolve left right .(top) leftTree rightTree _ =>
                 top.toString ++ " from " ++ left.toString ++ " & " ++ right.toString  ++
                 "; using: {" ++

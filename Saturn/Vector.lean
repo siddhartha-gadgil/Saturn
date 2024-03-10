@@ -85,7 +85,7 @@ theorem seq_vec_cons_eq {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) :
           Vector.ofFn' seq  = (seq.head) +: (seq.tail.vec) :=
                   seq_vec_cons_aux _ seq Vector.nil
 
-theorem coords_eq_implies_vec_eq{α: Type}{n : Nat}{v1 v2 : Vector α n}:
+theorem Vector.ext'{α: Type}{n : Nat}{v1 v2 : Vector α n}:
     v1.get' = v2.get' → v1 = v2 :=
     match n, v1, v2 with
     | zero, nil, nil => fun _ => rfl
@@ -99,7 +99,7 @@ theorem coords_eq_implies_vec_eq{α: Type}{n : Nat}{v1 v2 : Vector α n}:
             rw [h1, h2, hyp]
         rw [hypHead]
         apply congrArg
-        let base := @coords_eq_implies_vec_eq _ _ tail1 tail2
+        let base := @Vector.ext' _ _ tail1 tail2
         apply base
         apply funext
         intro k
@@ -111,7 +111,7 @@ theorem coords_eq_implies_vec_eq{α: Type}{n : Nat}{v1 v2 : Vector α n}:
           (cons head2 tail2).get' (k + 1) (Nat.succ_lt_succ kw) := by rfl
         rw [t1, t2, hyp]
 
-theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →
+theorem Vector.of_Fn'_get'{α : Type}{n : Nat}: (seq: FinSeq n α) →
   (Vector.ofFn' seq).get' = seq :=
   match n with
   | zero => by
@@ -139,7 +139,7 @@ theorem seq_to_vec_coords{α : Type}{n : Nat}: (seq: FinSeq n α) →
           (Vector.ofFn' (seq.tail)).get' k' (Nat.le_of_succ_le_succ kw) := by
               rw [(seq_vec_cons_eq seq)]
               rfl
-      let base := seq_to_vec_coords (seq.tail)
+      let base := Vector.of_Fn'_get' (seq.tail)
       rw [tl]
       rw [base]
       rfl
@@ -161,23 +161,22 @@ theorem cons_commutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
 theorem Vector.get'_of_Fn' {α : Type}{n : Nat} (f : (k : Nat) → k < n → α) (k : Nat) (kw : k < n) :
       (Vector.ofFn' f).get' k kw = f k kw :=
       by
-      let lem := seq_to_vec_coords f
+      let lem := Vector.of_Fn'_get' f
       let lem' := congrFun lem k
       apply congrFun lem'
 
-theorem tail_commutes{α : Type}{n : Nat} (x : α) (ys : Vector α n) :
-      (x +: ys).get'.tail = ys.get' :=
+theorem get'_cons_succ {α : Type}{n : Nat} (x : α) (ys : Vector α n)
+      (i: Nat) (iw : i < n) :
+      (x +: ys).get' (i + 1) (Nat.succ_le_succ iw) = ys.get' i iw :=
         by
-        apply funext
-        intro kw
         rfl
 
 def Vector.map {α β : Type}{n: Nat}(vec: Vector α n) (f : α → β) : Vector β n :=
     FinSeq.vec (fun j jw => f (vec.get' j jw))
 
-theorem map_coords_commute{α β : Type}{n : Nat}(vec: Vector α n) (f : α → β) (j : Nat) (jw : Nat.lt j n) :
+theorem get'_map{α β : Type}{n : Nat}(vec: Vector α n) (f : α → β) (j : Nat) (jw : Nat.lt j n) :
           (Vector.map vec f).get' j jw = f (vec.get' j jw) := by
           have resolve: (map vec f).get' j jw =
                 (Vector.ofFn' (fun j jw => f (vec.get' j jw)) ).get' j jw := rfl
           rw [resolve]
-          rw [seq_to_vec_coords]
+          rw [Vector.of_Fn'_get']

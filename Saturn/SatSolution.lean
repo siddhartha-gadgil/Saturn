@@ -17,7 +17,7 @@ inductive SatSolution{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) where
 def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
         (sol: SatSolution clauses) →  String
       | unsat tree => "unsat: " ++ tree.toString
-      | sat valuation _ => "sat: " ++ (valuation.get'.list).toString
+      | sat valuation _ => "sat: " ++ (valuation.toList).toString
 
 def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
                   (sol : SatSolution clauses) →  Prop

@@ -200,7 +200,7 @@ def identity{dom n : Nat}(base: Vector (Clause n) dom) : Containment base :=
     let idVec : Vector Nat dom := Vector.ofFn' (fun j _ => j)
     let idAt : (j : Nat) → (jw : j < dom) → idVec.get' j jw = j := by
       intro j jw
-      rw [seq_to_vec_coords]
+      rw [Vector.of_Fn'_get']
     let idBound : (j : Nat) → (jw : j < dom) → idVec.get' j jw < dom := by
       intro j jw
       rw [idAt]
@@ -296,7 +296,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                       forwardNVec.get' j jw = (forwardN j jw).index :=
                       by
                         intro j jw
-                        rw [seq_to_vec_coords]
+                        rw [Vector.of_Fn'_get']
               have forwardNBound : (j : Nat) → (jw : j < domN) →
                       forwardNVec.get' j jw < codomN := by
                         intro j jw
@@ -317,7 +317,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                           have se :
                             ((Vector.ofFn' imageSeqN).get' (forwardNVec.get' j jw) (forwardNBound j jw)) =
                             (imageSeqN (forwardNVec.get' j jw) (forwardNBound j jw)) := by
-                              rw [seq_to_vec_coords]
+                              rw [Vector.of_Fn'_get']
                           rw [se, forwardNEq j jw]
                           exact (forwardN j jw).equation
               let reverseN : (j : Nat) → (jw : j < codomN) →
@@ -330,7 +330,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                       reverseNVec.get' j jw = (reverseN j jw).index :=
                       by
                         intro j jw
-                        rw [seq_to_vec_coords]
+                        rw [Vector.of_Fn'_get']
               have reverseNBound : (j : Nat) → (jw : j < codomN) →
                       reverseNVec.get' j jw < domN := by
                         intro j jw
@@ -340,7 +340,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                       (Vector.ofFn' imageSeqN).get' j jw = imageSeqN j jw :=
                       by
                         intro j jw
-                        rw [seq_to_vec_coords]
+                        rw [Vector.of_Fn'_get']
               have reverseNEq : (j : Nat) → (jw : j < codomN) →
                   (base.get' (reverseNVec.get' j jw) (reverseNBound j jw)) =
                     base.get' (reverseN j jw).index (reverseN j jw).bound := by

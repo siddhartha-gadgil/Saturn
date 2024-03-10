@@ -32,7 +32,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             apply Exists.intro focusLt
             let resolve : (clauses.get' k w).get' focus focusLt = some branch := dp.dropped k w eq
             rw [resolve]
-            simp [Vector.get', seq_to_vec_coords, insert_at_focus]
+            simp [Vector.get', Vector.of_Fn'_get', insert_at_focus]
           | some j =>
             let bound := rc.forwardWit ⟨k, w⟩
             let jWitAux : boundOpt rc.codom (some j) := by
@@ -44,7 +44,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             simp [clauseSat]
             apply Exists.intro (skip focus i)
             apply Exists.intro (skip_le_succ iw)
-            simp [Vector.get', seq_to_vec_coords]
+            simp [Vector.get', Vector.of_Fn'_get']
             rw [insert_at_image]
             let delSkip : delete focus focusLt ((clauses.get' k w).get') i iw =
               ((clauses.get' k w).get') (skip focus i) (skip_le_succ iw) := by
@@ -155,11 +155,11 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
           rw [← leftLem2, ← rightLem2, ← topLem2]
           exact rt.joinRest ii iiw
   ⟨topFoc, ⟨pivotN, pivotNLt,
-                  (by rw [seq_to_vec_coords]; rw [← leftPivotN]),
-                  (by rw [seq_to_vec_coords]; rw [← rightPivotN]),
-                  (by rw [seq_to_vec_coords]; rw [← topPivotN]),
+                  (by rw [Vector.of_Fn'_get']; rw [← leftPivotN]),
+                  (by rw [Vector.of_Fn'_get']; rw [← rightPivotN]),
+                  (by rw [Vector.of_Fn'_get']; rw [← topPivotN]),
                   (by
-                      rw [seq_to_vec_coords]
+                      rw [Vector.of_Fn'_get']
                       intro k1
                       intro w
                       have lp : leftN =
@@ -170,9 +170,9 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
                         insert topFoc (n + 1) k lt top.get' := by rfl
                       rw [← lp, ← rp, ← tp]
                       have rn:  (Vector.ofFn' rightN).get' = rightN :=
-                        by rw [seq_to_vec_coords]
+                        by rw [Vector.of_Fn'_get']
                       have tn: (Vector.ofFn' topN).get' = topN :=
-                        by rw [seq_to_vec_coords]
+                        by rw [Vector.of_Fn'_get']
                       rw [rn,  tn]
                       apply joinRestN
                       assumption
@@ -211,8 +211,8 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
               ResolutionTree.assumption k kw  _ (by
                     rw [lem]
                     have lc : Vector.ofFn' (cl.get') = cl := by
-                      apply coords_eq_implies_vec_eq
-                      apply seq_to_vec_coords
+                      apply Vector.ext'
+                      apply Vector.of_Fn'_get'
                       done
                     rw [lc]
                     done)⟩
@@ -251,8 +251,8 @@ def pullBackResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n
                     (contradiction (n + 1)).get') =
                     contradiction (n + 2) := by
                       rw [contradiction_insert_none focus focusLt]
-                      apply coords_eq_implies_vec_eq
-                      apply seq_to_vec_coords
+                      apply Vector.ext'
+                      apply Vector.of_Fn'_get'
                 rw [lem] at tree
                 exact LiftedResTree.contra tree
             | some b, ineq, tree =>

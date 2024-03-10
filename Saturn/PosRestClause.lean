@@ -36,10 +36,7 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                   | succ i =>
                     apply funext
                     intro jw
-                    have tl :forwardVecN.get' (succ i) jw =
-                        forwardVecN.get'.tail i (Nat.le_of_succ_le_succ jw) := by rfl
-                    rw [tl]
-                    rw [tail_commutes none rc.forwardVec]
+                    rw [get'_cons_succ none rc.forwardVec]
           have forwardWitN : (k: Fin domN) →
               boundOpt rc.codom (forwardN k.val k.isLt) := by
             intro ⟨k, w⟩
@@ -57,7 +54,7 @@ def addPositiveClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n 
                   intro j
                   apply funext
                   intro jw
-                  apply map_coords_commute
+                  apply get'_map
           have reverseWitN : (k : Fin codomN) →
             reverseN k.val k.isLt < domN :=
               fun ⟨k, w⟩  => succ_le_succ (rc.reverseWit ⟨k,  w⟩)
@@ -132,12 +129,12 @@ theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n
             have res4 :
                 ( (rc.reverseVec.map (. + 1)) ).get' l w =
                   (zero +:
-                  (rc.reverseVec.map (. + 1)) ).get'.tail
-                  l w := by rfl
+                  (rc.reverseVec.map (. + 1)) ).get'
+                  (l + 1) (Nat.succ_le_succ w) := by rfl
             rw [res4]
-            rw [(tail_commutes
+            rw [(get'_cons_succ
                 zero (rc.reverseVec.map (. + 1)))]
-            rw [map_coords_commute]
+            rw [get'_map]
 
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):

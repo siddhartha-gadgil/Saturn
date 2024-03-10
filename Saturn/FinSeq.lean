@@ -43,10 +43,6 @@ def init {α : Type}{n: Nat}(seq : FinSeq (n + 1) α): FinSeq n α
 def last{α : Type}{n: Nat}(seq : FinSeq (n + 1) α): α :=
   seq n (Nat.le_refl _)
 
-def list{α : Type}{n : Nat}: FinSeq n α → List α :=
-  match n with
-  | zero => fun _ => []
-  | _ + 1 => fun s => (s.head) :: (list (s.tail))
 end FinSeq
 
 

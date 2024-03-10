@@ -62,7 +62,7 @@ theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1)
 
 
 instance {n: Nat} : Repr (Clause n) :=
-  ⟨fun (cls : Clause n) => fun n => reprPrec (cls.get'.list) n⟩
+  ⟨fun (cls : Clause n) => fun n => reprPrec (cls.toList) n⟩
 
 def Clause.toString {n: Nat}: Clause n → String :=
   fun (cls : Clause n) => (repr cls).pretty
@@ -77,14 +77,14 @@ def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
 
 theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           (unitClause n b k w).get' k w = b := by
-            rw [unitClause, seq_to_vec_coords]
+            rw [unitClause, Vector.of_Fn'_get']
             apply insert_at_focus
 
 theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           (i: Nat) → (iw : i < n) → (unitClause n b k w).get' (skip k i)
                   (skip_le_succ iw) = none := by
                   intro i iw
-                  rw [unitClause, seq_to_vec_coords]
+                  rw [unitClause, Vector.of_Fn'_get']
                   let ins := insert_at_image (some b) n k w ((contradiction n).get') i iw
                   rw [ins, get'_contradiction]
 
@@ -99,7 +99,7 @@ def clauseUnit{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitCla
     fun ⟨k, w⟩ =>
       match deqSeq _ clause.get' ((unitClause n parity k w).get') with
       | isTrue pf =>
-        let cl : IsUnitClause clause := IsUnitClause.mk k w parity (coords_eq_implies_vec_eq pf)
+        let cl : IsUnitClause clause := IsUnitClause.mk k w parity (Vector.ext' pf)
         some (cl)
       | isFalse _ => none
   let seq : FinSeq (n + 1) (Fin (n + 1)) := fun k w => ⟨k, w⟩

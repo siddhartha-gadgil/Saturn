@@ -24,6 +24,11 @@ def get' {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
   | _ + 1, cons head _, zero, _ => head
   | _ + 1, cons _ tail, j + 1, w =>
     tail.get' j (Nat.le_of_succ_le_succ w)
+
+def toList {α : Type}{n : Nat}(v: Vector α n) : List α :=
+  match n, v with
+  | zero, nil => []
+  | _ + 1, cons head tail => head :: tail.toList
 end Vector
 
 abbrev Clause(n : Nat) : Type := Vector (Option Bool) n

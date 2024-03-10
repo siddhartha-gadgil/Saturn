@@ -23,7 +23,7 @@ The DPLL algorithm with proofs. Here we implement:
 instance {n: Nat} : DecidableEq (Clause n) :=
   fun c1 c2 =>
   match decEq c1.get' c2.get' with
-  | isTrue pf => isTrue (coords_eq_implies_vec_eq pf)
+  | isTrue pf => isTrue (Vector.ext' pf)
   | isFalse contra => by
     apply isFalse
     intro hyp
@@ -63,8 +63,8 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
         have sf : FinSeq dom (Clause (n + 1))  = FinSeq domAccum (Clause (n + 1)):= by
           rw [ss]
         have clSeq : clauses = Vector.ofFn' clauses.get' := by
-          apply coords_eq_implies_vec_eq
-          rw [seq_to_vec_coords]
+          apply Vector.ext'
+          rw [Vector.of_Fn'_get']
         have resolve : concatSeqAux s clausesHead.get' clausesAccum.get' =
             Eq.mpr sf clausesAccum.get' := by rfl
         rw [clSeq]
@@ -73,8 +73,8 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
         match dom , domAccum, ss, sf, clausesAccum, restAccum with
         | d, .(d), rfl, rfl, cls,  ra =>
           have sm : Vector.ofFn'  (cls.get') = cls := by
-            apply coords_eq_implies_vec_eq
-            rw [seq_to_vec_coords]
+            apply Vector.ext'
+            rw [Vector.of_Fn'_get']
           rw [← sm] at ra
           exact ra
     | k + 1 => fun clausesHead clausesAccum s restAccum clauses clsEq =>
@@ -92,7 +92,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
           ((last clausesHead.get') +: clausesAccum) ss recRestAccum clauses
           (by
             have sm : (Vector.ofFn'  (init clausesHead.get')).get' =
-                init (clausesHead.get') := by rw [seq_to_vec_coords]
+                init (clausesHead.get') := by rw [Vector.of_Fn'_get']
             rw [sm,
                (cons_commutes (last (clausesHead.get')) clausesAccum),
                ← resolve,
@@ -138,7 +138,7 @@ Solution for length one clauses
 -/
 def lengthOneEqual{cl1 cl2 : Clause 1}(eql : cl1.get' zero (zero_lt_succ zero) = cl2.get' zero (zero_lt_succ zero)) :
                           cl1 = cl2 :=
-                            coords_eq_implies_vec_eq
+                            Vector.ext'
                             (funext (fun j =>
                                     match j with
                                     | zero => funext (fun _ => eql)
