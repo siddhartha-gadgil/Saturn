@@ -20,14 +20,7 @@ The DPLL algorithm with proofs. Here we implement:
   - lifting of proofs from branches and combining them if necessary
 -/
 
-instance {n: Nat} : DecidableEq (Clause n) :=
-  fun c1 c2 =>
-  match decEq c1.get' c2.get' with
-  | isTrue pf => isTrue (Vector.ext' pf)
-  | isFalse contra => by
-    apply isFalse
-    intro hyp
-    simp [hyp] at contra
+instance {n: Nat} : DecidableEq (Clause n) := inferInstance
 
 /-
 We map to branches inductively. The main work is done earlier.
@@ -122,9 +115,12 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           restrictionDataAux branch focus focusLt clauses Vector.nil
               (Nat.add_zero dom) rd clauses (
                 by
-
-                sorry
-                -- concat_empty_seq_id clauses.get'
+                have nl : Vector.get' (
+                  Vector.nil : Vector (Clause (n + 1)) 0) = FinSeq.empty := by
+                    funext j jw
+                    simp at jw
+                rw [nl]
+                exact concat_empty_seq_id clauses.get'
                 )
 
 /-

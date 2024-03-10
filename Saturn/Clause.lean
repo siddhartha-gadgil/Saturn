@@ -97,11 +97,10 @@ structure IsUnitClause{n: Nat}(clause: Clause (n +1)) where
 def clauseUnit{n: Nat}(clause: Clause (n + 1))(parity: Bool) : Option (IsUnitClause clause) :=
   let f : Fin (n + 1) →   (Option (IsUnitClause clause)) :=
     fun ⟨k, w⟩ =>
-      match deqSeq _ clause.get' ((unitClause n parity k w).get') with
-      | isTrue pf =>
-        let cl : IsUnitClause clause := IsUnitClause.mk k w parity (Vector.ext' pf)
-        some (cl)
-      | isFalse _ => none
+      if pf:clause = (unitClause n parity k w)
+      then
+        some ⟨k, w, parity, pf⟩
+      else none
   let seq : FinSeq (n + 1) (Fin (n + 1)) := fun k w => ⟨k, w⟩
   findSome? f seq
 
