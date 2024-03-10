@@ -1,5 +1,6 @@
 import Saturn.FinSeq
 import Saturn.Core
+import Mathlib.Data.Vector.Basic
 open Nat
 /-
 Functions and theorems for working with vectors. Most of these are conversions from
@@ -9,14 +10,13 @@ between finite sequences and vectors in both directions.
 -/
 open Vector
 
-def countAux {α : Type}{n : Nat}(v: Vector α n)(pred: α → Bool)(accum : Nat) : Nat :=
-  match n, v, accum with
-  | .(zero), nil, accum => accum
-  | _ + 1, cons head tail, accum =>
-      if (pred head) then countAux tail pred (accum + 1) else countAux tail pred accum
+#check Vector
+#check List.count
 
-def Vector.count {α : Type}{n : Nat}(v: Vector α n)(pred: α → Bool) : Nat :=
-    countAux v pred zero
+
+
+def Vector.count {α : Type}{n : Nat}(v: Vector α n)(pred: α → Bool) : Nat := match v with
+  | ⟨l, _⟩ => l.filter pred |>.length
 
 def seqVecAux {α: Type}{n m l: Nat}: (s : n + m = l) →
     (seq1 : FinSeq n α) → (accum : Vector α m) →
@@ -86,30 +86,14 @@ theorem seq_vec_cons_eq {α: Type}{n : Nat} (seq : FinSeq (n + 1) α) :
                   seq_vec_cons_aux _ seq Vector.nil
 
 theorem Vector.ext'{α: Type}{n : Nat}{v1 v2 : Vector α n}:
-    v1.get' = v2.get' → v1 = v2 :=
-    match n, v1, v2 with
-    | zero, nil, nil => fun _ => rfl
-    | m + 1, cons head1 tail1, cons head2 tail2 =>
-      by
-        intro hyp
-        have h1 : head1 = (cons head1 tail1).get' zero (Nat.zero_lt_succ m) := by rfl
-        have h2 : head2 = (cons head2 tail2).get' zero (Nat.zero_lt_succ m) := by rfl
-        have hypHead : head1 = head2 :=
-          by
-            rw [h1, h2, hyp]
-        rw [hypHead]
-        apply congrArg
-        let base := @Vector.ext' _ _ tail1 tail2
-        apply base
-        apply funext
-        intro k
-        apply funext
-        intro kw
-        have t1 : tail1.get' k kw =
-          (cons head1 tail1).get' (k + 1) (Nat.succ_lt_succ kw) := by rfl
-        have t2 : tail2.get' k kw =
-          (cons head2 tail2).get' (k + 1) (Nat.succ_lt_succ kw) := by rfl
-        rw [t1, t2, hyp]
+    v1.get' = v2.get' → v1 = v2 := by
+    intro h
+    apply Vector.ext
+    intro ⟨i, iw⟩
+    show get' v1 i iw = get' v2 i iw
+    let lem := congrFun h i
+    let lem' := (congrFun lem iw)
+    exact lem'
 
 theorem Vector.of_Fn'_get'{α : Type}{n : Nat}: (seq: FinSeq n α) →
   (Vector.ofFn' seq).get' = seq :=
@@ -144,6 +128,14 @@ theorem Vector.of_Fn'_get'{α : Type}{n : Nat}: (seq: FinSeq n α) →
       rw [base]
       rfl
 
+theorem Vector.of_Fn'_get{α : Type}{n : Nat}:
+  (seq: FinSeq n α) → (k :Fin n) →
+  (Vector.ofFn' seq).get k = seq k.val k.isLt := by
+  intro seq ⟨k, kw⟩
+  let lem := congrFun (Vector.of_Fn'_get' seq) k
+  let lem' := (congrFun lem kw)
+  exact lem'
+
 theorem cons_commutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
           (head +: tail).get' = head +| tail.get' := by
             apply funext
@@ -171,12 +163,9 @@ theorem get'_cons_succ {α : Type}{n : Nat} (x : α) (ys : Vector α n)
         by
         rfl
 
-def Vector.map {α β : Type}{n: Nat}(vec: Vector α n) (f : α → β) : Vector β n :=
-    FinSeq.vec (fun j jw => f (vec.get' j jw))
 
 theorem get'_map{α β : Type}{n : Nat}(vec: Vector α n) (f : α → β) (j : Nat) (jw : Nat.lt j n) :
-          (Vector.map vec f).get' j jw = f (vec.get' j jw) := by
-          have resolve: (map vec f).get' j jw =
-                (Vector.ofFn' (fun j jw => f (vec.get' j jw)) ).get' j jw := rfl
-          rw [resolve]
-          rw [Vector.of_Fn'_get']
+          (Vector.map f vec).get' j jw = f (vec.get' j jw) := by
+          rw [get']
+          simp [Vector.get_map]
+          rfl

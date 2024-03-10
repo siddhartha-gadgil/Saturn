@@ -81,12 +81,29 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   apply succ_le_succ
                   exact rc.reverseWit ⟨l, (le_of_succ_le_succ w)⟩
                   done
-            ReductionClauses.mk codomN restClausesN
-                    forwardVecN
-                    (forwardNEq ▸ forwardWitN)
-                    reverseVecN
-                    (reverseNEq ▸ reverseWitN)
+            {
+            codom := codomN,
+            restClauses := restClausesN,
+            forwardVec := forwardVecN,
+            forwardWit :=  forwardNEq ▸ forwardWitN
+            reverseVec :=  reverseVecN,
+            reverseWit :=  reverseNEq ▸ reverseWitN
+            }
 
+
+theorem restClauses_prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+        (head : Clause (n + 1))(neg : Not (head.get' focus focusLt = some branch)) :
+    (prependClause branch focus focusLt clauses rc head neg).restClauses =
+      (Vector.ofFn' (delete focus focusLt head.get')) +: rc.restClauses :=
+          rfl
+
+theorem reverseVec_prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+        (head : Clause (n + 1))(neg : Not (head.get' focus focusLt = some branch)) :
+    (prependClause branch focus focusLt clauses rc head neg).reverseVec =
+      zero +: (rc.reverseVec.map (. + 1)) :=
+          rfl
 
 theorem none_mapsto_none{α β : Type}(fn: α → β): (x: Option α) → (x.map fn = none) → x = none
   | none, rfl => by rfl
@@ -128,7 +145,12 @@ theorem forwardResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n
           (prependClause  branch focus focusLt clauses rc head neg).forward (l + 1) w =
             (rc.forward l (le_of_succ_le_succ w)).map (. + 1) := by
                   intro rc head _ l w
-                  simp [ReductionClauses.forward, ReductionClauses.forwardVec, prependClause, Vector.get', get'_map]
+                  simp [ReductionClauses.forward, ReductionClauses.forwardVec, prependClause]
+                  simp [Vector.get']
+                  have s : { val := l + 1, isLt := w } = Fin.succ
+                    ⟨l, le_of_succ_le_succ w⟩ := by rfl
+                  rw [s]
+                  rw [Vector.get_cons_succ, Vector.get_map]
 
 
 def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
@@ -213,8 +235,15 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                       simp [Vector.get']
                       rw [forwardResolve] at c
                       let cc:= map_plusone_pred c
-                      rw [frc.forwardRelation l (le_of_succ_le_succ w) j cc
-                            (le_of_succ_le_succ jw)]
+                      let rel := frc.forwardRelation l (le_of_succ_le_succ w) j cc
+                            (le_of_succ_le_succ jw)
+                      rw [Vector.get'] at rel
+                      have s : { val := l + 1, isLt := w } =
+                        Fin.succ ⟨l, le_of_succ_le_succ w⟩ := by rfl
+                      rw [s, Vector.get_cons_succ]
+                      rw [rel]
+                      simp [Vector.get']
+                      rfl
           ⟨forwardRelationN⟩
 
 
@@ -227,6 +256,42 @@ theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n
             (rc.reverse l (le_of_succ_le_succ w)) + 1 := by
             intro rc head _ l w
             simp [ReductionClauses.reverse, ReductionClauses.reverseVec, prependClause, Vector.get', get'_map]
+            have s : { val := l + 1, isLt := w } = Fin.succ
+                    ⟨l, le_of_succ_le_succ w⟩ := by rfl
+            rw [s, Vector.get_cons_succ, Vector.get_map]
+
+theorem revrelAux (v : Vector Nat codom)(clauses: Vector (Clause (n + 1)) dom)(head: Clause (n + 1))(l: Nat)(w: l < codom)(bd : v.get ⟨l, w⟩ < dom):
+    Vector.get clauses { val := Vector.get v { val := l, isLt := w }, isLt := bd } =
+  Vector.get (head ::ᵥ clauses)
+    { val := Vector.get (0 ::ᵥ map (fun x ↦ x + 1) v) (Fin.succ { val := l, isLt := w }), isLt :=
+      by
+        have l : Vector.get (0 ::ᵥ map (fun x ↦ x + 1) v) (Fin.succ { val := l, isLt := w }) =  v.get ⟨l, w⟩ + 1  := by
+          rw [Vector.get_cons_succ]
+          rw [Vector.get_map]
+        rw [l]
+        apply Nat.succ_lt_succ
+        exact bd
+      } := by
+        symm
+        let lem :=
+          Vector.get_cons_succ 0 (map (fun x ↦ x + 1) v) ⟨l, w⟩
+        rw [Vector.get_map] at lem
+        let lem' : Fin.succ { val := Vector.get v { val := l, isLt := w }, isLt := bd } =
+          ⟨ Vector.get (0 ::ᵥ map (fun x ↦ x + 1) v) (Fin.succ { val := l, isLt := w }), by
+              rw [lem]
+              apply Nat.succ_lt_succ
+              exact bd
+          ⟩  := by
+            apply Fin.eq_of_veq
+            simp
+            symm
+            exact lem
+        let lem'' :=
+          Vector.get_cons_succ head clauses ⟨Vector.get v { val := l, isLt := w }, bd⟩
+        rw [lem'] at lem''
+        exact lem''
+
+#check Vector.get_cons_succ
 
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
@@ -247,25 +312,41 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                     intro k
                     match k with
                     | zero =>
-                      intros
-                      simp [Vector.get', Vector.of_Fn'_get']
+                      intro w
+                      simp [Vector.get', Vector.of_Fn'_get]
+                      rw [restClauses_prependClause]
+                      simp [reverseVec_prependClause]
+                      apply Vector.of_Fn'_get'
                     | l + 1 =>
                       intro w
                       let lem2 := rrc.relation l (le_of_succ_le_succ w)
                       simp [Vector.get', ReverseRelation.relation]
+                      rw [Vector.get'] at lem2
+                      rw [restClauses_prependClause]
+                      simp [reverseVec_prependClause]
+                      have s : { val := l + 1, isLt := w } =
+                        Fin.succ ⟨l, le_of_succ_le_succ w⟩ := by rfl
+                      rw [s]
+                      rw [Vector.get_cons_succ]
                       rw [lem2]
-                      have rs0 : clausesN.get' (rcN.reverse (l + 1) w)
-                                (rcN.reverseWit ⟨(l + 1), w⟩) =
-                                  clausesN.get'
-                                    (rc.reverse l (Nat.le_of_succ_le_succ w) + 1)
-                                    (succ_le_succ
-                                      (rc.reverseWit ⟨l, (Nat.le_of_succ_le_succ w)⟩)) := by
-                                    apply witness_independent
-                                    apply reverseResolve
-
-                      rw [rs0]
-                      rfl
+                      simp [ReductionClauses.reverse]
+                      rw [Vector.get']
+                      funext j jw
+                      let fn (cl: Clause (n + 1))  :=
+                        delete focus focusLt cl.get' j jw
+                      apply congrArg fn
+                      simp [Vector.get', Vector.get_cons_succ]
+                      let v := rc.reverseVec
+                      show Vector.get clauses
+                        { val := Vector.get v { val := l, isLt := _ }, isLt := _ } =
+                          Vector.get (head ::ᵥ clauses)
+                            { val := Vector.get (0 ::ᵥ map (fun x ↦ x + 1) v) (
+                              Fin.succ { val := l, isLt :=
+                              Nat.le_of_succ_le_succ w }), isLt := _ }
+                      apply
+                        revrelAux v clauses head l (Nat.le_of_succ_le_succ w)
           ⟨relationN⟩
+
 
 def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):

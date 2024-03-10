@@ -32,7 +32,8 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             apply Exists.intro focusLt
             let resolve : (clauses.get' k w).get' focus focusLt = some branch := dp.dropped k w eq
             rw [resolve]
-            simp [Vector.get', Vector.of_Fn'_get', insert_at_focus]
+            simp [Vector.get', Vector.of_Fn'_get]
+            simp [insert_at_focus]
           | some j =>
             let bound := rc.forwardWit ⟨k, w⟩
             let jWitAux : boundOpt rc.codom (some j) := by
@@ -44,10 +45,10 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             simp [clauseSat]
             apply Exists.intro (skip focus i)
             apply Exists.intro (skip_le_succ iw)
-            simp [Vector.get', Vector.of_Fn'_get']
+            simp [Vector.get', Vector.of_Fn'_get]
             rw [insert_at_image]
             let delSkip : delete focus focusLt ((clauses.get' k w).get') i iw =
-              ((clauses.get' k w).get') (skip focus i) (skip_le_succ iw) := by
+              (clauses.get ⟨k, w⟩).get ⟨(skip focus i), (skip_le_succ iw)⟩ := by
                 rfl
             rw [← delSkip]
             rw [fwdEq]

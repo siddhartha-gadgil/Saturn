@@ -120,7 +120,12 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
                 exact False.elim contra
             )⟩⟩
           restrictionDataAux branch focus focusLt clauses Vector.nil
-              (Nat.add_zero dom) rd clauses (concat_empty_seq_id clauses.get')
+              (Nat.add_zero dom) rd clauses (
+                by
+
+                sorry
+                -- concat_empty_seq_id clauses.get'
+                )
 
 /-
 The simple cases: having a contradiction or having no clauses.

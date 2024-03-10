@@ -1,4 +1,6 @@
+import Mathlib.Data.Vector
 open Nat
+
 
 /-
 The code that is necessary to represent a SAT problem and the associated propositions
@@ -8,27 +10,18 @@ exclusive.
 
 @[inline] def FinSeq (n: Nat) (α : Type) : Type := (k : Nat) → k < n → α
 
-inductive Vector (α : Type) : Nat → Type where
-  | nil : Vector α zero
-  | cons{n: Nat}(head: α) (tail: Vector  α n) : Vector α  (n + 1)
-  deriving Repr
+-- inductive Vector (α : Type) : Nat → Type where
+--   | nil : Vector α zero
+--   | cons{n: Nat}(head: α) (tail: Vector  α n) : Vector α  (n + 1)
+--   deriving Repr
 
 infixr:66 "+:" => Vector.cons
 
 
 namespace Vector
 def get' {α : Type}{n : Nat}(v: Vector α n) : FinSeq n α :=
-  fun j jw =>
-  match n, v, j, jw with
-  | .(zero), nil, _, lt => nomatch lt
-  | _ + 1, cons head _, zero, _ => head
-  | _ + 1, cons _ tail, j + 1, w =>
-    tail.get' j (Nat.le_of_succ_le_succ w)
+  fun j jw => v.get ⟨j, jw⟩
 
-def toList {α : Type}{n : Nat}(v: Vector α n) : List α :=
-  match n, v with
-  | zero, nil => []
-  | _ + 1, cons head tail => head :: tail.toList
 end Vector
 
 abbrev Clause(n : Nat) : Type := Vector (Option Bool) n
