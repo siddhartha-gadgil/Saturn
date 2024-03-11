@@ -234,6 +234,32 @@ inductive ResolutionTree{dom n: Nat}
                 ResolutionTriple left right top
                 → ResolutionTree clauses top
 
+open Std
+def ResolutionTree.rp {dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
+      {top : Clause (n + 1)}
+        (tree: ResolutionTree clauses top) : Nat →  Format := by
+      cases tree
+      case assumption j jw eqn  =>
+        intro n
+        exact (reprPrec
+          (clauseSummary <| clauses.get' j jw) n) ++ " ← assumption "
+            ++ repr j
+      case resolve left right leftTree rightTree triple =>
+        intro m
+        let deduction :=
+          (reprPrec (clauseSummary top) m) ++ " ← " ++
+          (reprPrec (clauseSummary left) m) ++ " & " ++
+          (reprPrec (clauseSummary right) m) ++  " with pivot: " ++
+          (reprPrec triple.pivot m)
+        let leftTreeRp := leftTree.rp (m + 2)
+        let rightTreeRp := rightTree.rp (m + 2)
+        exact deduction ++ .line ++ "· " ++ .group (leftTreeRp) ++ .line ++ "· " ++ .group (rightTreeRp)
+
+
+
+instance : Repr (ResolutionTree clauses top) :=
+  ⟨ fun tree => tree.rp⟩
+
 #check Std.Format
 def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
       {top : Clause (n + 1)}

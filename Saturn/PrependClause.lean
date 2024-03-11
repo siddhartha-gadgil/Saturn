@@ -291,8 +291,6 @@ theorem revrelAux (v : Vector Nat codom)(clauses: Vector (Clause (n + 1)) dom)(h
         rw [lem'] at lem''
         exact lem''
 
-#check Vector.get_cons_succ
-
 def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) dom):
       (rc: ReductionClauses branch focus focusLt clauses) →

@@ -26,6 +26,12 @@ end Vector
 
 abbrev Clause(n : Nat) : Type := Vector (Option Bool) n
 
+def clauseSummary {n: Nat}(clause : Clause n) : List <| Nat × Bool :=
+  let padded := clause.toList.mapIdx (fun i x => (i, x))
+  padded.filterMap (fun (i, x) => match x with
+    | some b => some (i, b)
+    | none => none)
+
 abbrev Valuation(n: Nat) : Type := Vector Bool n
 
 abbrev varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal

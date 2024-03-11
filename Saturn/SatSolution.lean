@@ -11,13 +11,26 @@ by all the given clauses, or a resolution tree starting with the given clauses.
 inductive SatSolution{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) where
   | unsat : (tree : ResolutionTree clauses (contradiction (n + 1))) →
           SatSolution clauses
-  | sat : (valuation : Valuation (n + 1)) → ((k : Nat) → (kw : k < dom)
+  | sat : (valuation : Vector Bool (n + 1)) → ((k : Nat) → (kw : k < dom)
         → clauseSat (clauses.get' k kw) valuation) → SatSolution clauses
+
+instance {dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
+  Repr (SatSolution clauses) where
+  reprPrec := by
+        intro satSoln m
+        cases satSoln
+        case unsat tree =>
+          exact "UNSAT: " ++ .line ++ reprPrec tree m
+        case sat valuation evidence =>
+          let valFormat := reprPrec (valuation.toList) m
+          let clauseList := clauses.toList.map (fun c => clauseSummary c)
+          exact "SAT: " ++  valFormat ++ .line ++
+                "Satisfying Clauses: " ++
+                reprPrec (clauseList) m
 
 def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
         (sol: SatSolution clauses) →  String
-      | unsat tree => "unsat: " ++ tree.toString
-      | sat valuation _ => "sat: " ++ (valuation.toList).toString
+      | soln => repr soln  |>.pretty
 
 def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
                   (sol : SatSolution clauses) →  Prop

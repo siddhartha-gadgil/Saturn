@@ -24,8 +24,8 @@ def eg2Statement := cl1 +: cl3 +: Vector.nil -- clauses 1 and 3 only
 def eg1Soln : SatSolution eg1Statement := solveSAT (eg1Statement)
 def eg2Soln : SatSolution eg2Statement := solveSAT (eg2Statement)
 
-#eval eg1Soln.toString
-#eval eg2Soln.toString
+#eval eg1Soln
+#eval eg2Soln
 
 def eg1Untyped  := getProof eg1Soln
 
