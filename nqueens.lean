@@ -7,15 +7,20 @@ open Nat
 Running the elementary examples as well as the N-Queens problem for `N` a command line
 argument.
 -/
-def printSolution {n dom : Nat}: (clauses : Vector (Clause n) dom) → Nat →  IO Unit :=
+def printSolution {n dom : Nat}: (clauses : Vector (Clause (n * n)) dom) → Nat →  IO Unit :=
   match n with
   | zero => fun _ _ => pure ()
-  | _ + 1 =>
+  | m + 1 =>
     fun clauses q =>
       do
         IO.println ""
         IO.println (s!"Solving the {q}-Queens problem (may take a while):")
-        IO.println (solveSAT clauses).toString
+        let soln := solveSAT clauses
+        match soln with
+        | .unsat .. =>
+          IO.println soln.toString
+        | .sat model .. =>
+          IO.println (showQueens  (m + 1) model)
         return ()
 
 def main (args: List String) : IO UInt32 := do

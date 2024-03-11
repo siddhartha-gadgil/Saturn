@@ -44,3 +44,12 @@ def Vector.ofList{α : Type}(l : List α) : Vector α l.length :=
 
 def queensClauses(n: Nat) :=
   Vector.ofList <| rowClauses n ++ (forbidPairClauses n)
+
+def queen := "♕"
+
+def showQueens (n: Nat)(cl: Vector Bool (n * n)) : String :=
+  let line := List.range (n * 2 + 1) |>.map (fun _ => "-") |>.foldl (fun s c => s ++ c) ""
+  let l := cl.toList.mapIdx (fun k b  =>
+    let c := if b then queen else " "
+    if (k + 1) % n == 0 && k + 1 < n * n then c ++ "|\n"++ line ++"\n|" else c++"|")
+  l.foldl (fun s c => s ++ c) "|"
