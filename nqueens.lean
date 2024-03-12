@@ -20,6 +20,7 @@ def printSolution {n dom : Nat}: (clauses : Vector (Clause (n * n)) dom) → Nat
         | .unsat .. =>
           IO.println soln.toString
         | .sat model .. =>
+          IO.println "\nSAT\n"
           IO.println (showQueens  (m + 1) model)
         return ()
 
@@ -34,7 +35,7 @@ def main (args: List String) : IO UInt32 := do
   IO.println ""
   IO.println "SATurn: A SAT solver-prover in lean"
   IO.println ""
-  IO.println "Solving the sat problem with clauses {P ∨ Q}, {P} and {¬Q}:"
+  IO.println "Solving the sat problem with clauses {P ∨ Q}, {¬P} and {¬Q}:"
   IO.println (solveSAT eg1Statement).toString
   IO.println ""
   IO.println "Solving the sat problem with clauses {P ∨ Q} and {¬Q}:"

@@ -22,10 +22,9 @@ The file [Examples.lean](https://github.com/siddhartha-gadgil/Saturn/blob/main/S
 One can run a compiled version in a command line. This solves the basic examples in the file [Examples.lean](https://github.com/siddhartha-gadgil/Saturn/blob/main/Saturn/Examples.lean) and also the [N-Queens problem](https://en.wikipedia.org/wiki/Eight_queens_puzzle) (if one chooses) for specified `N`. To run this assuming a recent version of the `lean` toolchain is installed using `elan`, one can do the following (in linux) for example:
 
 ```bash
-$ lake build bin
-$ build/bin/saturn 7
+$ lake exe nqueens 7
 ```
 
 The above commands run the basic examples and the 7-queens problem. Without an argument (such as `7` in the above example) just the basic examples are run. 
 
-Note that the performance is slow, to a large extent because the underlying collections used are not optimized for performance.
+Note that the performance is slow, to some extent because the underlying collections used are not optimized for performance.
