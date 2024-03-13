@@ -152,7 +152,7 @@ def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.get' zero (zero_lt_succ zero)
                                   (unitClause zero b zero (zero_lt_succ zero)).get' zero (zero_lt_succ zero) =
                                     some b :=
                                           by
-                                            apply unitDiag
+                                            apply unitClause_at_literal
                                 let lem2 : cl.get' zero (zero_lt_succ zero) =
                                     (unitClause zero b zero (zero_lt_succ zero)).get'
                                       zero (zero_lt_succ zero)
@@ -337,7 +337,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                             trees_preserve_notsomebranch (not par) index bd base
                                    (unitClause (m + 1) (!par) index bd)
                                    tree
-                          let impure := unitDiag (m + 1) (not par) index bd
+                          let impure := unitClause_at_literal (m + 1) (not par) index bd
                           exact absurd impure pure
                 | none =>
                   let index := zero

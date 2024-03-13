@@ -31,6 +31,7 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             apply Exists.intro focus
             apply Exists.intro focusLt
             let resolve : (clauses.get' k w).get' focus focusLt = some branch := dp.dropped k w eq
+            rw [Vector.get'] at resolve
             rw [resolve]
             simp [Vector.get', Vector.of_Fn'_get]
             simp [insert_at_focus]

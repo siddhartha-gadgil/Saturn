@@ -32,10 +32,14 @@ def contradiction(n: Nat) : Clause n :=
 theorem get'_contradiction(n: Nat)(k: Nat)(w: k < n) : (contradiction n).get' k w = none :=
   by rw [contradiction, Vector.get'_of_Fn']
 
+theorem get_contradiction (n : Nat) (kw : Fin n) : (contradiction n).get kw = none :=
+  by rw [contradiction, Vector.ofFn', Vector.get_ofFn]
+
 theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n,
           Not (clauseSat (contradiction n) valuation) := by
     intro valuation ⟨k, ⟨b, p⟩⟩
-    simp [get'_contradiction, varSat] at p
+    simp [get_contradiction, varSat] at p
+
 
 theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :
       insert none n focus focusLt ((contradiction n).get') =
@@ -75,12 +79,12 @@ Unit clauses: definitions and finding with proofs
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
   Vector.ofFn' (insert (some b) n k w ((contradiction n).get'))
 
-theorem unitDiag(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
+theorem unitClause_at_literal(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           (unitClause n b k w).get' k w = b := by
             rw [unitClause, Vector.of_Fn'_get']
             apply insert_at_focus
 
-theorem unitSkip(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
+theorem unitClause_skipping_literal(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):
           (i: Nat) → (iw : i < n) → (unitClause n b k w).get' (skip k i)
                   (skip_le_succ iw) = none := by
                   intro i iw

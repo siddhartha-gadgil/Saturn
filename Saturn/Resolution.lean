@@ -128,13 +128,13 @@ deriving Repr
 def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
         ResolutionTriple (unitClause n false  k lt) (unitClause n true k lt) (contradiction (n + 1)) :=
           ⟨k, lt,
-            unitDiag n false k lt ,
-            unitDiag n true k lt,
+            unitClause_at_literal n false k lt ,
+            unitClause_at_literal n true k lt,
             by
               rw [get'_contradiction]
               done,
             fun j jw => by
-              rw [unitSkip n false k lt j jw, unitSkip n true k lt j jw]
+              rw [unitClause_skipping_literal n false k lt j jw, unitClause_skipping_literal n true k lt j jw]
               simp [get'_contradiction]
               apply IsJoin.noneNone
                       ⟩
@@ -150,7 +150,7 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                 if c : valuation.get' (triple.pivot) (triple.pivotLt)  then
                     -- the left branch survives
                     if cc : kl = triple.pivot then by
-                      have lem1 : left.get' kl llt =
+                      have lem1 : left.get' kl llt  =
                         left.get' triple.pivot triple.pivotLt := by
                         apply witness_independent
                         apply cc
@@ -158,8 +158,9 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                         valuation.get' triple.pivot triple.pivotLt := by
                         apply witness_independent
                         apply cc
+                      rw [Vector.get'] at lem1
                       have lem3 : some true = some false := by
-                        rw [← c, ← lem2, ← wl, lem1, triple.leftPivot]
+                        rw [← c, ← lem2, Vector.get', ← wl, lem1, triple.leftPivot]
                       simp at lem3
                     else
                       let i := skipInverse triple.pivot kl cc
@@ -194,8 +195,9 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
                             valuation.get' triple.pivot triple.pivotLt := by
                             apply witness_independent
                             apply ccc
+                      rw [Vector.get'] at lem1
                       have lem5 : some false = some true := by
-                        rw [← cc, ← lem2, ← wr, lem1, triple.rightPivot]
+                        rw [← cc, ← lem2, Vector.get', ← wr, lem1, triple.rightPivot]
                       simp at lem5
                     else
                       let i := skipInverse triple.pivot kr ccc
@@ -259,18 +261,6 @@ def ResolutionTree.rp {dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
 
 instance : Repr (ResolutionTree clauses top) :=
   ⟨ fun tree => tree.rp⟩
-
-#check Std.Format
-def ResolutionTree.toString{dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
-      {top : Clause (n + 1)}
-        (rt: ResolutionTree clauses top) : String :=
-      match rt with
-      | ResolutionTree.assumption i iw _ _  =>
-          (clauses.get' i iw).toList.toString
-      | ResolutionTree.resolve left right .(top) leftTree rightTree _ =>
-                top.toString ++ " from " ++ left.toString ++ " & " ++ right.toString  ++
-                "; using: {" ++
-                leftTree.toString ++ "} and {" ++ rightTree.toString ++ "}"
 
 /-- proof of the apex from the assumptions as propositions -/
 theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):

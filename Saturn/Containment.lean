@@ -6,6 +6,8 @@ open Vector
 open FinSeq
 
 /-!
+## Containment of collections of clauses
+
 Containment of clauses and basic properties
 -/
 
