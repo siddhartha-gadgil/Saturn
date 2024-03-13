@@ -6,24 +6,25 @@ open Nat
 open Vector
 open FinSeq
 
-/-! A SAT problem is a set of clauses. Here we define structures corresponding to clauses,
-and prove their basic properties.
+/-!
+## Clauses
 
-Variables are assumed to correspond to integers. Literals correspond to associating to each variable
-a term of type `Option Bool`, with `none` meaning absence of the variable in the clause, and
-`some b` meaning its presence with `b` a boolean indicating whether the variable or its negation
-is part of the clause. Thus, clauses correspond to `FinSeq n (Option Bool)`, with `n` the number
-of variables. Similarly a valuation (assignment of `true` or `false` to each variable) is a
-term of type `FinSeq n Bool`.
+A **SAT problem** is determined by a set of clauses. Here we define structures corresponding to clauses, and prove their basic properties.
 
-We also define unit clauses, which are clauses that have only one literal, and pure clauses.
-We define functions that find unit clauses and pure variables in a finite sequence of clauses,
-with proofs.
+Variables are assumed to correspond to integers.
+Literals correspond to associating to each variable a term of type `Option Bool`, with `none` meaning absence of the variable in the clause, and
+`some b` meaning its presence with `b` a boolean indicating whether the variable or its negation is part of the clause. Thus, clauses correspond to `Vector (Option Bool) n`, with `n` the number of variables.
+Similarly a valuation (assignment of `true` or `false` to each variable) is a term of type `Vector Bool n`.
+
+We also define *unit clauses*, which are clauses that have only one literal, and *pure clauses* and define functions to find these.
+These allow simplification of the SAT problem.
 -/
 
 
 /--
-Contradiction clause
+### Contradiction
+
+These are clauses that are always false, i.e., they have no satisfying valuation. They are the empty clauses.
 -/
 def contradiction(n: Nat) : Clause n :=
   Vector.ofFn' (fun _ _ => none)
@@ -68,14 +69,11 @@ theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1)
 instance {n: Nat} : Repr (Clause n) :=
   ⟨fun (cls : Clause n) => fun n => reprPrec (cls.toList) n⟩
 
-def Clause.toString {n: Nat}: Clause n → String :=
-  fun (cls : Clause n) => (repr cls).pretty
+/-!
+### Unit clauses
 
-
-/-
-Unit clauses: definitions and finding with proofs
+These are clauses that have only one literal. They are useful in simplifying the SAT problem. Given a unit clause, the variable in the clause must be assigned the value that makes the clause true. This lets us consider only one branch of the search tree in the DPLL algorithm.
 -/
-
 def unitClause(n : Nat)(b : Bool)(k : Nat) (w : k < n + 1):   Clause (n + 1):=
   Vector.ofFn' (insert (some b) n k w ((contradiction n).get'))
 
@@ -139,55 +137,57 @@ def someUnitClauseAux {l : Nat} {n : Nat}: (clauses : Vector (Clause (n + 1)) l)
         else none
 
 
-def someUnitClause {l : Nat} {n : Nat}: (clauses : Vector  (Clause (n + 1)) l) →
+def someUnitClause? {l : Nat} {n : Nat}: (clauses : Vector  (Clause (n + 1)) l) →
   Vector Nat l →
   Vector Nat l →
   Option (SomeUnitClause clauses)  :=
     fun clauses posCount negCount =>
      someUnitClauseAux clauses posCount negCount l (Nat.le_refl l) none
 
-/-
-Pure variables: definitions and finding with proofs
+/-!
+### Pure variables
+
+A variable is pure in a set of clauses if it appears only with the same polarity in all the clauses. This means that the variable can be assigned a value that makes all the clauses true. This is useful in simplifying the SAT problem as if there
 -/
 
-structure HasPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom) where
+structure HasPureVar{num_clauses n : Nat}(clauses : Vector  (Clause n) num_clauses) where
   index : Nat
   bound : index < n
   parity : Bool
-  evidence : (k : Nat) → (lt : k < dom) →
+  evidence : (k : Nat) → (lt : k < num_clauses) →
           ((clauses.get' k lt).get' index bound = none) ∨
             ((clauses.get' k lt).get' index bound = some parity)
 
-structure IsPureVar{dom n : Nat}(clauses : Vector  (Clause n) dom)
+structure IsPureVar{num_clauses n : Nat}(clauses : Vector  (Clause n) num_clauses)
                       (index: Nat)(bound : index < n)(parity : Bool) where
-  evidence : (k : Nat) → (lt : k < dom) → ((clauses.get' k lt).get' index bound = none) ∨
+  evidence : (k : Nat) → (lt : k < num_clauses) → ((clauses.get' k lt).get' index bound = none) ∨
                                 ((clauses.get' k lt).get' index bound = some parity)
 
-def pureEvidence {dom n : Nat}(clauses : Vector  (Clause n) dom)
+def IsPure {num_clauses n : Nat}(clauses : Vector  (Clause n) num_clauses)
                   (index: Nat)(bound : index < n)(parity : Bool): Prop :=
-                  (k : Nat) → (lt : k < dom) →
+                  (k : Nat) → (lt : k < num_clauses) →
           ((clauses.get' k lt).get' index bound = none) ∨
           ((clauses.get' k lt).get' index bound = some parity)
 
-def pureBeyond{dom n : Nat}(clauses : Vector  (Clause n) dom)
+def HasPureTail{num_clauses n : Nat}(clauses : Vector  (Clause n) num_clauses)
                   (index: Nat)(bound : index < n)(parity : Bool)(m: Nat): Prop :=
-                  (k : Nat) → (lt : k < dom) → (m ≤ k) →
+                  (k : Nat) → (lt : k < num_clauses) → (m ≤ k) →
           ((clauses.get' k lt).get' index bound = none) ∨
           ((clauses.get' k lt).get' index bound = some parity)
 
-def pureBeyondZero{dom n : Nat}(clauses : Vector  (Clause n) dom)
+theorem isPure_of_PureTail_at_zero{num_clauses n : Nat}(clauses : Vector  (Clause n) num_clauses)
                 (index: Nat)(bound : index < n)(parity : Bool) :
-                  pureBeyond clauses index bound parity zero →
-                  pureEvidence clauses index bound parity := by
+                  HasPureTail clauses index bound parity zero →
+                  IsPure clauses index bound parity := by
                     intro hyp
                     intro k
                     intro kw
                     exact hyp k kw  (Nat.zero_le k)
                     done
 
-def pureBeyondVacuous{dom n : Nat}(clauses : Vector  (Clause n) dom)
-            (index: Nat)(bound : index < n)(parity : Bool)(m: Nat)(le: dom ≤ m):
-            pureBeyond clauses index bound parity m := by
+theorem pureTail_at_end{num_clauses n : Nat}(clauses : Vector  (Clause n) num_clauses)
+            (index: Nat)(bound : index < n)(parity : Bool)(m: Nat)(le: num_clauses ≤ m):
+            HasPureTail clauses index bound parity m := by
                   intro k
                   intro kw
                   intro ineq
@@ -196,27 +196,27 @@ def pureBeyondVacuous{dom n : Nat}(clauses : Vector  (Clause n) dom)
                   exact (False.elim (Nat.lt_irrefl k inq2))
                   done
 
-structure IsPureVarBeyond{dom n : Nat}(clauses : Vector  (Clause n) dom)
+structure PureVarTail{num_clauses n : Nat}(clauses : Vector  (Clause n) num_clauses)
                       (index: Nat)(bound : index < n)(parity : Bool)(m: Nat) where
-  evidence : pureBeyond clauses index bound parity m
+  evidence : HasPureTail clauses index bound parity m
 
 def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
-  (dom: Nat) →  (clauses : Vector  (Clause n) dom) →
-    (m: Nat) → Option (IsPureVarBeyond clauses index bound parity m) →
+  (num_clauses: Nat) →  (clauses : Vector  (Clause n) num_clauses) →
+    (m: Nat) → Option (PureVarTail clauses index bound parity m) →
     Option (IsPureVar clauses index bound parity) :=
-    fun dom clauses m =>
+    fun num_clauses clauses m =>
     match m with
     | zero => fun opt =>
-        opt.map (fun pb => ⟨pureBeyondZero clauses index bound parity pb.evidence⟩)
+        opt.map (fun pb => ⟨isPure_of_PureTail_at_zero clauses index bound parity pb.evidence⟩)
     | p + 1 =>
       fun opt =>
         match opt with
         | none => none
         | some pureBeyondEv =>
-          if pw : p < dom then
+          if pw : p < num_clauses then
             let head := (clauses.get' p pw).get' index bound
               if pf : (head = none) ∨  (head = some parity) then
-                let evidence : pureBeyond clauses index bound parity p :=
+                let evidence : HasPureTail clauses index bound parity p :=
                   by
                     intro k
                     intro kw
@@ -230,31 +230,31 @@ def varIsPureRec{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
                       exact pf
                     | inr l2 =>
                       exact pureBeyondEv.evidence k kw l2
-                varIsPureRec index bound parity dom clauses p (some ⟨evidence⟩)
+                varIsPureRec index bound parity num_clauses clauses p (some ⟨evidence⟩)
               else none
           else
             none -- can recurse here but never called so making TCO easy
 
-def varIsPure{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
-  (dom: Nat) →  (clauses : Vector  (Clause n) dom) →
+def varIsPure?{n : Nat}(index: Nat)(bound : index < n)(parity : Bool) :
+  (num_clauses: Nat) →  (clauses : Vector  (Clause n) num_clauses) →
     Option (IsPureVar clauses index bound parity) :=
-    fun dom clauses =>
-      varIsPureRec index bound parity dom clauses dom
-        (some ⟨pureBeyondVacuous clauses index bound parity dom (Nat.le_refl _)⟩)
+    fun num_clauses clauses =>
+      varIsPureRec index bound parity num_clauses clauses num_clauses
+        (some ⟨pureTail_at_end clauses index bound parity num_clauses (Nat.le_refl _)⟩)
 
-def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Vector  (Clause (n +1)) dom) →
+def findPureAux{n : Nat} : (num_clauses: Nat) →  (clauses : Vector  (Clause (n +1)) num_clauses) →
   (ub: Nat) → (lt : ub < n + 1) →
       Option (HasPureVar clauses) :=
-      fun dom clauses ub =>
+      fun num_clauses clauses ub =>
         match ub with
         | zero =>
           fun lt =>
-           match (varIsPure zero lt true dom clauses).map (
+           match (varIsPure? zero lt true num_clauses clauses).map (
             fun ⟨evidence⟩ =>
               HasPureVar.mk zero lt true evidence
               ) with
               | none =>
-                (varIsPure zero lt false dom clauses).map (
+                (varIsPure? zero lt false num_clauses clauses).map (
                   fun ⟨evidence⟩ =>
                     HasPureVar.mk zero lt false evidence
                     )
@@ -262,12 +262,12 @@ def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Vector  (Clause (n +1)) do
         | l + 1 =>
           fun lt =>
             let atCursor :=
-                match (varIsPure l (le_step  (le_of_succ_le_succ lt)) true dom clauses).map (
+                match (varIsPure? l (le_step  (le_of_succ_le_succ lt)) true num_clauses clauses).map (
               fun ⟨evidence⟩ =>
                 HasPureVar.mk l (le_step (le_of_succ_le_succ lt)) true evidence
                 ) with
                 | none =>
-                (varIsPure l (le_step (le_of_succ_le_succ lt)) false dom clauses).map (
+                (varIsPure? l (le_step (le_of_succ_le_succ lt)) false num_clauses clauses).map (
               fun ⟨evidence⟩ =>
                 HasPureVar.mk l (le_step (le_of_succ_le_succ lt)) false evidence
                 )
@@ -275,8 +275,8 @@ def findPureAux{n : Nat} : (dom: Nat) →  (clauses : Vector  (Clause (n +1)) do
             match atCursor with
             | some res => some res
             |none =>
-              findPureAux dom clauses l (le_step (le_of_succ_le_succ lt))
+              findPureAux num_clauses clauses l (le_step (le_of_succ_le_succ lt))
 
-def hasPure{n : Nat}{dom: Nat}(clauses : Vector  (Clause (n +1)) dom)
+def hasPure?{n : Nat}{num_clauses: Nat}(clauses : Vector  (Clause (n +1)) num_clauses)
              : Option (HasPureVar clauses) :=
-          findPureAux dom clauses n (Nat.le_refl _)
+          findPureAux num_clauses clauses n (Nat.le_refl _)

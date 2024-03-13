@@ -11,15 +11,15 @@ The inductive step for adding a new clause when it is not dropped. The new claus
 are defined. All the witnesses for the relations between the old and new clauses are also
 constructed.
 -/
-def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom):
+def prependClause{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses):
       (rc: ReductionClauses branch focus focusLt clauses) →
         (head : Clause (n + 1)) → (neg : Not (head.get' focus focusLt = some branch)) →
             ReductionClauses branch focus focusLt (head +: clauses) :=
           fun rc head _ =>
             let headImage := Vector.ofFn' (delete focus focusLt head.get')
-            let domN := dom + 1
-            let codomN := rc.codom + 1
+            let domN := num_clauses + 1
+            let codomN := rc.num_reducedClauses + 1
             let restClausesN := headImage +: rc.restClauses
             let forwardVecN := (some zero) +: (rc.forwardVec.map (fun nop => nop.map (. + 1)) )
             let forwardN: (k : Nat) →  k < domN → Option Nat  :=
@@ -50,7 +50,7 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   apply zero_lt_succ
               | l + 1 =>
                   simp [forwardN]
-                  exact boundOptSucc rc.codom
+                  exact boundOptSucc rc.num_reducedClauses
                             (rc.forward l (le_of_succ_le_succ w))
                             (rc.forwardWit ⟨ l, (le_of_succ_le_succ w)⟩)
             let reverseVecN := zero +: (rc.reverseVec.map (. + 1))
@@ -82,7 +82,7 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                   exact rc.reverseWit ⟨l, (le_of_succ_le_succ w)⟩
                   done
             {
-            codom := codomN,
+            num_reducedClauses := codomN,
             restClauses := restClausesN,
             forwardVec := forwardVecN,
             forwardWit :=  forwardNEq ▸ forwardWitN
@@ -91,15 +91,15 @@ def prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
             }
 
 
-theorem restClauses_prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+theorem restClauses_prependClause{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses)(rc: ReductionClauses branch focus focusLt clauses)
         (head : Clause (n + 1))(neg : Not (head.get' focus focusLt = some branch)) :
     (prependClause branch focus focusLt clauses rc head neg).restClauses =
       (Vector.ofFn' (delete focus focusLt head.get')) +: rc.restClauses :=
           rfl
 
-theorem reverseVec_prependClause{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+theorem reverseVec_prependClause{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses)(rc: ReductionClauses branch focus focusLt clauses)
         (head : Clause (n + 1))(neg : Not (head.get' focus focusLt = some branch)) :
     (prependClause branch focus focusLt clauses rc head neg).reverseVec =
       zero +: (rc.reverseVec.map (. + 1)) :=
@@ -137,11 +137,11 @@ theorem map_plusone_pred{n : Option Nat}{m : Nat} : n.map (. + 1) = some (m + 1)
 
 namespace PrependClause
 
-theorem forwardResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom):
+theorem forwardResolve{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses):
       (rc: ReductionClauses branch focus focusLt clauses) →
         (head : Clause (n + 1)) → (neg : Not (head.get' focus focusLt = some branch)) →
-        (l: Nat) → (w : l + 1 < dom + 1) →
+        (l: Nat) → (w : l + 1 < num_clauses + 1) →
           (prependClause  branch focus focusLt clauses rc head neg).forward (l + 1) w =
             (rc.forward l (le_of_succ_le_succ w)).map (. + 1) := by
                   intro rc head _ l w
@@ -153,15 +153,15 @@ theorem forwardResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n
                   rw [Vector.get_cons_succ, Vector.get_map]
 
 
-def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom):
+def droppedProof{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses):
       (rc: ReductionClauses branch focus focusLt clauses) →
         (head : Clause (n + 1)) → (neg : Not (head.get' focus focusLt = some branch)) →
           DroppedProof rc →
           DroppedProof (prependClause  branch focus focusLt clauses rc head neg) :=
           fun rc head neg drc =>
             let rcN := prependClause  branch focus focusLt clauses rc head neg
-            let domN := dom + 1
+            let domN := num_clauses + 1
             let clausesN := head +: clauses
             let droppedN :
               (k : Nat) → (w: k < domN) → rcN.forward k w = none →
@@ -184,16 +184,16 @@ def droppedProof{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
                     exact nw
             ⟨droppedN⟩
 
-def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom):
+def forwardRelation{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses):
       (rc: ReductionClauses branch focus focusLt clauses) →
         (head : Clause (n + 1)) → (neg : Not (head.get' focus focusLt = some branch)) →
           ForwardRelation rc →
           ForwardRelation (prependClause  branch focus focusLt clauses rc head neg) :=
         fun rc head neg frc =>
           let rcN := prependClause  branch focus focusLt clauses rc head neg
-          let domN := dom + 1
-          let codomN := rc.codom + 1
+          let domN := num_clauses + 1
+          let codomN := rc.num_reducedClauses + 1
           let clausesN := head +: clauses
           have forwardRelationN : (k : Nat) → (w: k < domN) → (j: Nat) →  rcN.forward k w = some j →
               (jw : j < codomN) →  delete focus focusLt ((clausesN.get' k w).get') =
@@ -247,11 +247,11 @@ def forwardRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           ⟨forwardRelationN⟩
 
 
-theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom):
+theorem reverseResolve{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses):
       (rc: ReductionClauses branch focus focusLt clauses) →
         (head : Clause (n + 1)) → (neg : Not (head.get' focus focusLt = some branch)) →
-        (l: Nat) → (w : l + 1 < rc.codom + 1) →
+        (l: Nat) → (w : l + 1 < rc.num_reducedClauses + 1) →
           (prependClause  branch focus focusLt clauses rc head neg).reverse (l + 1) w =
             (rc.reverse l (le_of_succ_le_succ w)) + 1 := by
             intro rc head _ l w
@@ -260,7 +260,7 @@ theorem reverseResolve{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n
                     ⟨l, le_of_succ_le_succ w⟩ := by rfl
             rw [s, Vector.get_cons_succ, Vector.get_map]
 
-theorem revrelAux (v : Vector Nat codom)(clauses: Vector (Clause (n + 1)) dom)(head: Clause (n + 1))(l: Nat)(w: l < codom)(bd : v.get ⟨l, w⟩ < dom):
+theorem revrelAux (v : Vector Nat num_reducedClauses)(clauses: Vector (Clause (n + 1)) num_clauses)(head: Clause (n + 1))(l: Nat)(w: l < num_reducedClauses)(bd : v.get ⟨l, w⟩ < num_clauses):
     Vector.get clauses { val := Vector.get v { val := l, isLt := w }, isLt := bd } =
   Vector.get (head ::ᵥ clauses)
     { val := Vector.get (0 ::ᵥ map (fun x ↦ x + 1) v) (Fin.succ { val := l, isLt := w }), isLt :=
@@ -291,15 +291,15 @@ theorem revrelAux (v : Vector Nat codom)(clauses: Vector (Clause (n + 1)) dom)(h
         rw [lem'] at lem''
         exact lem''
 
-def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom):
+def reverseRelation{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses):
       (rc: ReductionClauses branch focus focusLt clauses) →
         (head : Clause (n + 1)) → (neg : Not (head.get' focus focusLt = some branch)) →
           ReverseRelation rc →
           ReverseRelation (prependClause  branch focus focusLt clauses rc head neg) :=
         fun rc head pos rrc =>
           let rcN := prependClause  branch focus focusLt clauses rc head pos
-          let codomN := rcN.codom
+          let codomN := rcN.num_reducedClauses
           let clausesN := head +: clauses
           have relationN : (k : Nat) → (w: k < codomN) →
                  (rcN.restClauses.get' k w).get' =
@@ -346,15 +346,15 @@ def reverseRelation{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
           ⟨relationN⟩
 
 
-def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom):
+def pureReverse{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses):
       (rc: ReductionClauses branch focus focusLt clauses) →
         (head : Clause (n + 1)) → (neg : Not (head.get' focus focusLt = some branch)) →
           NonPosReverse rc →
           NonPosReverse (prependClause  branch focus focusLt clauses rc head neg) :=
         fun rc head neg prc =>
           let rcN := prependClause  branch focus focusLt clauses rc head neg
-          let codomN := rc.codom + 1
+          let codomN := rc.num_reducedClauses + 1
           let clausesN := head +: clauses
           have pureN : (k : Nat) → (w: k < codomN)  →
                 Not (
@@ -393,8 +393,8 @@ def pureReverse{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
           ⟨pureN⟩
 
 
-def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom):
+def prependResData{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses):
         (head : Clause (n + 1)) → (neg : Not (head.get' focus focusLt = some branch)) →
         (rd : ReductionData branch focus focusLt clauses) →
         ReductionData branch focus focusLt (head +: clauses) :=

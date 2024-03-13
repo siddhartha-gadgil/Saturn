@@ -225,9 +225,9 @@ theorem triple_step{n: Nat}(left right top : Clause (n + 1))
 A resolution tree, with leaves given clauses assumed to be satisfied and nodes resolution steps.
 We show that the apex is satisfied by a valuation if the given clauses are satisfied.
 -/
-inductive ResolutionTree{dom n: Nat}
-      (clauses : Vector   (Clause (n + 1)) dom) : (Clause (n + 1)) → Type  where
-  | assumption : (index : Nat) → (indexBound : index < dom ) → (top : Clause (n + 1)) →
+inductive ResolutionTree{num_clauses n: Nat}
+      (clauses : Vector   (Clause (n + 1)) num_clauses) : (Clause (n + 1)) → Type  where
+  | assumption : (index : Nat) → (indexBound : index < num_clauses ) → (top : Clause (n + 1)) →
           clauses.get' index indexBound = top →
           ResolutionTree clauses top
   | resolve : (left right top : Clause (n + 1)) →
@@ -237,7 +237,7 @@ inductive ResolutionTree{dom n: Nat}
                 → ResolutionTree clauses top
 
 open Std
-def ResolutionTree.rp {dom n: Nat}{clauses : Vector  (Clause (n + 1)) dom}
+def ResolutionTree.rp {num_clauses n: Nat}{clauses : Vector  (Clause (n + 1)) num_clauses}
       {top : Clause (n + 1)}
         (tree: ResolutionTree clauses top) : Nat →  Format := by
       cases tree
@@ -263,9 +263,9 @@ instance : Repr (ResolutionTree clauses top) :=
   ⟨ fun tree => tree.rp⟩
 
 /-- proof of the apex from the assumptions as propositions -/
-theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top : Clause (n + 1)):
+theorem resolutionToProof{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses)(top : Clause (n + 1)):
   (tree : ResolutionTree clauses top) →  (valuation :Valuation (n + 1))→
-    ((j : Nat) → (jw : j < dom) → clauseSat (clauses.get' j jw) valuation) →
+    ((j : Nat) → (jw : j < num_clauses) → clauseSat (clauses.get' j jw) valuation) →
             clauseSat top valuation := by
       intro tree
       induction tree
@@ -282,7 +282,7 @@ theorem resolutionToProof{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)(top
         exact triple_step left right top' triple valuation leftBase rightBase
 
 -- unsat from a resolution tree
-theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
+theorem tree_unsat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses):
       ResolutionTree clauses (contradiction (n + 1)) → isUnSat clauses :=
   fun tree valuation hyp =>
     contradiction_is_false _ valuation $
@@ -292,7 +292,7 @@ theorem tree_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
 Pieces for building trees.
 -/
 
-def mergeUnitTrees{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
+def mergeUnitTrees{num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}
                 (focus : Nat)(focusLt : focus < n + 1)
                 (left: ResolutionTree clauses (unitClause n false focus focusLt))
                 (right: ResolutionTree clauses (unitClause n true focus focusLt)) :
@@ -304,7 +304,7 @@ def mergeUnitTrees{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
                      left right (unitTriple n focus focusLt)
                 tree
 
-def mergeAlignUnitTrees{dom n: Nat}{branch : Bool}{clauses : Vector (Clause (n + 1)) dom}
+def mergeAlignUnitTrees{num_clauses n: Nat}{branch : Bool}{clauses : Vector (Clause (n + 1)) num_clauses}
                 {focus : Nat}{focusLt : focus < n + 1}
                  (first: ResolutionTree clauses (unitClause n branch focus focusLt))
                 (second: ResolutionTree clauses (unitClause n (not branch) focus focusLt)) :
@@ -315,15 +315,15 @@ def mergeAlignUnitTrees{dom n: Nat}{branch : Bool}{clauses : Vector (Clause (n +
                 | true, right, left =>
                     mergeUnitTrees focus focusLt left right
 
-def unitProof{dom n: Nat}{branch : Bool}{clauses : Vector (Clause (n + 1)) dom}
-                {focus : Nat}{focusLt : focus < n + 1}{j : Nat}{jw : j < dom}
+def unitProof{num_clauses n: Nat}{branch : Bool}{clauses : Vector (Clause (n + 1)) num_clauses}
+                {focus : Nat}{focusLt : focus < n + 1}{j : Nat}{jw : j < num_clauses}
                 (eqn: clauses.get' j jw = unitClause n branch focus focusLt):
                 ResolutionTree clauses (unitClause n branch focus focusLt) :=
                   ResolutionTree.assumption j jw (unitClause n branch focus focusLt) eqn
 
 -- Lift of a resolution tree with apex `top` from the branch corresponding to `focus` and `topFocus`
-structure BranchResolutionProof{dom n: Nat}(bf: Bool)(focus : Nat)(focusLt : focus < n + 1)
-  (clauses : Vector (Clause (n + 1)) dom)(top : Clause (n))  where
+structure BranchResolutionProof{num_clauses n: Nat}(bf: Bool)(focus : Nat)(focusLt : focus < n + 1)
+  (clauses : Vector (Clause (n + 1)) num_clauses)(top : Clause (n))  where
     topFocus : Option Bool
     nonPos : Not (topFocus = some bf)
     provedTree : ResolutionTree clauses (Vector.ofFn' (insert topFocus n focus focusLt top.get'))
@@ -333,8 +333,8 @@ Lift of a resolution tree with apex a contradiction, i.e., a resolution proof of
  from the branch corresponding to `focus` and `topFocus`. The lift could be either a contradiction
  or the proof of a unit clause.
 -/
-inductive LiftedResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
-    (clauses: Vector (Clause (n + 2)) dom) where
+inductive LiftedResTree{num_clauses n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
+    (clauses: Vector (Clause (n + 2)) num_clauses) where
     | contra : ResolutionTree clauses (contradiction (n + 2)) →
                   LiftedResTree branch focus focusLt clauses
     | unit : ResolutionTree clauses (unitClause (n + 1) (not branch) focus focusLt) →
@@ -346,9 +346,9 @@ theorem not_eq_implies_eq_not(b: Bool){x : Bool} : Not (x = b) → x = (not b) :
   | false => fun w => eq_true_of_ne_false w
 
 -- if none of the assumption clauses are `some bf` at a literal, the apex is not
-theorem trees_preserve_notsomebranch{dom n : Nat}{clauses : Vector (Clause (n + 1)) dom}
+theorem trees_preserve_notsomebranch{num_clauses n : Nat}{clauses : Vector (Clause (n + 1)) num_clauses}
         (bf: Bool)(k : Nat)(kw : k < n + 1)
-        (base : (j : Nat) → (lt : j < dom) →
+        (base : (j : Nat) → (lt : j < num_clauses) →
           Not ((clauses.get' j lt).get' k kw = some bf)) :
         (top : Clause (n + 1)) →
         (tree : ResolutionTree clauses top) →

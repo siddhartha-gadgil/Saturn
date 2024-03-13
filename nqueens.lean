@@ -7,7 +7,7 @@ open Nat
 Running the elementary examples as well as the N-Queens problem for `N` a command line
 argument.
 -/
-def printSolution {n dom : Nat}: (clauses : Vector (Clause (n * n)) dom) → Nat →  IO Unit :=
+def printSolution {n num_clauses : Nat}: (clauses : Vector (Clause (n * n)) num_clauses) → Nat →  IO Unit :=
   match n with
   | zero => fun _ _ => pure ()
   | m + 1 =>

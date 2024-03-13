@@ -8,13 +8,13 @@ import Saturn.Resolution
 Structured solution to a SAT problem. Either a valuation with evidence that it is satisfied
 by all the given clauses, or a resolution tree starting with the given clauses.
 -/
-inductive SatSolution{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) where
+inductive SatSolution{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses) where
   | unsat : (tree : ResolutionTree clauses (contradiction (n + 1))) →
           SatSolution clauses
-  | sat : (valuation : Vector Bool (n + 1)) → ((k : Nat) → (kw : k < dom)
+  | sat : (valuation : Vector Bool (n + 1)) → ((k : Nat) → (kw : k < num_clauses)
         → clauseSat (clauses.get' k kw) valuation) → SatSolution clauses
 
-instance {dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
+instance {num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}:
   Repr (SatSolution clauses) where
   reprPrec := by
         intro satSoln m
@@ -28,16 +28,16 @@ instance {dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
                 "Satisfying Clauses: " ++
                 reprPrec (clauseList) m
 
-def SatSolution.toString{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
+def SatSolution.toString{num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}:
         (sol: SatSolution clauses) →  String
       | soln => repr soln  |>.pretty
 
-def solutionProp{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}:
+def solutionProp{num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}:
                   (sol : SatSolution clauses) →  Prop
 | SatSolution.unsat _  => isUnSat clauses
 | SatSolution.sat _ _ => isSat clauses
 
-def solutionProof{dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
+def solutionProof{num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}
                   :(sol : SatSolution clauses) → solutionProp sol
 | SatSolution.unsat tree  => tree_unsat clauses tree
 | SatSolution.sat valuation evidence => ⟨valuation, evidence⟩

@@ -15,12 +15,12 @@ or a specifc unit clause determined by the branch.
 -/
 
 -- pull back of a solution
-def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+def pullBackSolution{num_clauses n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses)(rc: ReductionClauses branch focus focusLt clauses)
     (dp : DroppedProof rc) (fr: ForwardRelation rc):
       (valuation : Valuation n) →
-        ((j : Nat) → (jw : j < rc.codom) → clauseSat (rc.restClauses.get' j jw) valuation) →
-        (j : Nat) → (jw : j < dom) →
+        ((j : Nat) → (jw : j < rc.num_reducedClauses) → clauseSat (rc.restClauses.get' j jw) valuation) →
+        (j : Nat) → (jw : j < num_clauses) →
           clauseSat (clauses.get' j jw) (Vector.ofFn' (insert branch n focus focusLt valuation.get')) :=
         by
           intro valuation pf k w
@@ -37,10 +37,10 @@ def pullBackSolution{dom n: Nat}(branch: Bool)(focus : Nat)(focusLt : focus < n 
             simp [insert_at_focus]
           | some j =>
             let bound := rc.forwardWit ⟨k, w⟩
-            let jWitAux : boundOpt rc.codom (some j) := by
+            let jWitAux : boundOpt rc.num_reducedClauses (some j) := by
               rw [←  eq]
               exact bound
-            let jWit : j < rc.codom := jWitAux
+            let jWit : j < rc.num_reducedClauses := jWitAux
             let fwdEq := fr.forwardRelation k w j eq jWit
             let ⟨i, iw, vs⟩ := pf j jWit
             simp [clauseSat]
@@ -182,8 +182,8 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
 
 
 -- pulling back a tree
-def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
-    (clauses: Vector (Clause (n + 2)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+def pullBackTree{num_clauses n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
+    (clauses: Vector (Clause (n + 2)) num_clauses)(rc: ReductionClauses branch focus focusLt clauses)
     (np : NonPosReverse rc) (rr: ReverseRelation rc): (top : Clause (n + 1)) →
       (tree : ResolutionTree (rc.restClauses) top)
        → BranchResolutionProof branch focus focusLt clauses top  :=
@@ -191,7 +191,7 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
         match tree with
         | ResolutionTree.assumption j jw .(top) ttp =>
             let k := rc.reverse j jw
-            let kw : k < dom := rc.reverseWit ⟨j, jw⟩
+            let kw : k < num_clauses := rc.reverseWit ⟨j, jw⟩
             let cl := clauses.get' k kw
             let topFocus := cl.get' focus focusLt
             let nonPosLem : Not (topFocus = some branch)  :=
@@ -238,8 +238,8 @@ def pullBackTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 
               ⟨topFoc, topNonPos, tree⟩
 
 -- pulling back a proof of unsat by resolution to a contradiction or a proof of a unit clause.
-def pullBackResTree{dom n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
-    (clauses: Vector (Clause (n + 2)) dom)(rc: ReductionClauses branch focus focusLt clauses)
+def pullBackResTree{num_clauses n: Nat}(branch: Bool)(focus: Nat )(focusLt : focus <  (n + 2))
+    (clauses: Vector (Clause (n + 2)) num_clauses)(rc: ReductionClauses branch focus focusLt clauses)
     (np : NonPosReverse rc) (rr: ReverseRelation rc) :
         ResolutionTree rc.restClauses (contradiction (n + 1)) →
             LiftedResTree branch focus focusLt clauses := by

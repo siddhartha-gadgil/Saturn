@@ -50,19 +50,19 @@ abbrev varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some v
 abbrev clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) :=
   ∃ (k : Nat), ∃ (b : k < n), varSat (clause.get ⟨k, b⟩) (valuation.get ⟨k, b⟩)
 
-def isSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) : Prop :=
+def isSat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses) : Prop :=
           ∃ valuation : Valuation (n + 1),
            ∀ (p : Nat),
-            ∀ pw : p < dom,
+            ∀ pw : p < num_clauses,
               ∃ (k : Nat), ∃ (kw : k < n + 1),
                 ((clauses.get ⟨p, pw⟩).get ⟨k, kw⟩) = some (valuation.get ⟨k, kw⟩)
 
-def isUnSat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom) : Prop :=
+def isUnSat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses) : Prop :=
           ∀ valuation : Valuation (n + 1),
            Not (∀ (p : Nat),
-            ∀ pw : p < dom,
+            ∀ pw : p < num_clauses,
               ∃ (k : Nat), ∃ (kw : k < n + 1),
                 ((clauses.get ⟨p, pw⟩).get ⟨k, kw⟩) = some (valuation.get ⟨k, kw⟩))
 
-theorem not_sat_and_unsat{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom):
+theorem not_sat_and_unsat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses):
     isSat clauses → isUnSat clauses → False := by intro ⟨v, p⟩ h2 ; exact h2 v p

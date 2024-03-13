@@ -25,8 +25,8 @@ instance {n: Nat} : DecidableEq (Clause n) := inferInstance
 /-
 We map to branches inductively. The main work is done earlier.
 -/
-def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
-    (clauses: Vector (Clause (n + 1)) dom):
+def prependResData{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
+    (clauses: Vector (Clause (n + 1)) num_clauses):
         (rd : ReductionData branch focus focusLt clauses) →
            (head : Clause (n + 1)) →
         ReductionData branch focus focusLt (head +: clauses) :=
@@ -36,24 +36,24 @@ def prependResData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1
           else
             PrependClause.prependResData branch focus focusLt clauses head c rd
 
-def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
+def restrictionDataAux{domHead domAccum num_clauses n: Nat}(branch: Bool)
     (focus: Nat)(focusLt : focus < n + 1):
     (clausesHead: Vector (Clause (n + 1)) domHead) →
     (clausesAccum: Vector (Clause (n + 1)) domAccum) →
-    (s : domHead + domAccum = dom) →
+    (s : domHead + domAccum = num_clauses) →
     (restAcum : ReductionData branch focus focusLt clausesAccum) →
-    (clauses: Vector (Clause (n + 1)) dom) →
+    (clauses: Vector (Clause (n + 1)) num_clauses) →
     (clsEq : concatSeqAux s clausesHead.get' clausesAccum.get' = clauses.get') →
         ReductionData branch focus focusLt clauses :=
     match domHead with
     | zero =>
       by
         intro clausesHead clausesAccum s restAccum clauses clsEq
-        have ss : dom = domAccum := by
+        have ss : num_clauses = domAccum := by
           rw [← s]
           apply Nat.zero_add
           done
-        have sf : FinSeq dom (Clause (n + 1))  = FinSeq domAccum (Clause (n + 1)):= by
+        have sf : FinSeq num_clauses (Clause (n + 1))  = FinSeq domAccum (Clause (n + 1)):= by
           rw [ss]
         have clSeq : clauses = Vector.ofFn' clauses.get' := by
           apply Vector.ext'
@@ -63,7 +63,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
         rw [clSeq]
         rw [← clsEq]
         rw [resolve]
-        match dom , domAccum, ss, sf, clausesAccum, restAccum with
+        match num_clauses , domAccum, ss, sf, clausesAccum, restAccum with
         | d, .(d), rfl, rfl, cls,  ra =>
           have sm : Vector.ofFn'  (cls.get') = cls := by
             apply Vector.ext'
@@ -71,7 +71,7 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
           rw [← sm] at ra
           exact ra
     | k + 1 => fun clausesHead clausesAccum s restAccum clauses clsEq =>
-      let ss : k + (domAccum + 1)  = dom :=
+      let ss : k + (domAccum + 1)  = num_clauses :=
         by
           rw [← s]
           rw [(Nat.add_comm domAccum 1)]
@@ -93,8 +93,8 @@ def restrictionDataAux{domHead domAccum dom n: Nat}(branch: Bool)
             done)
 
 
-def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1):
-    (clauses: Vector (Clause (n + 1)) dom) →
+def restrictionData{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1):
+    (clauses: Vector (Clause (n + 1)) num_clauses) →
         ReductionData branch focus focusLt clauses :=
         fun clauses =>
           let rc : ReductionClauses branch focus focusLt Vector.nil :=
@@ -107,13 +107,13 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
             ⟨fun k w => nomatch w⟩,
             ⟨(by
                 intro k kw
-                have eq0 : rc.codom = 0 := by rfl
+                have eq0 : rc.num_reducedClauses = 0 := by rfl
                 rw [eq0] at kw
                 have contra := not_lt_zero _ kw
                 exact False.elim contra
             )⟩⟩
           restrictionDataAux branch focus focusLt clauses Vector.nil
-              (Nat.add_zero dom) rd clauses (
+              (Nat.add_zero num_clauses) rd clauses (
                 by
                 have nl : Vector.get' (
                   Vector.nil : Vector (Clause (n + 1)) 0) = FinSeq.empty := by
@@ -127,7 +127,7 @@ def restrictionData{dom n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 
 The simple cases: having a contradiction or having no clauses.
 -/
 
-def contraSol{n dom: Nat}{clauses : Vector (Clause (n + 1)) dom}{j : Nat}{jw : j < dom}
+def contraSol{n num_clauses: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}{j : Nat}{jw : j < num_clauses}
                 (eqn : clauses.get' j jw = contradiction (n + 1)): SatSolution clauses :=
                   SatSolution.unsat (ResolutionTree.assumption j jw _ eqn)
 
@@ -166,8 +166,8 @@ def lengthOneUnit{cl: Clause 1}{b : Bool}(eql : cl.get' zero (zero_lt_succ zero)
 def lengthOneContra{cl: Clause 1}(eql : cl.get' zero (zero_lt_succ zero) = none):
                               cl = contradiction 1 := lengthOneEqual eql
 
-def lengthOneSolution{dom : Nat}: (clauses : Vector (Clause 1) dom) →  SatSolution clauses :=
-    match dom with
+def lengthOneSolution{num_clauses : Nat}: (clauses : Vector (Clause 1) num_clauses) →  SatSolution clauses :=
+    match num_clauses with
     | zero => fun cls => emptySol cls
     | l + 1 =>
       fun cls =>
@@ -249,9 +249,9 @@ theorem notpure_cases(b: Bool): (x : Option Bool) → x = none ∨  x = some b  
 /-
 Lifting under containment and from branches and putting together lifts
 -/
-def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
+def containmentLift{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses)
     (cntn : Containment clauses):
-          SatSolution (cntn.imageSeq) → SatSolution clauses :=
+          SatSolution (cntn.reducedClauses) → SatSolution clauses :=
           fun sol =>
           match sol with
           | SatSolution.sat val pf =>
@@ -259,17 +259,17 @@ def containmentLift{dom n: Nat}(clauses : Vector (Clause (n + 1)) dom)
                 fun k kw =>
                         let ⟨ind, bd, w⟩ := cntn.forward k kw
                         let ev := pf ind bd
-                        let lem := containsSat (clauses.get' k kw) (cntn.imageSeq.get' ind bd) w val
+                        let lem := containsSat (clauses.get' k kw) (cntn.reducedClauses.get' ind bd) w val
                         lem ev)
 
           | SatSolution.unsat tree =>
                 let tree :=
-                  transportResTree cntn.imageSeq clauses cntn.reverse (contradiction (n + 1))
+                  transportResTree cntn.reducedClauses clauses cntn.reverse (contradiction (n + 1))
                     tree
                 SatSolution.unsat tree
 
 
-def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolution clauses :=
+def solveSAT{n num_clauses : Nat}: (clauses : Vector (Clause (n + 1)) num_clauses) →  SatSolution clauses :=
       match n with
       | zero => fun clauses => lengthOneSolution clauses
       | m + 1 =>
@@ -280,11 +280,11 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
         | some z => contraSol z.equation
         | none =>
           let cntn := simplifiedContainment clauses posCount negCount
-          let cls := cntn.imageSeq
+          let cls := cntn.reducedClauses
           let posCount  := cls.map (parityCount true)
           let negCount  := cls.map (parityCount false)
           let solution : SatSolution cls :=
-              match someUnitClause cls posCount negCount with
+              match someUnitClause? cls posCount negCount with
               | some ⟨i, iw, index, bd, par, eql⟩ =>
                   let rd := restrictionData par index bd cls
                   let subCls := rd.restrictionClauses.restClauses
@@ -309,7 +309,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                         let merged := mergeAlignUnitTrees tree1 tree
                         exact SatSolution.unsat merged
               | none =>
-                match hasPure cls with
+                match hasPure? cls with
                 | some ⟨index, bd, par, evid⟩=>
                   let rd := restrictionData par index bd cls
                   let subCls := rd.restrictionClauses.restClauses
@@ -329,7 +329,7 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
                       case contra pf =>
                           exact SatSolution.unsat pf
                       case unit tree =>
-                          let base : (j : Nat) → (lt : j < cntn.codom) →
+                          let base : (j : Nat) → (lt : j < cntn.num_reducedClauses) →
                               Not ((cls.get' j lt).get' index bd = some (not par)) :=
                                 fun j jw =>
                                   notpure_cases par ((cls.get' j jw).get' index bd) (evid j jw)
@@ -387,15 +387,15 @@ def solveSAT{n dom : Nat}: (clauses : Vector (Clause (n + 1)) dom) →  SatSolut
 /-
 Decidability and convenience functions.
 -/
-instance {dom n: Nat}{clauses : Vector (Clause (n + 1)) dom}
+instance {num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}
                  : Prover (SatSolution clauses) where
       statement := fun sol => solutionProp sol
       proof := fun sol => solutionProof sol
 
-def proveOrDisprove{n dom : Nat}(clauses : Vector (Clause (n + 1)) dom) :=
+def proveOrDisprove{n num_clauses : Nat}(clauses : Vector (Clause (n + 1)) num_clauses) :=
             getProof (solveSAT clauses)
 
-instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
+instance {n num_clauses : Nat}{clauses : Vector (Clause (n + 1)) num_clauses} :
     Decidable (isSat clauses) :=
     match solveSAT clauses with
       | SatSolution.sat valuation evidence =>
@@ -403,7 +403,7 @@ instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
       | SatSolution.unsat tree => isFalse $ fun hyp =>
             not_sat_and_unsat clauses hyp $ tree_unsat clauses tree
 
-instance {n dom : Nat}{clauses : Vector (Clause (n + 1)) dom} :
+instance {n num_clauses : Nat}{clauses : Vector (Clause (n + 1)) num_clauses} :
     Decidable (isUnSat clauses) :=
     match solveSAT clauses with
       | SatSolution.sat valuation evidence => isFalse $ fun hyp =>
