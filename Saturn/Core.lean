@@ -1,7 +1,5 @@
 import Mathlib.Data.Vector
 open Nat
-
-
 /-!
 ## SATurn Core
 

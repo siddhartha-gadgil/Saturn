@@ -48,7 +48,7 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
 def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2.get' k kw = some b → cl1.get' k kw = some b
 
-infix:65 " ⊇  " => contains
+infix:65 "⊇" => contains
 
 theorem contains_refl{n: Nat} (cl : Clause n) :
   cl ⊇ cl := fun _ _ _ hyp => hyp
@@ -82,12 +82,12 @@ abbrev containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, m ≤ k →  ∀ b : Bool, cl2.get' k kw = some b → cl1.get' k kw = some b
 
 theorem contains_implies_contains_beyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
-  contains cl1 cl2 → containsBeyond cl1 cl2 m := by
+  cl1 ⊇ cl2 → containsBeyond cl1 cl2 m := by
     intro h k kw _ b
     exact h k kw b
 
 theorem contains_beyond_zero_implies_contains {n: Nat} (cl1 cl2 : Clause n) :
-  containsBeyond cl1 cl2 zero → contains cl1 cl2 := by
+  containsBeyond cl1 cl2 zero → cl1 ⊇ cl2 := by
     intro h k kw b
     exact h k kw (Nat.zero_le _) b
 
@@ -108,7 +108,7 @@ theorem contains_beyond_vacuously{n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
       exact (False.elim (Nat.lt_irrefl k inq2))
 
 def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
-        (m: Nat) → Decidable (containsBeyond cl1 cl2 m) → Decidable (contains cl1 cl2) :=
+        (m: Nat) → Decidable (containsBeyond cl1 cl2 m) → Decidable (cl1 ⊇ cl2) :=
         fun m dContainsBeyond =>
           match m, dContainsBeyond with
           | m, isFalse contra => isFalse (
@@ -213,7 +213,7 @@ def identity{num_clauses n : Nat}(base: Vector (Clause n) num_clauses) : Contain
           apply witness_independent
           rw [idAt]
     let baseContains : (j : Nat) → (jw : j < num_clauses) →
-          contains (base.get' j jw) (base.get' (idVec.get' j jw) (idBound j jw)) := by
+          (base.get' j jw) ⊇ (base.get' (idVec.get' j jw) (idBound j jw)) := by
           intro j jw
           rw [baseEqn]
           exact contains_refl (base.get' j jw)
@@ -312,7 +312,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                           apply witness_independent
                           rw [forwardNAt]
               have forwardNPred : (j : Nat) → (jw : j < domN) →
-                    contains (base.get' j jw)
+                    (base.get' j jw) ⊇
                           ((Vector.ofFn' imageSeqN).get' (forwardNVec.get' j jw) (forwardNBound j jw)) :=
                         by
                           intro j jw
