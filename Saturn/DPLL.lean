@@ -259,7 +259,7 @@ def containmentLift{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_cl
                 fun k kw =>
                         let ⟨ind, bd, w⟩ := cntn.forward k kw
                         let ev := pf ind bd
-                        let lem := containsSat (clauses.get' k kw) (cntn.reducedClauses.get' ind bd) w val
+                        let lem := sat_of_contained_sat (clauses.get' k kw) (cntn.reducedClauses.get' ind bd) w val
                         lem ev)
 
           | SatSolution.unsat tree =>
@@ -396,7 +396,7 @@ def proveOrDisprove{n num_clauses : Nat}(clauses : Vector (Clause (n + 1)) num_c
             getProof (solveSAT clauses)
 
 instance {n num_clauses : Nat}{clauses : Vector (Clause (n + 1)) num_clauses} :
-    Decidable (isSat clauses) :=
+    Decidable (IsSat clauses) :=
     match solveSAT clauses with
       | SatSolution.sat valuation evidence =>
           isTrue ⟨valuation, evidence⟩
@@ -404,7 +404,7 @@ instance {n num_clauses : Nat}{clauses : Vector (Clause (n + 1)) num_clauses} :
             not_sat_and_unsat clauses hyp $ tree_unsat clauses tree
 
 instance {n num_clauses : Nat}{clauses : Vector (Clause (n + 1)) num_clauses} :
-    Decidable (isUnSat clauses) :=
+    Decidable (IsUnSat clauses) :=
     match solveSAT clauses with
       | SatSolution.sat valuation evidence => isFalse $ fun hyp =>
         not_sat_and_unsat clauses ⟨valuation, evidence⟩ hyp

@@ -8,17 +8,28 @@ open FinSeq
 /-!
 ## Containment of collections of clauses
 
-Containment of clauses and basic properties
+Containment is a property of collections of clauses that guarantees equisatisfiability. This builds on the observation that if two clauses are viewed as collections of literals, if the first contains the second
+then a valuation satisying the second also satisfies the first.
+
+In the DPLL algorithm, after restricting to a branch we discard duplicates.
+Further, we can discard clauses that contain other clauses.
 -/
 
-abbrev varContains (v1 v2 : Option Bool) : Prop :=
+/--
+Containment of a pair representing possibly negated literals.
+-/
+abbrev VarContains (v1 v2 : Option Bool) : Prop :=
   ∀ b : Bool, v2 = some b → v1  = some b
 
 
 instance : LE (Option Bool) :=
-  ⟨fun v₁ v₂ => varContains v₂ v₁⟩
+  ⟨fun v₁ v₂ => VarContains v₂ v₁⟩
 
-def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 ≥  v2) :=
+/--
+Decidability of containment of literals.
+-/
+def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) →
+    Decidable (v1 ≥  v2) :=
   fun v1 v2 =>
   match v2 with
   | none =>
@@ -45,22 +56,25 @@ def varDomDecide : (v1 : Option Bool) → (v2 : Option Bool) → Decidable (v1 �
                   c (lem2)
             )
 
-def contains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
+/--
+Containment of clauses viewed as sets of literals.
+-/
+def ClauseContains{n: Nat} (cl1 cl2 : Clause n) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, ∀ b : Bool, cl2.get' k kw = some b → cl1.get' k kw = some b
 
-infix:65 "⊇" => contains
+infix:65 "⊇" => ClauseContains
 
-theorem contains_refl{n: Nat} (cl : Clause n) :
+theorem clauseContains_refl{n: Nat} (cl : Clause n) :
   cl ⊇ cl := fun _ _ _ hyp => hyp
 
-theorem contains_trans{n: Nat} (cl1 cl2 cl3 : Clause n) :
+theorem clauseContains_trans{n: Nat} (cl1 cl2 cl3 : Clause n) :
         cl1 ⊇  cl2 → cl2 ⊇ cl3 →  cl1 ⊇ cl3 := by
                 intro hyp1 hyp2  k w b dHyp
                 apply hyp1
                 apply hyp2
                 apply dHyp
 
-theorem contains_prepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
+theorem clauseContains_prepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
           v1 ≥  v2 → cl1 ⊇  cl2 →
                 (v1 +: cl1) ⊇ (v2 +: cl2) := by
             intro hyp1 hyp2 k
@@ -75,24 +89,27 @@ theorem contains_prepend{n: Nat}(v1 v2 : Option Bool)(cl1 cl2 : Clause n) :
                   exact kw
               exact hyp2 j w b hb
 
-/-
+/--
 Implementation of checking for containment; tail-call optimized
 -/
-abbrev containsBeyond(cl1 cl2 : Clause n)(m: Nat) : Prop :=
+abbrev clauseContainsTail(cl1 cl2 : Clause n)(m: Nat) : Prop :=
   ∀ k : Nat, ∀ kw : k < n, m ≤ k →  ∀ b : Bool, cl2.get' k kw = some b → cl1.get' k kw = some b
 
-theorem contains_implies_contains_beyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
-  cl1 ⊇ cl2 → containsBeyond cl1 cl2 m := by
+theorem clauseContains_implies_clauseContains_beyond {n: Nat} (cl1 cl2 : Clause n) (m: Nat) :
+  cl1 ⊇ cl2 → clauseContainsTail cl1 cl2 m := by
     intro h k kw _ b
     exact h k kw b
 
-theorem contains_beyond_zero_implies_contains {n: Nat} (cl1 cl2 : Clause n) :
-  containsBeyond cl1 cl2 zero → cl1 ⊇ cl2 := by
+theorem clauseContains_beyond_zero_implies_contains {n: Nat} (cl1 cl2 : Clause n) :
+  clauseContainsTail cl1 cl2 zero → cl1 ⊇ cl2 := by
     intro h k kw b
     exact h k kw (Nat.zero_le _) b
 
-theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
-  cl1 ⊇  cl2 → (valuation : Valuation n) → clauseSat cl2 valuation → clauseSat cl1 valuation := by
+/--
+If a clause contains another, a valuation that satisfies the second satisfies the first.
+-/
+theorem sat_of_contained_sat {n: Nat} (cl1 cl2 : Clause n) :
+  cl1 ⊇  cl2 → (valuation : Valuation n) → ClauseSat cl2 valuation → ClauseSat cl1 valuation := by
     intro num_clauses valuation
     intro ⟨j, jw, vs⟩
     let lem0 :  cl2.get' j jw = some (valuation.get' j jw) := vs
@@ -100,26 +117,26 @@ theorem containsSat{n: Nat} (cl1 cl2 : Clause n) :
     exact ⟨j, jw, lem1⟩
 
 
-theorem contains_beyond_vacuously{n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
-    (n ≤ m) → containsBeyond cl1 cl2 m := by
+theorem clauseContains_beyond_vacuously {n: Nat} (cl1 cl2 : Clause n)(m: Nat) :
+    (n ≤ m) → clauseContainsTail cl1 cl2 m := by
       intro h k kw ineq
       let inq := Nat.le_trans h ineq
       let inq2 := Nat.lt_of_lt_of_le kw inq
       exact (False.elim (Nat.lt_irrefl k inq2))
 
-def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
-        (m: Nat) → Decidable (containsBeyond cl1 cl2 m) → Decidable (cl1 ⊇ cl2) :=
+def decideContainsRec {n: Nat} (cl1 cl2 : Clause n) :
+        (m: Nat) → Decidable (clauseContainsTail cl1 cl2 m) → Decidable (cl1 ⊇ cl2) :=
         fun m dContainsBeyond =>
           match m, dContainsBeyond with
           | m, isFalse contra => isFalse (
               by
                 intro hyp
                 apply contra
-                apply contains_implies_contains_beyond cl1 cl2 m hyp
+                apply clauseContains_implies_clauseContains_beyond cl1 cl2 m hyp
                 )
-          | zero, isTrue pf => isTrue (contains_beyond_zero_implies_contains cl1 cl2 pf)
+          | zero, isTrue pf => isTrue (clauseContains_beyond_zero_implies_contains cl1 cl2 pf)
           | l + 1, isTrue pf =>
-            let accum: Decidable (containsBeyond cl1 cl2 l) :=
+            let accum: Decidable (clauseContainsTail cl1 cl2 l) :=
               if lw : l < n then
                 match varDomDecide (cl1.get' l lw) (cl2.get' l lw) with
                 | isTrue pfHead =>
@@ -147,16 +164,18 @@ def decideContainsRec{n: Nat} (cl1 cl2 : Clause n) :
                   cases Nat.lt_or_ge l n with
                   | inl l1 => exact absurd l1 lw
                   | inr l2 => exact l2
-                isTrue (contains_beyond_vacuously cl1 cl2 l overshoot)
+                isTrue (clauseContains_beyond_vacuously cl1 cl2 l overshoot)
         decideContainsRec cl1 cl2 l accum
 
-
+/--
+Decidability of containment of clauses
+-/
 def decideContains(n: Nat) : (cl1: Clause n) →  (cl2 : Clause n) →
                                           Decidable (cl1 ⊇   cl2) :=
     fun cl1 cl2 => decideContainsRec cl1 cl2 n
-        (isTrue (contains_beyond_vacuously cl1 cl2 n (Nat.le_refl _)))
+        (isTrue (clauseContains_beyond_vacuously cl1 cl2 n (Nat.le_refl _)))
 
-instance {n: Nat}{cl: Clause n} : DecidablePred (contains cl) :=
+instance {n: Nat}{cl: Clause n} : DecidablePred (ClauseContains cl) :=
   decideContains n cl
 
 def parityCount{n: Nat}  (b: Bool) (cl : Clause n) : Nat :=
@@ -187,7 +206,7 @@ structure Containment{num_clauses n : Nat}(baseClauses: Vector (Clause n) num_cl
 namespace Containment
 abbrev forward {num_clauses n : Nat}{base: Vector (Clause n) num_clauses}
       (cntn : Containment base) (j : Nat) (jw : j < num_clauses) :
-                  ElemSeqPred cntn.reducedClauses.get' (contains (base.get' j jw)) :=
+                  ElemSeqPred cntn.reducedClauses.get' (ClauseContains (base.get' j jw)) :=
                 ⟨cntn.forwardVec.get' j jw, cntn.forwardBound j jw,
                     cntn.forwardEq j jw⟩
 
@@ -216,7 +235,7 @@ def identity{num_clauses n : Nat}(base: Vector (Clause n) num_clauses) : Contain
           (base.get' j jw) ⊇ (base.get' (idVec.get' j jw) (idBound j jw)) := by
           intro j jw
           rw [baseEqn]
-          exact contains_refl (base.get' j jw)
+          exact clauseContains_refl (base.get' j jw)
     ⟨num_clauses, base, idVec, idBound, baseContains, idVec, idBound,
       by
       intro j jw
@@ -258,7 +277,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                   (negCount.get' (reverseVec.get' j jw) (reverseBound j jw))
                     posFocus negFocus)
           let step  : Containment base :=
-            match findFiltered? filter (contains focus) rest with
+            match findFiltered? filter (ClauseContains focus) rest with
             | none =>
                 ⟨l + 1, reducedClauses, forwardVec, forwardBound, forwardEq,
                    reverseVec, reverseBound, revereseEq⟩
@@ -267,7 +286,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
               let imageSeqN := rest
               let domN := d + 1
               let forwardN : (j : Nat) → (jw : j < domN) →
-                    ElemSeqPred imageSeqN (contains (base.get' j jw)) :=
+                    ElemSeqPred imageSeqN (ClauseContains (base.get' j jw)) :=
                     fun j jw =>
                       let ⟨i, iw , ict⟩ := forward j jw
                       if c : i = k then -- index i redirected
@@ -277,7 +296,7 @@ def simplifyNonEmptyContainment{d n : Nat}: (cursorBound : Nat) →
                           let lem2 : reducedClauses.get' i iw ⊇ imageSeqN zi zb := by
                                 rw [lem1]
                                 exact zc
-                          ⟨zi, zb, contains_trans _ _ _ ict lem2⟩
+                          ⟨zi, zb, clauseContains_trans _ _ _ ict lem2⟩
                       else
                         let ii := skipInverse k i c -- index in sequence before deletion
                         let eqn := skipInverse_eq k i c

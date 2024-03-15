@@ -19,15 +19,15 @@ def pullBackSolution{num_clauses n: Nat}(branch: Bool)(focus : Nat)(focusLt : fo
     (clauses: Vector (Clause (n + 1)) num_clauses)(rc: ReductionClauses branch focus focusLt clauses)
     (dp : DroppedProof rc) (fr: ForwardRelation rc):
       (valuation : Valuation n) →
-        ((j : Nat) → (jw : j < rc.num_reducedClauses) → clauseSat (rc.restClauses.get' j jw) valuation) →
+        ((j : Nat) → (jw : j < rc.num_reducedClauses) → ClauseSat (rc.restClauses.get' j jw) valuation) →
         (j : Nat) → (jw : j < num_clauses) →
-          clauseSat (clauses.get' j jw) (Vector.ofFn' (insert branch n focus focusLt valuation.get')) :=
+          ClauseSat (clauses.get' j jw) (Vector.ofFn' (insert branch n focus focusLt valuation.get')) :=
         by
           intro valuation pf k w
           let fwdOpt := (rc.forward k w)
           match eq:fwdOpt with
           | none =>
-            simp [clauseSat]
+            simp [ClauseSat]
             apply Exists.intro focus
             apply Exists.intro focusLt
             let resolve : (clauses.get' k w).get' focus focusLt = some branch := dp.dropped k w eq
@@ -43,7 +43,7 @@ def pullBackSolution{num_clauses n: Nat}(branch: Bool)(focus : Nat)(focusLt : fo
             let jWit : j < rc.num_reducedClauses := jWitAux
             let fwdEq := fr.forwardRelation k w j eq jWit
             let ⟨i, iw, vs⟩ := pf j jWit
-            simp [clauseSat]
+            simp [ClauseSat]
             apply Exists.intro (skip focus i)
             apply Exists.intro (skip_le_succ iw)
             simp [Vector.get', Vector.of_Fn'_get]

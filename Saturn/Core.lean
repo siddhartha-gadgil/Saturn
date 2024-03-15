@@ -40,27 +40,45 @@ def clauseSummary {n: Nat}(clause : Clause n) : List <| Nat × Bool :=
     | some b => some (i, b)
     | none => none)
 
-
+/--
+Assignment of `true` or `false` to variables.
+-/
 abbrev Valuation(n: Nat) : Type := Vector Bool n
 
-abbrev varSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
+/--
+Whether assignment to variable shows truth of statement.
+-/
+abbrev VarSat (clVal: Option Bool)(valuationVal : Bool) : Prop := clVal = some valuationVal
 
-abbrev clauseSat {n: Nat}(clause : Clause n)(valuation: Valuation n) :=
-  ∃ (k : Nat), ∃ (b : k < n), varSat (clause.get ⟨k, b⟩) (valuation.get ⟨k, b⟩)
+/--
+Whether valuation satisfies a clause.
+-/
+abbrev ClauseSat {n: Nat}(clause : Clause n)
+    (valuation: Valuation n) : Prop :=
+  ∃ (k : Nat), ∃ (b : k < n), VarSat (clause.get ⟨k, b⟩) (valuation.get ⟨k, b⟩)
 
-def isSat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses) : Prop :=
+/--
+Whether a collection of clauses is satisfiable.
+-/
+def IsSat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses) : Prop :=
           ∃ valuation : Valuation (n + 1),
            ∀ (p : Nat),
             ∀ pw : p < num_clauses,
               ∃ (k : Nat), ∃ (kw : k < n + 1),
                 ((clauses.get ⟨p, pw⟩).get ⟨k, kw⟩) = some (valuation.get ⟨k, kw⟩)
 
-def isUnSat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses) : Prop :=
+/--
+Whether a collection of clauses is unsatisfiable.
+-/
+def IsUnSat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses) : Prop :=
           ∀ valuation : Valuation (n + 1),
            Not (∀ (p : Nat),
             ∀ pw : p < num_clauses,
               ∃ (k : Nat), ∃ (kw : k < n + 1),
                 ((clauses.get ⟨p, pw⟩).get ⟨k, kw⟩) = some (valuation.get ⟨k, kw⟩))
 
+/--
+A collection of clauses cannot be `SAT` and `UNSAT`
+-/
 theorem not_sat_and_unsat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses):
-    isSat clauses → isUnSat clauses → False := by intro ⟨v, p⟩ h2 ; exact h2 v p
+    IsSat clauses → IsUnSat clauses → False := by intro ⟨v, p⟩ h2 ; exact h2 v p

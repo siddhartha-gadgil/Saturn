@@ -37,9 +37,9 @@ theorem get_contradiction (n : Nat) (kw : Fin n) : (contradiction n).get kw = no
   by rw [contradiction, Vector.ofFn', Vector.get_ofFn]
 
 theorem contradiction_is_false (n: Nat) : ∀ valuation : Valuation n,
-          Not (clauseSat (contradiction n) valuation) := by
+          Not (ClauseSat (contradiction n) valuation) := by
     intro valuation ⟨k, ⟨b, p⟩⟩
-    simp [get_contradiction, varSat] at p
+    simp [get_contradiction, VarSat] at p
 
 
 theorem contradiction_insert_none{n : Nat} (focus: Nat)(focusLt : focus < n + 1) :

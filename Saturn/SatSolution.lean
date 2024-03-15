@@ -12,7 +12,7 @@ inductive SatSolution{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_
   | unsat : (tree : ResolutionTree clauses (contradiction (n + 1))) →
           SatSolution clauses
   | sat : (valuation : Vector Bool (n + 1)) → ((k : Nat) → (kw : k < num_clauses)
-        → clauseSat (clauses.get' k kw) valuation) → SatSolution clauses
+        → ClauseSat (clauses.get' k kw) valuation) → SatSolution clauses
 
 instance {num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}:
   Repr (SatSolution clauses) where
@@ -34,8 +34,8 @@ def SatSolution.toString{num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) n
 
 def solutionProp{num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}:
                   (sol : SatSolution clauses) →  Prop
-| SatSolution.unsat _  => isUnSat clauses
-| SatSolution.sat _ _ => isSat clauses
+| SatSolution.unsat _  => IsUnSat clauses
+| SatSolution.sat _ _ => IsSat clauses
 
 def solutionProof{num_clauses n: Nat}{clauses : Vector (Clause (n + 1)) num_clauses}
                   :(sol : SatSolution clauses) → solutionProp sol

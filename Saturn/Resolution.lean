@@ -84,8 +84,8 @@ theorem top_of_join_not_positive(bf : Bool)(left right top: Option Bool): IsJoin
 
 -- valuations at a literal satisy the top of a join if they satisfy the bottom literals
 theorem var_resolution_step {left right top : Option Bool}(join: IsJoin left right top)
-      (valuationVal : Bool) : Or (varSat left valuationVal) (varSat right valuationVal) →
-          (varSat top valuationVal)  := by
+      (valuationVal : Bool) : Or (VarSat left valuationVal) (VarSat right valuationVal) →
+          (VarSat top valuationVal)  := by
         intro hyp
         cases hyp with
         | inl heq =>
@@ -142,8 +142,8 @@ def unitTriple(n : Nat)(k: Nat)(lt : k < n + 1) :
 -- if a valuation satisfies the bottom two clauses, it satisfies the top clause as a proposition
 theorem triple_step{n: Nat}(left right top : Clause (n + 1))
   (triple : ResolutionTriple left right top) :
-        (valuation: Valuation (n + 1))  → (clauseSat left valuation) →
-        (clauseSat right valuation) → (clauseSat top valuation) :=
+        (valuation: Valuation (n + 1))  → (ClauseSat left valuation) →
+        (ClauseSat right valuation) → (ClauseSat top valuation) :=
           fun valuation =>
             fun ⟨kl, ⟨llt, wl⟩⟩ =>
               fun ⟨kr, ⟨rlt, wr⟩⟩ =>
@@ -265,8 +265,8 @@ instance : Repr (ResolutionTree clauses top) :=
 /-- proof of the apex from the assumptions as propositions -/
 theorem resolutionToProof{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses)(top : Clause (n + 1)):
   (tree : ResolutionTree clauses top) →  (valuation :Valuation (n + 1))→
-    ((j : Nat) → (jw : j < num_clauses) → clauseSat (clauses.get' j jw) valuation) →
-            clauseSat top valuation := by
+    ((j : Nat) → (jw : j < num_clauses) → ClauseSat (clauses.get' j jw) valuation) →
+            ClauseSat top valuation := by
       intro tree
       induction tree
       case assumption j jw top eqn =>
@@ -275,15 +275,15 @@ theorem resolutionToProof{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) 
         apply base
       case resolve left right top' _ _ triple lih rih  =>
         intro valuation base
-        let leftBase : clauseSat left valuation := by
+        let leftBase : ClauseSat left valuation := by
           apply lih valuation base
-        let rightBase : clauseSat right valuation := by
+        let rightBase : ClauseSat right valuation := by
           apply rih valuation base
         exact triple_step left right top' triple valuation leftBase rightBase
 
 -- unsat from a resolution tree
 theorem tree_unsat{num_clauses n: Nat}(clauses : Vector (Clause (n + 1)) num_clauses):
-      ResolutionTree clauses (contradiction (n + 1)) → isUnSat clauses :=
+      ResolutionTree clauses (contradiction (n + 1)) → IsUnSat clauses :=
   fun tree valuation hyp =>
     contradiction_is_false _ valuation $
       resolutionToProof clauses (contradiction (n + 1)) tree valuation hyp
