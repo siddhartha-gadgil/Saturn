@@ -42,5 +42,6 @@ def main (args: List String) : IO UInt32 := do
   IO.println (solveSAT eg2Statement).toString
   let problem := (queensClauses n)
   printSolution problem n
+  IO.println ""
 
   return 0
