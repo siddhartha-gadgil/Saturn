@@ -58,7 +58,7 @@ theorem cons_commutes{α : Type}{n : Nat} (head : α) (tail : Vector α n) :
               rfl
 
 theorem Vector.get'_of_Fn' {α : Type}{n : Nat} (f : (k : Nat) → k < n → α) (k : Nat) (kw : k < n) :
-      (Vector.ofFn' f).get' k kw = f k kw :=
+      Vector.get' (Vector.ofFn' f) k kw = f k kw :=
       by
       let lem := Vector.of_Fn'_get' f
       let lem' := congrFun lem k

@@ -386,8 +386,19 @@ def simplifiedContainment{num_clauses n : Nat}: (clauses : Vector (Clause n) num
                               Containment clauses :=
                     match num_clauses with
                     |zero => fun _ _ _ =>
-                      ⟨zero, Vector.nil, Vector.nil, fun _ jw => nomatch jw, fun _ jw => nomatch jw,
-                        Vector.nil, fun _ jw => nomatch jw, fun _ jw => nomatch jw⟩
+                      {
+                        num_reducedClauses := 0,
+                        reducedClauses := Vector.nil,
+                        forwardVec := Vector.nil,
+                        forwardBound := by simp,
+                        forwardEq := by
+                          intro _ jw
+                          simp at jw,
+                        reverseVec := Vector.nil,
+                        reverseBound := by simp,
+                        reverseEq := fun _ jw => nomatch jw
+                        }
+                      -- ⟨zero, Vector.nil, Vector.nil, fun _ jw => nomatch jw, fun _ jw => nomatch jw, Vector.nil, fun _ jw => nomatch jw, fun _ jw => nomatch jw⟩
                     | m + 1 => fun clauses posCount negCount =>
                         simplifyNonEmptyContainment (m + 1) clauses
                             posCount negCount (Containment.identity clauses)

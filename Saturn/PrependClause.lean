@@ -282,7 +282,7 @@ theorem revrelAux (v : Vector Nat num_reducedClauses)(clauses: Vector (Clause (n
               apply Nat.succ_lt_succ
               exact bd
           ⟩  := by
-            apply Fin.eq_of_veq
+            apply Fin.eq_of_val_eq
             simp
             symm
             exact lem
@@ -302,29 +302,26 @@ def reverseRelation{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focu
           let codomN := rcN.num_reducedClauses
           let clausesN := head +: clauses
           have relationN : (k : Nat) → (w: k < codomN) →
-                 (rcN.restClauses.get' k w).get' =
+                 (rcN.restClauses.get ⟨k, w⟩).get' =
                   delete focus focusLt
                       (clausesN.get' (rcN.reverse k w)
                       (rcN.reverseWit ⟨ k, w⟩ )).get' :=
                     by
-                    intro k
-                    match k with
-                    | zero =>
-                      intro w
+                    intro k w
+                    match k, w with
+                    | zero, _ =>
                       simp [Vector.get', Vector.of_Fn'_get]
                       rw [restClauses_prependClause]
                       simp [reverseVec_prependClause]
                       apply Vector.of_Fn'_get'
-                    | l + 1 =>
-                      intro w
-                      let lem2 := rrc.relation l (le_of_succ_le_succ w)
+                    | l + 1, w =>
+                      let w' := (le_of_succ_le_succ w)
+                      let lem2 := rrc.relation l w'
                       simp [Vector.get', ReverseRelation.relation]
                       rw [Vector.get'] at lem2
                       rw [restClauses_prependClause]
-                      simp [reverseVec_prependClause]
-                      have s : { val := l + 1, isLt := w } =
-                        Fin.succ ⟨l, le_of_succ_le_succ w⟩ := by rfl
-                      rw [s]
+                      simp [rcN, reverseVec_prependClause]
+                      show get' ((ofFn' (delete focus focusLt (get' head))+:rc.restClauses).get (⟨l, w'⟩ : Fin _).succ) = _
                       rw [Vector.get_cons_succ]
                       rw [lem2]
                       simp [ReductionClauses.reverse]
@@ -345,6 +342,7 @@ def reverseRelation{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focu
                         revrelAux v clauses head l (Nat.le_of_succ_le_succ w)
           ⟨relationN⟩
 
+#check Vector.get_cons_succ
 
 def pureReverse{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focus < n + 1)
     (clauses: Vector (Clause (n + 1)) num_clauses):

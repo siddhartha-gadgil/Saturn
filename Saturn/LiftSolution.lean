@@ -112,7 +112,7 @@ def liftResolutionTriple{n : Nat} (bf : Bool) (leftFoc rightFoc : Option Bool)
           apply witness_independent
           assumption
         rw [leftLem, rightLem, topLem]
-        simp [insert_at_focus]
+        simp [leftN, rightN, topN, insert_at_focus]
         exact focJoin
       else
         let i := skipInverse k jj jj_eq_k

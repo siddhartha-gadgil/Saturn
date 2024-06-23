@@ -1,4 +1,4 @@
-import Mathlib.Data.Vector
+import Mathlib.Data.Vector.Basic
 open Nat
 /-!
 ## SATurn Core

@@ -98,9 +98,14 @@ def restrictionData{num_clauses n: Nat}(branch: Bool)(focus: Nat)(focusLt : focu
         ReductionData branch focus focusLt clauses :=
         fun clauses =>
           let rc : ReductionClauses branch focus focusLt Vector.nil :=
-              ⟨0, Vector.nil, Vector.nil,
-                fun ⟨k, w⟩ => nomatch w,
-                Vector.nil, fun ⟨k, w⟩ => nomatch w⟩
+          {
+            num_reducedClauses := 0,
+            restClauses := Vector.nil,
+            forwardVec := Vector.nil,
+            forwardWit := by simp,
+            reverseVec := Vector.nil,
+            reverseWit := by simp
+            }
           let rd : ReductionData branch focus focusLt Vector.nil := ⟨rc,
             ⟨fun k w => nomatch w⟩,
             ⟨fun k w => nomatch w⟩,
